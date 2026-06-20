@@ -1,6 +1,6 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python
 
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -17,6 +17,7 @@ help:
 	@echo "  make api-test         Run API tests excluding integration markers"
 	@echo "  make api-openapi      Export OpenAPI JSON"
 	@echo "  make ai-test          Run AI provider abstraction tests without live providers"
+	@echo "  make browser-test     Run browser runtime unit tests"
 	@echo "  make docker-config    Validate Docker Compose config"
 	@echo "  make docker-up        Start local stack"
 	@echo "  make docker-down      Stop local stack"
@@ -99,6 +100,18 @@ ai-test-live:
 
 ai-test-unit:
 	uv run pytest packages/backend_common/src/live_demo_backend_common/tests/ai
+
+browser-install:
+	pnpm --filter @live-demo-agent/browser-runtime install
+
+browser-dev:
+	pnpm --filter @live-demo-agent/browser-runtime dev
+
+browser-test:
+	pnpm --filter @live-demo-agent/browser-runtime test
+
+browser-test-integration:
+	pnpm --filter @live-demo-agent/browser-runtime test:integration
 
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache

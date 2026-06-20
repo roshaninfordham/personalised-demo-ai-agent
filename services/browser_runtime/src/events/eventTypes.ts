@@ -1,0 +1,17 @@
+export type BrowserEventType =
+  | "browser.session.created"
+  | "browser.session.closed"
+  | "browser.navigation.started"
+  | "browser.navigation.completed"
+  | "browser.navigation.failed"
+  | "browser.screen.updated"
+  | "browser.cursor.move"
+  | "browser.cursor.click"
+  | "browser.cursor.ripple"
+  | "browser.element.highlight"
+  | "browser.action.started"
+  | "browser.action.completed"
+  | "browser.action.failed"
+  | "browser.policy.blocked"
+  | "browser.error";
+

@@ -143,19 +143,24 @@ services:
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
     ports:
-      - "8010:8010"
+      - "8200:8200"
     shm_size: "2gb"
     depends_on:
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test:
         [
           "CMD",
           "node",
           "-e",
-          "fetch('http://localhost:8010/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          "fetch('http://localhost:8200/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 10s
       timeout: 5s

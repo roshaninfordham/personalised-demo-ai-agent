@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Dashboard</title>
+  </head>
+  <body>
+    <nav>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/reports">Reports</a>
+      <a href="/settings">Settings</a>
+    </nav>
+    <main>
+      <h1>Dashboard</h1>
+      <section>
+        <button id="addMetric">Add Metric</button>
+        <button id="viewReport">View Report</button>
+      </section>
+      <p>Revenue is up this month.</p>
+    </main>
+    <script>
+      document.getElementById("addMetric").addEventListener("click", () => {
+        const message = document.createElement("div");
+        message.id = "metricAdded";
+        message.textContent = "Metric added";
+        document.body.appendChild(message);
+      });
+    </script>
+  </body>
+</html>
+

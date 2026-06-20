@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Dynamic App</title>
+  </head>
+  <body>
+    <h1>Dynamic App</h1>
+    <button id="toggle">Show panel</button>
+    <script>
+      document.getElementById("toggle").addEventListener("click", () => {
+        const panel = document.createElement("section");
+        panel.textContent = "Panel opened";
+        document.body.appendChild(panel);
+      });
+    </script>
+  </body>
+</html>
+
