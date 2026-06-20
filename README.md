@@ -608,6 +608,223 @@ uv run pytest services/api/tests/test_security_redaction.py
 uv run pytest services/api/tests/test_pagination.py
 ```
 
+## AI Provider Architecture
+
+Phase 4 adds a reusable provider-agnostic Python package at `packages/backend_common`. Later services should use the registry and interfaces, not provider constructors.
+
+```mermaid
+flowchart LR
+    Agent["Agent / learner / API service"]
+    Registry["ProviderRegistry"]
+    Text["TextGenerationProvider"]
+    Embed["EmbeddingProvider"]
+    Vision["VisionUnderstandingProvider"]
+    OpenAICompat["OpenAI-compatible adapter"]
+    NIM["NVIDIA NIM adapter"]
+    Ollama["Ollama adapter"]
+    Fake["Fake providers for CI"]
+
+    Agent --> Registry
+    Registry --> Text
+    Registry --> Embed
+    Registry --> Vision
+    Text --> OpenAICompat
+    Text --> NIM
+    Text --> Ollama
+    Text --> Fake
+    Embed --> OpenAICompat
+    Embed --> NIM
+    Embed --> Ollama
+    Embed --> Fake
+    Vision --> OpenAICompat
+    Vision --> Ollama
+    Vision --> Fake
+```
+
+The interfaces live in:
+
+- `live_demo_backend_common.ai.text.base.TextGenerationProvider`
+- `live_demo_backend_common.ai.embeddings.base.EmbeddingProvider`
+- `live_demo_backend_common.ai.vision.base.VisionUnderstandingProvider`
+
+Allowed business-code usage:
+
+```python
+from live_demo_backend_common.ai.config import get_ai_provider_settings
+from live_demo_backend_common.ai.registry import ProviderRegistry
+from live_demo_backend_common.ai.types import ChatMessage, MessageRole, TextGenerationRequest
+
+settings = get_ai_provider_settings()
+registry = ProviderRegistry(settings)
+
+text_provider = registry.get_text_provider()
+
+response = await text_provider.generate(
+    TextGenerationRequest(
+        messages=[
+            ChatMessage(role=MessageRole.user, content="Say hello in one sentence.")
+        ],
+        metadata={
+            "purpose": "realtime_host",
+            "request_id": "req_123",
+            "trace_id": "trace_123",
+        },
+    )
+)
+
+print(response.content)
+await registry.close()
+```
+
+### Text Providers
+
+Text generation supports:
+
+- `AI_TEXT_PROVIDER=nvidia_nim`
+- `AI_TEXT_PROVIDER=openai`
+- `AI_TEXT_PROVIDER=custom_openai_compatible`
+- `AI_TEXT_PROVIDER=ollama`
+- `AI_TEXT_PROVIDER=fake`
+- `AI_TEXT_PROVIDER=disabled`
+
+NVIDIA NIM uses the same generic OpenAI-compatible adapter surface:
+
+```env
+AI_TEXT_PROVIDER=nvidia_nim
+AI_TEXT_BASE_URL=https://integrate.api.nvidia.com/v1
+AI_TEXT_API_KEY=...
+AI_TEXT_MODEL=meta/llama-3.1-70b-instruct
+```
+
+Custom OpenAI-compatible endpoint:
+
+```env
+AI_TEXT_PROVIDER=custom_openai_compatible
+AI_TEXT_BASE_URL=https://provider.example.com/v1
+AI_TEXT_API_KEY=...
+AI_TEXT_MODEL=provider-model-name
+```
+
+Local Ollama, no API key:
+
+```env
+AI_TEXT_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_TEXT_MODEL=llama3.2
+OLLAMA_TEXT_MODE=openai_compatible
+```
+
+Ollama native mode uses `/api/chat` and does not auto-pull models.
+
+```mermaid
+sequenceDiagram
+    participant Caller as Business service
+    participant Registry as ProviderRegistry
+    participant Provider as Text provider
+    participant Endpoint as Provider endpoint
+
+    Caller->>Registry: get_text_provider()
+    Registry-->>Caller: TextGenerationProvider
+    Caller->>Provider: generate(request)
+    Provider->>Endpoint: normalized chat completion request
+    Endpoint-->>Provider: provider-specific response
+    Provider-->>Caller: TextGenerationResponse
+```
+
+Streaming uses server-sent event parsing for OpenAI-compatible endpoints and yields `TextGenerationChunk` objects as deltas arrive. The provider layer returns tool calls as data and never executes tools.
+
+### Embedding Providers
+
+Embeddings support:
+
+- `AI_EMBEDDING_PROVIDER=nvidia_nim`
+- `AI_EMBEDDING_PROVIDER=openai`
+- `AI_EMBEDDING_PROVIDER=custom_openai_compatible`
+- `AI_EMBEDDING_PROVIDER=ollama`
+- `AI_EMBEDDING_PROVIDER=fake`
+- `AI_EMBEDDING_PROVIDER=disabled`
+
+The default vector dimension is `AI_EMBEDDING_DIMENSIONS=768`, matching the Phase 2 pgvector schema. Dimension mismatches, NaN values, infinite values, and zero-vector normalization are rejected before vectors reach storage.
+
+```mermaid
+flowchart TD
+    Texts["texts[]"]
+    Hash["content/model hash"]
+    Cache{"in-memory LRU hit?"}
+    Provider["embedding provider"]
+    Validate["dimension + finite-value validation"]
+    Normalize["optional L2 normalization"]
+    Response["EmbeddingResponse"]
+
+    Texts --> Hash --> Cache
+    Cache -- yes --> Response
+    Cache -- no --> Provider --> Validate --> Normalize --> Response
+```
+
+Ollama embeddings use `/api/embed` by default. The deprecated `/api/embeddings` path is only used when `OLLAMA_EMBEDDING_USE_LEGACY_ENDPOINT=true`.
+
+### Vision Providers
+
+Vision is disabled by default:
+
+```env
+AI_VISION_PROVIDER=disabled
+AI_VISION_ALLOW_HOT_PATH=false
+```
+
+Vision adapters accept bytes, base64, or a trusted artifact reference. They do not fetch arbitrary remote image URLs. Image bytes/base64 are never logged, and screenshots are treated as sensitive data.
+
+### Provider Reliability Controls
+
+```mermaid
+flowchart LR
+    Request["Provider request"]
+    Circuit{"Circuit open?"}
+    Retry["retry policy"]
+    HTTP["shared httpx.AsyncClient"]
+    Normalize["normalized response/error"]
+
+    Request --> Circuit
+    Circuit -- no --> Retry --> HTTP --> Normalize
+    Circuit -- yes --> Error["ProviderCircuitOpenError"]
+```
+
+- One `httpx.AsyncClient` is reused per provider instance.
+- Hot-path retries default to `AI_PROVIDER_HOT_PATH_MAX_RETRIES=0`.
+- Cold-path retries default to `AI_PROVIDER_COLD_PATH_MAX_RETRIES=2`.
+- Circuit breakers are in-process for Phase 4.
+- Streaming requests are not retried after partial chunks have been yielded.
+
+### AI Provider Tests
+
+Unit tests do not require provider keys:
+
+```bash
+make ai-test
+```
+
+Live tests are opt-in:
+
+```bash
+export RUN_LIVE_PROVIDER_TESTS=true
+export AI_TEXT_PROVIDER=nvidia_nim
+export AI_TEXT_BASE_URL=https://integrate.api.nvidia.com/v1
+export AI_TEXT_API_KEY=...
+export AI_TEXT_MODEL=...
+make ai-test-live
+```
+
+For Ollama live tests, use an already-pulled model. The test suite does not download model weights:
+
+```bash
+docker compose --profile ai-local up -d ollama
+export RUN_LIVE_PROVIDER_TESTS=true
+export AI_TEXT_PROVIDER=ollama
+export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_TEXT_MODEL=<already-pulled-model>
+make ai-test-live
+```
+
 ## How Contracts Work
 
 JSON Schema is the source of truth:
@@ -695,12 +912,20 @@ uv sync --all-packages
 - Realtime voice and Pipecat pipeline are not implemented in Phase 3.
 - Browser automation and Playwright control are not implemented in Phase 3.
 - Product learning, summarization, and graph building are not implemented in Phase 3.
-- AI provider calls and provider adapters are not implemented in Phase 3.
+- AI provider adapters are implemented in Phase 4, but the live agent brain does not call them yet.
 - Actual WebRTC room creation is not implemented; join config is a safe placeholder.
 - CRM export is not implemented in Phase 3.
 - Lead-summary generation is not implemented; the API only reads existing summaries.
 - Event outbox publisher worker is not implemented yet; the outbox table and Redis event bus foundation exist.
 - Observability configs are placeholders until runtime metrics and traces are emitted.
+
+## Phase 4 Limitations
+
+- Phase 4 implements AI provider abstractions and adapters.
+- It does not implement the live agent brain, Pipecat runtime, browser automation, product learner, or CRM summaries.
+- Live provider tests are opt-in and skipped unless `RUN_LIVE_PROVIDER_TESTS=true`.
+- Ollama providers do not auto-pull models.
+- Vision remains disabled by default and should be used as fallback/cold-path enrichment unless explicitly enabled.
 
 ## Architecture Docs
 
