@@ -12,9 +12,9 @@
       "required": [
         "session_id",
         "product_id",
-        "product_url",
         "status",
         "current_phase",
+        "start_url",
         "created_at",
         "updated_at"
       ],
@@ -26,7 +26,7 @@
         "product_id": {
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
-        "product_url": {
+        "start_url": {
           "type": "string",
           "format": "uri"
         },
@@ -45,7 +45,16 @@
         "product_name": {
           "type": "string"
         },
-        "target_persona": {
+        "user_persona": {
+          "type": "string"
+        },
+        "user_company": {
+          "type": "string"
+        },
+        "user_display_name": {
+          "type": "string"
+        },
+        "user_email": {
           "type": "string"
         },
         "recipe_id": {
@@ -67,48 +76,29 @@
     },
     "CreateDemoSessionRequest": {
       "type": "object",
-      "required": ["product_url"],
+      "required": ["product_id"],
       "additionalProperties": false,
       "properties": {
-        "product_url": {
-          "type": "string",
-          "format": "uri"
-        },
-        "product_name": {
-          "type": "string"
-        },
-        "target_persona": {
-          "type": "string"
-        },
-        "positioning": {
-          "type": "string"
-        },
-        "demo_goals": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        },
-        "what_to_show": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        },
-        "what_to_avoid": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
+        "product_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
         "recipe_id": {
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
-        "metadata": {
-          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        "start_url": {
+          "type": "string"
+        },
+        "user_persona": {
+          "type": "string"
+        },
+        "user_company": {
+          "type": "string"
+        },
+        "user_display_name": {
+          "type": "string"
+        },
+        "user_email": {
+          "type": "string"
         }
       }
     },
@@ -124,34 +114,33 @@
     },
     "StartDemoSessionRequest": {
       "type": "object",
-      "required": ["session_id"],
+      "required": [],
       "additionalProperties": false,
-      "properties": {
-        "session_id": {
-          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
-        }
-      }
+      "properties": {}
     },
     "StartDemoSessionResponse": {
       "type": "object",
-      "required": ["session"],
+      "required": ["session", "join_config"],
       "additionalProperties": false,
       "properties": {
         "session": {
           "$ref": "https://schemas.live-demo-agent.local/demo-session.schema.json#/$defs/DemoSession"
+        },
+        "join_config": {
+          "$ref": "https://schemas.live-demo-agent.local/demo-session.schema.json#/$defs/JoinConfigResponse"
         }
       }
     },
     "EndDemoSessionRequest": {
       "type": "object",
-      "required": ["session_id"],
+      "required": [],
       "additionalProperties": false,
       "properties": {
-        "session_id": {
-          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
-        },
         "reason": {
           "type": "string"
+        },
+        "force": {
+          "type": "boolean"
         }
       }
     },
@@ -162,6 +151,128 @@
       "properties": {
         "session": {
           "$ref": "https://schemas.live-demo-agent.local/demo-session.schema.json#/$defs/DemoSession"
+        }
+      }
+    },
+    "DemoSessionResponse": {
+      "$ref": "https://schemas.live-demo-agent.local/demo-session.schema.json#/$defs/DemoSession"
+    },
+    "ListDemoSessionsResponse": {
+      "type": "object",
+      "required": ["items", "next_cursor"],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/demo-session.schema.json#/$defs/DemoSession"
+          },
+          "default": []
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "SessionLiveState": {
+      "type": "object",
+      "required": ["available", "current_screen", "safe_actions", "browser_status", "latency"],
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "current_screen": {
+          "oneOf": [
+            {
+              "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "safe_actions": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+          },
+          "default": []
+        },
+        "browser_status": {
+          "oneOf": [
+            {
+              "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latency": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "live_state_status": {
+          "type": "string"
+        }
+      }
+    },
+    "DemoSessionStateResponse": {
+      "type": "object",
+      "required": ["session", "live_state"],
+      "additionalProperties": false,
+      "properties": {
+        "session": {
+          "$ref": "https://schemas.live-demo-agent.local/demo-session.schema.json#/$defs/DemoSession"
+        },
+        "live_state": {
+          "$ref": "https://schemas.live-demo-agent.local/demo-session.schema.json#/$defs/SessionLiveState"
+        }
+      }
+    },
+    "JoinConfigResponse": {
+      "type": "object",
+      "required": [
+        "transport_provider",
+        "session_id",
+        "room_id",
+        "join_token",
+        "expires_at",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "transport_provider": {
+          "type": "string"
+        },
+        "session_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "room_id": {
+          "type": "string"
+        },
+        "join_token": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        },
+        "status": {
+          "type": "string"
         }
       }
     }

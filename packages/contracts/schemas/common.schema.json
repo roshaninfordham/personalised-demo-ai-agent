@@ -39,6 +39,18 @@
         },
         {
           "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/JsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/JsonValue"
+          }
         }
       ]
     },
@@ -94,6 +106,299 @@
         "height": {
           "type": "number",
           "minimum": 0
+        }
+      }
+    },
+    "PaginationCursor": {
+      "type": "string"
+    },
+    "ApiErrorDetail": {
+      "type": "object",
+      "required": ["code", "message", "request_id", "trace_id", "details"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "trace_id": {
+          "type": "string"
+        },
+        "details": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        }
+      }
+    },
+    "ApiErrorResponse": {
+      "type": "object",
+      "required": ["error"],
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ApiErrorDetail"
+        }
+      }
+    },
+    "ProductConfiguration": {
+      "type": "object",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "allowed_domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "default_never_click": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "demo_credentials_configured": {
+          "type": "boolean"
+        },
+        "preferred_recipe_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "browser_viewport": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        }
+      }
+    },
+    "ProductResponse": {
+      "type": "object",
+      "required": [
+        "product_id",
+        "product_name",
+        "product_url",
+        "confidence",
+        "configuration",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "product_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "product_name": {
+          "type": "string"
+        },
+        "product_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "default_persona": {
+          "type": "string"
+        },
+        "product_summary": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "configuration": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ProductConfiguration"
+        },
+        "created_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        },
+        "updated_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        }
+      }
+    },
+    "CreateProductRequest": {
+      "type": "object",
+      "required": ["product_name", "product_url"],
+      "additionalProperties": false,
+      "properties": {
+        "product_name": {
+          "type": "string"
+        },
+        "product_url": {
+          "type": "string"
+        },
+        "default_persona": {
+          "type": "string"
+        },
+        "product_summary": {
+          "type": "string"
+        },
+        "configuration": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ProductConfiguration"
+        }
+      }
+    },
+    "UpdateProductRequest": {
+      "type": "object",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "product_name": {
+          "type": "string"
+        },
+        "product_url": {
+          "type": "string"
+        },
+        "default_persona": {
+          "type": "string"
+        },
+        "product_summary": {
+          "type": "string"
+        },
+        "configuration": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ProductConfiguration"
+        }
+      }
+    },
+    "ListProductsResponse": {
+      "type": "object",
+      "required": ["items", "next_cursor"],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ProductResponse"
+          },
+          "default": []
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/PaginationCursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ProductGuidanceType": {
+      "type": "string",
+      "enum": [
+        "text",
+        "document",
+        "recipe",
+        "recording",
+        "objection_playbook",
+        "messaging",
+        "sales_script",
+        "product_positioning",
+        "forbidden_actions",
+        "setup_notes"
+      ]
+    },
+    "ProductGuidanceResponse": {
+      "type": "object",
+      "required": [
+        "guidance_id",
+        "product_id",
+        "guidance_type",
+        "content",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "guidance_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "product_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "guidance_type": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ProductGuidanceType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "source_uri": {
+          "type": "string"
+        },
+        "created_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        },
+        "updated_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        }
+      }
+    },
+    "CreateProductGuidanceRequest": {
+      "type": "object",
+      "required": ["guidance_type", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "guidance_type": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ProductGuidanceType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "source_uri": {
+          "type": "string"
+        }
+      }
+    },
+    "UpdateProductGuidanceRequest": {
+      "type": "object",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "guidance_type": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ProductGuidanceType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "source_uri": {
+          "type": "string"
+        }
+      }
+    },
+    "ListProductGuidanceResponse": {
+      "type": "object",
+      "required": ["items", "next_cursor"],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/ProductGuidanceResponse"
+          },
+          "default": []
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/PaginationCursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     }

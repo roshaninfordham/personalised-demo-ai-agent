@@ -7,6 +7,10 @@
   "additionalProperties": false,
   "properties": {},
   "$defs": {
+    "RecipeStatus": {
+      "type": "string",
+      "enum": ["draft", "active", "archived"]
+    },
     "DemoStep": {
       "type": "object",
       "required": ["step_id", "step_order", "step_key", "goal"],
@@ -53,6 +57,49 @@
         }
       }
     },
+    "DemoStepInput": {
+      "type": "object",
+      "required": ["step_order", "step_key", "goal"],
+      "additionalProperties": false,
+      "properties": {
+        "step_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "step_key": {
+          "type": "string"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "screen_hint": {
+          "type": "string"
+        },
+        "click_hint": {
+          "type": "string"
+        },
+        "talk_track": {
+          "type": "string"
+        },
+        "allowed_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "success_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "fallback_strategy": {
+          "type": "string"
+        }
+      }
+    },
     "DemoRecipe": {
       "type": "object",
       "required": [
@@ -60,6 +107,8 @@
         "product_id",
         "recipe_name",
         "demo_goal",
+        "status",
+        "is_active",
         "steps",
         "never_click",
         "created_at",
@@ -76,8 +125,17 @@
         "recipe_name": {
           "type": "string"
         },
+        "target_persona": {
+          "type": "string"
+        },
         "demo_goal": {
           "type": "string"
+        },
+        "status": {
+          "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeStatus"
+        },
+        "is_active": {
+          "type": "boolean"
         },
         "steps": {
           "type": "array",
@@ -93,11 +151,121 @@
           },
           "default": []
         },
+        "global_talk_track": {
+          "type": "string"
+        },
         "created_at": {
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
         },
         "updated_at": {
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        }
+      }
+    },
+    "CreateDemoRecipeRequest": {
+      "type": "object",
+      "required": ["recipe_name", "demo_goal", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "recipe_name": {
+          "type": "string"
+        },
+        "target_persona": {
+          "type": "string"
+        },
+        "demo_goal": {
+          "type": "string"
+        },
+        "never_click": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "global_talk_track": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoStepInput"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "UpdateDemoRecipeRequest": {
+      "type": "object",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "recipe_name": {
+          "type": "string"
+        },
+        "target_persona": {
+          "type": "string"
+        },
+        "demo_goal": {
+          "type": "string"
+        },
+        "never_click": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "global_talk_track": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoStepInput"
+          }
+        }
+      }
+    },
+    "DemoRecipeResponse": {
+      "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoRecipe"
+    },
+    "ListDemoRecipesResponse": {
+      "type": "object",
+      "required": ["items", "next_cursor"],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoRecipe"
+          },
+          "default": []
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "RecipeValidationIssue": {
+      "type": "object",
+      "required": ["path", "code", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
         }
       }
     },
@@ -115,6 +283,40 @@
             "type": "string"
           },
           "default": []
+        }
+      }
+    },
+    "ValidateDemoRecipeResponse": {
+      "type": "object",
+      "required": ["valid", "errors", "warnings"],
+      "additionalProperties": false,
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeValidationIssue"
+          },
+          "default": []
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeValidationIssue"
+          },
+          "default": []
+        }
+      }
+    },
+    "ActivateDemoRecipeResponse": {
+      "type": "object",
+      "required": ["recipe"],
+      "additionalProperties": false,
+      "properties": {
+        "recipe": {
+          "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoRecipe"
         }
       }
     }

@@ -36,6 +36,25 @@ export interface BrowserActionResult {
   error_message?: string;
 }
 
+export interface BrowserActionEventResponse {
+  action_event_id: UuidString;
+  action_type: string;
+  risk_level: RiskLevel;
+  policy_decision: PolicyDecision;
+  success?: boolean;
+  error_code?: string;
+  from_screen_id?: UuidString;
+  to_screen_id?: UuidString;
+  latency_ms?: number;
+  created_at: IsoDateTimeString;
+  action_payload?: Metadata;
+}
+
+export interface BrowserActionsResponse {
+  items: BrowserActionEventResponse[];
+  next_cursor: string | null;
+}
+
 export interface SafeAction {
   action_id: UuidString;
   action_type: BrowserActionType;

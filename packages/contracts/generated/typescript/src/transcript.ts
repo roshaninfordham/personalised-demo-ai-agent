@@ -18,3 +18,21 @@ export interface TranscriptEvent {
   confidence?: number;
   turn_id?: string;
 }
+
+export interface TranscriptEventsResponse {
+  items: TranscriptEvent[];
+  next_cursor: string | null;
+}
+
+export interface QuestionResponse {
+  text: string;
+  source: string;
+  transcript_event_id?: UuidString;
+  insight_id?: UuidString;
+  created_at: IsoDateTimeString;
+}
+
+export interface QuestionsResponse {
+  items: QuestionResponse[];
+  next_cursor: string | null;
+}

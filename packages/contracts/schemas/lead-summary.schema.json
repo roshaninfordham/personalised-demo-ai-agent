@@ -193,6 +193,89 @@
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
         }
       }
+    },
+    "LeadInsightsResponse": {
+      "type": "object",
+      "required": ["items", "next_cursor"],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/LeadInsight"
+          },
+          "default": []
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "LeadSummaryResponse": {
+      "type": "object",
+      "required": ["lead_summary"],
+      "additionalProperties": false,
+      "properties": {
+        "lead_summary": {
+          "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/LeadSummary"
+        }
+      }
+    },
+    "CrmPayloadResponse": {
+      "type": "object",
+      "required": ["crm_payload"],
+      "additionalProperties": false,
+      "properties": {
+        "crm_payload": {
+          "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/CrmPayload"
+        }
+      }
+    },
+    "FeatureShown": {
+      "type": "object",
+      "required": ["name", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "screen_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "action_event_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        }
+      }
+    },
+    "FeaturesShownResponse": {
+      "type": "object",
+      "required": ["features", "source", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "features": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/FeatureShown"
+          },
+          "default": []
+        },
+        "source": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
     }
   }
 }

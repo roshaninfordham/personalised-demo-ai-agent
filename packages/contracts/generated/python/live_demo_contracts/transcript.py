@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from live_demo_contracts.common import (
     BoundingBox,
@@ -48,3 +48,27 @@ class TranscriptEvent(BaseModel):
     end_ms: int | None = None
     confidence: float | None = None
     turn_id: str | None = None
+
+
+class TranscriptEventsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[TranscriptEvent] = Field(default_factory=list)
+    next_cursor: str | None
+
+
+class QuestionResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str
+    source: str
+    transcript_event_id: UuidString | None = None
+    insight_id: UuidString | None = None
+    created_at: IsoDateTimeString
+
+
+class QuestionsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[QuestionResponse] = Field(default_factory=list)
+    next_cursor: str | None

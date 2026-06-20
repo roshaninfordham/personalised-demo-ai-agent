@@ -117,6 +117,20 @@ function schemaType(schema: JsonObject): string {
 }
 
 function renderType(name: string, schema: JsonObject): string {
+  if (name === "JsonValue") {
+    return [
+      "export interface JsonObject {",
+      "  [key: string]: JsonValue;",
+      "}",
+      "",
+      "export type JsonValue = string | number | boolean | null | JsonValue[] | JsonObject;",
+      "",
+    ].join("\n");
+  }
+  if (name === "Metadata") {
+    return "export type Metadata = JsonObject;\n";
+  }
+
   if (Array.isArray(schema.enum)) {
     return `export type ${name} = ${schema.enum.map(literal).join(" | ")};\n`;
   }

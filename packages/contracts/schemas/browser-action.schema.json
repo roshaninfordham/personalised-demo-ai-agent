@@ -124,6 +124,71 @@
         }
       }
     },
+    "BrowserActionEventResponse": {
+      "type": "object",
+      "required": ["action_event_id", "action_type", "risk_level", "policy_decision", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "action_event_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "action_type": {
+          "type": "string"
+        },
+        "risk_level": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/RiskLevel"
+        },
+        "policy_decision": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/PolicyDecision"
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "from_screen_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "to_screen_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "created_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        },
+        "action_payload": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        }
+      }
+    },
+    "BrowserActionsResponse": {
+      "type": "object",
+      "required": ["items", "next_cursor"],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/browser-action.schema.json#/$defs/BrowserActionEventResponse"
+          },
+          "default": []
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "SafeAction": {
       "type": "object",
       "required": [

@@ -5,13 +5,16 @@ import type { BoundingBox, DemoPhase, IsoDateTimeString, JsonValue, Metadata, Po
 export interface DemoSession {
   session_id: UuidString;
   product_id: UuidString;
-  product_url: string;
+  start_url: string;
   status: SessionStatus;
   current_phase: DemoPhase;
   created_at: IsoDateTimeString;
   updated_at: IsoDateTimeString;
   product_name?: string;
-  target_persona?: string;
+  user_persona?: string;
+  user_company?: string;
+  user_display_name?: string;
+  user_email?: string;
   recipe_id?: UuidString;
   browser_session_id?: string;
   transport_session_id?: string;
@@ -20,15 +23,13 @@ export interface DemoSession {
 }
 
 export interface CreateDemoSessionRequest {
-  product_url: string;
-  product_name?: string;
-  target_persona?: string;
-  positioning?: string;
-  demo_goals?: string[];
-  what_to_show?: string[];
-  what_to_avoid?: string[];
+  product_id: UuidString;
   recipe_id?: UuidString;
-  metadata?: Metadata;
+  start_url?: string;
+  user_persona?: string;
+  user_company?: string;
+  user_display_name?: string;
+  user_email?: string;
 }
 
 export interface CreateDemoSessionResponse {
@@ -36,18 +37,48 @@ export interface CreateDemoSessionResponse {
 }
 
 export interface StartDemoSessionRequest {
-  session_id: UuidString;
 }
 
 export interface StartDemoSessionResponse {
   session: DemoSession;
+  join_config: JoinConfigResponse;
 }
 
 export interface EndDemoSessionRequest {
-  session_id: UuidString;
   reason?: string;
+  force?: boolean;
 }
 
 export interface EndDemoSessionResponse {
   session: DemoSession;
+}
+
+export type DemoSessionResponse = DemoSession;
+
+export interface ListDemoSessionsResponse {
+  items: DemoSession[];
+  next_cursor: string | null;
+}
+
+export interface SessionLiveState {
+  available: boolean;
+  current_screen: Metadata | null;
+  safe_actions: Metadata[];
+  browser_status: Metadata | null;
+  latency: Metadata;
+  live_state_status?: string;
+}
+
+export interface DemoSessionStateResponse {
+  session: DemoSession;
+  live_state: SessionLiveState;
+}
+
+export interface JoinConfigResponse {
+  transport_provider: string;
+  session_id: UuidString;
+  room_id: string;
+  join_token: string | null;
+  expires_at: IsoDateTimeString;
+  status: string;
 }

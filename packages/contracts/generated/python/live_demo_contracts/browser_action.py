@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from live_demo_contracts.common import (
     BoundingBox,
@@ -74,6 +74,29 @@ class BrowserActionResult(BaseModel):
     new_screen_summary: str | None = None
     error_code: str | None = None
     error_message: str | None = None
+
+
+class BrowserActionEventResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    action_event_id: UuidString
+    action_type: str
+    risk_level: RiskLevel
+    policy_decision: PolicyDecision
+    success: bool | None = None
+    error_code: str | None = None
+    from_screen_id: UuidString | None = None
+    to_screen_id: UuidString | None = None
+    latency_ms: int | None = None
+    created_at: IsoDateTimeString
+    action_payload: Metadata | None = None
+
+
+class BrowserActionsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[BrowserActionEventResponse] = Field(default_factory=list)
+    next_cursor: str | None
 
 
 class SafeAction(BaseModel):

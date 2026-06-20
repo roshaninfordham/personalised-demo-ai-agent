@@ -47,3 +47,29 @@ export interface LeadSummary {
   crm_payload: CrmPayload;
   created_at: IsoDateTimeString;
 }
+
+export interface LeadInsightsResponse {
+  items: LeadInsight[];
+  next_cursor: string | null;
+}
+
+export interface LeadSummaryResponse {
+  lead_summary: LeadSummary;
+}
+
+export interface CrmPayloadResponse {
+  crm_payload: CrmPayload;
+}
+
+export interface FeatureShown {
+  name: string;
+  source: string;
+  screen_id?: UuidString;
+  action_event_id?: UuidString;
+}
+
+export interface FeaturesShownResponse {
+  features: FeatureShown[];
+  source: string;
+  message: string;
+}

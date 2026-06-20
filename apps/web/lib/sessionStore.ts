@@ -6,7 +6,7 @@ export function createInitialSessionState(sessionId: string): DemoSession {
   return {
     session_id: sessionId,
     product_id: "local-dev-product",
-    product_url: "http://localhost:3000",
+    start_url: "http://localhost:3000",
     status: "created",
     current_phase: "created",
     created_at: now,

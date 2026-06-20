@@ -87,3 +87,39 @@ class LeadSummary(BaseModel):
     recommended_follow_up: str
     crm_payload: CrmPayload
     created_at: IsoDateTimeString
+
+
+class LeadInsightsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[LeadInsight] = Field(default_factory=list)
+    next_cursor: str | None
+
+
+class LeadSummaryResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    lead_summary: LeadSummary
+
+
+class CrmPayloadResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    crm_payload: CrmPayload
+
+
+class FeatureShown(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    source: str
+    screen_id: UuidString | None = None
+    action_event_id: UuidString | None = None
+
+
+class FeaturesShownResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    features: list[FeatureShown] = Field(default_factory=list)
+    source: str
+    message: str

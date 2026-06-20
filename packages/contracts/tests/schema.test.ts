@@ -41,7 +41,7 @@ describe("contracts", () => {
     const payload: DemoSession = {
       session_id: "00000000-0000-4000-8000-000000000001",
       product_id: "00000000-0000-4000-8000-000000000002",
-      product_url: "https://example.com",
+      start_url: "https://example.com",
       status: "created",
       current_phase: "created",
       created_at: "2026-06-20T00:00:00.000Z",

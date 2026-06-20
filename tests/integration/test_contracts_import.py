@@ -11,7 +11,7 @@ def test_generated_python_contracts_validate_sample_payloads() -> None:
         {
             "session_id": session_id,
             "product_id": "00000000-0000-4000-8000-000000000002",
-            "product_url": "https://example.com",
+            "start_url": "https://example.com",
             "status": "created",
             "current_phase": "created",
             "created_at": now,
