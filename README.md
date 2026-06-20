@@ -2,7 +2,7 @@
 
 Monorepo foundation for a production-grade, low-latency, secure, deterministic, provider-agnostic AI product-demo agent platform.
 
-Phase 2 provides the monorepo, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, and S3-compatible artifact storage foundation. It does not yet implement the live AI demo loop.
+Phase 3 provides the monorepo, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage foundation, and FastAPI backend APIs for products, guidance, recipes, demo sessions, transcripts, browser actions, and lead-summary reads. It does not yet implement the live AI demo loop.
 
 ## What This Repo Is
 
@@ -13,6 +13,7 @@ This repository currently contains:
 - Phase 0 architecture and product requirements.
 - Phase 1 monorepo scaffold.
 - Phase 2 database, Redis, event bus, and artifact storage foundation.
+- Phase 3 FastAPI backend API and orchestration placeholders.
 - Python and TypeScript workspace tooling.
 - Shared JSON Schema contracts with generated Python and TypeScript outputs.
 - Local Docker Compose stack for lightweight development.
@@ -384,6 +385,163 @@ xrange live_demo:stream:global:events - +
 xinfo stream live_demo:stream:global:events
 ```
 
+## Phase 3 API Overview
+
+All Phase 3 business APIs are under `/api/v1`. Health endpoints are also available at the root for container health checks.
+
+```mermaid
+flowchart TB
+    Client["Frontend / API client"]
+    Router["FastAPI routers"]
+    Services["Service layer\nvalidation, state machines, audit/events"]
+    Repositories["Repository layer\nSQLAlchemy queries"]
+    Redis["Redis live state"]
+    Events["Redis Streams event bus"]
+    DB["Postgres"]
+
+    Client --> Router
+    Router --> Services
+    Services --> Repositories
+    Services --> Redis
+    Services --> Events
+    Repositories --> DB
+```
+
+Endpoint groups:
+
+- `GET /healthz`, `GET /readyz`, `GET /api/v1/healthz`, `GET /api/v1/readyz`
+- `POST/GET/PATCH/DELETE /api/v1/products`
+- `POST/GET/PATCH/DELETE /api/v1/products/{product_id}/guidance`
+- `POST/GET/PATCH/DELETE /api/v1/products/{product_id}/recipes`
+- `POST /api/v1/products/{product_id}/recipes/{recipe_id}/validate`
+- `POST /api/v1/products/{product_id}/recipes/{recipe_id}/activate`
+- `POST /api/v1/products/{product_id}/recipes/{recipe_id}/archive`
+- `POST/GET /api/v1/demo-sessions`
+- `POST /api/v1/demo-sessions/{session_id}/start`
+- `POST /api/v1/demo-sessions/{session_id}/end`
+- `GET /api/v1/demo-sessions/{session_id}/state`
+- `GET /api/v1/demo-sessions/{session_id}/join-config`
+- `GET /api/v1/demo-sessions/{session_id}/transcript`
+- `GET /api/v1/demo-sessions/{session_id}/browser-actions`
+- `GET /api/v1/demo-sessions/{session_id}/features-shown`
+- `GET /api/v1/demo-sessions/{session_id}/questions`
+- `GET /api/v1/demo-sessions/{session_id}/lead-insights`
+- `GET /api/v1/demo-sessions/{session_id}/lead-summary`
+- `GET /api/v1/demo-sessions/{session_id}/crm-payload`
+
+### Local Auth
+
+Phase 3 local auth is development-only. Requests use:
+
+```text
+X-Organization-ID: 00000000-0000-0000-0000-000000000001
+X-User-ID: 00000000-0000-0000-0000-000000000002
+X-User-Role: owner
+```
+
+When `DEV_ALLOW_IMPLICIT_LOCAL_ORG=true`, the API creates the deterministic local organization and user if needed. This is not production auth.
+
+### API Examples
+
+Start dependencies and migrations:
+
+```bash
+docker compose up -d postgres redis minio
+make db-upgrade
+make api-dev
+```
+
+Create a product:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/products \
+  -H "Content-Type: application/json" \
+  -H "X-Organization-ID: 00000000-0000-0000-0000-000000000001" \
+  -d '{
+    "product_name": "Example Product",
+    "product_url": "https://example.com",
+    "default_persona": "founder"
+  }'
+```
+
+Create guidance:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/products/{product_id}/guidance \
+  -H "Content-Type: application/json" \
+  -H "X-Organization-ID: 00000000-0000-0000-0000-000000000001" \
+  -d '{
+    "guidance_type": "product_positioning",
+    "title": "Founder positioning",
+    "content": {"summary": "Focus on speed to insight."}
+  }'
+```
+
+Create and start a session:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/demo-sessions \
+  -H "Content-Type: application/json" \
+  -H "X-Organization-ID: 00000000-0000-0000-0000-000000000001" \
+  -d '{"product_id": "{product_id}", "user_persona": "founder"}'
+
+curl -X POST http://localhost:8000/api/v1/demo-sessions/{session_id}/start \
+  -H "Content-Type: application/json" \
+  -H "X-Organization-ID: 00000000-0000-0000-0000-000000000001" \
+  -d '{}'
+```
+
+The join config response is an explicit placeholder:
+
+```json
+{
+  "transport_provider": "small_webrtc",
+  "session_id": "uuid",
+  "room_id": "local-placeholder",
+  "join_token": null,
+  "expires_at": "2026-06-20T12:00:00Z",
+  "status": "not_implemented_in_phase_3"
+}
+```
+
+### Session Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> created
+    created --> prewarming: start
+    created --> completed: end
+    prewarming --> waiting_for_user
+    prewarming --> live
+    prewarming --> completed
+    waiting_for_user --> live
+    waiting_for_user --> completed
+    live --> ending
+    live --> completed
+    ending --> completed
+    completed --> completed: idempotent end
+```
+
+Session state reads merge durable Postgres identity/status with Redis live-state overlays. If Redis is unavailable, the API returns the durable session with `live_state_status="unavailable"`.
+
+### Pagination and Errors
+
+List endpoints use keyset pagination with opaque base64url JSON cursors. They do not use offset pagination.
+
+Error responses are deterministic:
+
+```json
+{
+  "error": {
+    "code": "product_not_found",
+    "message": "Product not found.",
+    "request_id": "string",
+    "trace_id": "string",
+    "details": {}
+  }
+}
+```
+
 ## Object Storage
 
 Object keys are deterministic and tenant scoped:
@@ -427,6 +585,27 @@ uv run pytest services/api/tests/test_redis_keys.py
 uv run pytest services/api/tests/test_live_state_store.py
 uv run pytest services/api/tests/test_event_bus.py
 uv run pytest services/api/tests/test_artifact_store.py
+```
+
+## Phase 3 Test Commands
+
+```bash
+docker compose up -d postgres redis minio
+make db-upgrade
+make api-test
+make lint
+make typecheck
+uv run pytest services/api/tests/test_app_factory.py
+uv run pytest services/api/tests/test_health_api.py
+uv run pytest services/api/tests/test_products_api.py
+uv run pytest services/api/tests/test_guidance_api.py
+uv run pytest services/api/tests/test_recipes_api.py
+uv run pytest services/api/tests/test_demo_sessions_api.py
+uv run pytest services/api/tests/test_transcripts_api.py
+uv run pytest services/api/tests/test_lead_summaries_api.py
+uv run pytest services/api/tests/test_error_handlers.py
+uv run pytest services/api/tests/test_security_redaction.py
+uv run pytest services/api/tests/test_pagination.py
 ```
 
 ## How Contracts Work
@@ -511,13 +690,16 @@ pnpm install
 uv sync --all-packages
 ```
 
-## Phase 2 Limitations
+## Phase 3 Limitations
 
-- Realtime voice and Pipecat pipeline are not implemented in Phase 2.
-- Browser automation and Playwright control are not implemented in Phase 2.
-- Product learning, summarization, and graph building are not implemented in Phase 2.
-- CRM export is not implemented in Phase 2.
-- Event outbox publisher worker is not implemented yet; Phase 2 creates the outbox table and Redis event bus foundation.
+- Realtime voice and Pipecat pipeline are not implemented in Phase 3.
+- Browser automation and Playwright control are not implemented in Phase 3.
+- Product learning, summarization, and graph building are not implemented in Phase 3.
+- AI provider calls and provider adapters are not implemented in Phase 3.
+- Actual WebRTC room creation is not implemented; join config is a safe placeholder.
+- CRM export is not implemented in Phase 3.
+- Lead-summary generation is not implemented; the API only reads existing summaries.
+- Event outbox publisher worker is not implemented yet; the outbox table and Redis event bus foundation exist.
 - Observability configs are placeholders until runtime metrics and traces are emitted.
 
 ## Architecture Docs
