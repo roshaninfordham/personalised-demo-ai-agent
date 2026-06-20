@@ -36,6 +36,7 @@ src = [
   "services/agent_runtime/src",
   "services/learner_worker/src",
   "services/tts_service/src",
+  "services/api/tests",
   "packages/contracts/generated/python",
 ]
 

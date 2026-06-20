@@ -3,6 +3,7 @@ FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
+ENV PYTHONPATH=/app/services/api/src:/app/packages/contracts/generated/python
 
 WORKDIR /app
 
@@ -30,4 +31,3 @@ USER app
 EXPOSE 8000
 
 CMD ["/app/.venv/bin/uvicorn", "live_demo_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
-

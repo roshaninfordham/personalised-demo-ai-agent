@@ -19,6 +19,9 @@ class ProductGuidanceType(StrEnum):
     OBJECTION_PLAYBOOK = "objection_playbook"
     MESSAGING = "messaging"
     SALES_SCRIPT = "sales_script"
+    PRODUCT_POSITIONING = "product_positioning"
+    FORBIDDEN_ACTIONS = "forbidden_actions"
+    SETUP_NOTES = "setup_notes"
 
 
 class RecipeStatus(StrEnum):

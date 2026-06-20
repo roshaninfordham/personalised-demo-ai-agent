@@ -102,9 +102,18 @@ class Product(Base):
     __table_args__ = (
         sa.CheckConstraint("confidence >= 0 AND confidence <= 1", name="products_confidence_range"),
         sa.CheckConstraint("length(product_url) > 0", name="products_product_url_non_empty"),
+        sa.CheckConstraint(
+            "jsonb_typeof(configuration) = 'object'", name="products_configuration_object"
+        ),
         sa.Index("ix_products_organization_id_deleted_at", "organization_id", "deleted_at"),
         sa.Index("ix_products_organization_id_product_url", "organization_id", "product_url"),
         sa.Index("ix_products_organization_id_product_name", "organization_id", "product_name"),
+        sa.Index(
+            "ix_products_organization_id_created_at_product_id",
+            "organization_id",
+            sa.text("created_at DESC"),
+            sa.text("product_id DESC"),
+        ),
     )
 
     product_id: Mapped[PyUUID] = uuid_pk("product_id")
@@ -117,6 +126,9 @@ class Product(Base):
     product_summary: Mapped[str | None] = mapped_column(sa.Text)
     confidence: Mapped[Decimal] = mapped_column(
         sa.Numeric(4, 3), nullable=False, server_default="0.000"
+    )
+    configuration: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
     )
     created_at: Mapped[datetime] = created_at_column()
     updated_at: Mapped[datetime] = updated_at_column()
@@ -256,6 +268,12 @@ class DemoSession(Base):
             "organization_id",
             "status",
             sa.text("created_at DESC"),
+        ),
+        sa.Index(
+            "ix_demo_sessions_organization_id_created_at_session_id",
+            "organization_id",
+            sa.text("created_at DESC"),
+            sa.text("session_id DESC"),
         ),
         sa.Index(
             "ix_demo_sessions_product_id_created_at", "product_id", sa.text("created_at DESC")

@@ -51,3 +51,10 @@ async def ping_database() -> bool:
         result = await session.execute(text("select 1"))
         value = result.scalar_one()
         return bool(value == 1)
+
+
+async def dispose_database_engine() -> None:
+    engine = get_async_engine()
+    await engine.dispose()
+    get_async_engine.cache_clear()
+    get_sessionmaker.cache_clear()

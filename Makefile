@@ -1,4 +1,6 @@
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+API_PYTHONPATH := services/api/src:packages/contracts/generated/python
+
+.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -11,6 +13,9 @@ help:
 	@echo "  make contracts        Validate and generate contracts"
 	@echo "  make db-upgrade       Apply API database migrations"
 	@echo "  make db-current       Show current API database migration"
+	@echo "  make api-dev          Run API development server"
+	@echo "  make api-test         Run API tests excluding integration markers"
+	@echo "  make api-openapi      Export OpenAPI JSON"
 	@echo "  make docker-config    Validate Docker Compose config"
 	@echo "  make docker-up        Start local stack"
 	@echo "  make docker-down      Stop local stack"
@@ -72,6 +77,18 @@ db-reset:
 	docker compose down -v
 	docker compose up -d postgres
 	cd services/api && uv run alembic upgrade head
+
+api-dev:
+	PYTHONPATH=$(API_PYTHONPATH) uv run --package live-demo-api uvicorn live_demo_api.main:app --reload --host 0.0.0.0 --port 8000
+
+api-test:
+	uv run pytest services/api/tests -m "not integration"
+
+api-test-integration:
+	uv run pytest services/api/tests -m integration
+
+api-openapi:
+	@PYTHONPATH=$(API_PYTHONPATH) uv run python -m live_demo_api.export_openapi
 
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache

@@ -40,8 +40,8 @@ class S3ArtifactStore:
         self._client: Any = boto3.client(
             "s3",
             endpoint_url=self._settings.object_storage_endpoint,
-            aws_access_key_id=self._settings.object_storage_access_key,
-            aws_secret_access_key=self._settings.object_storage_secret_key,
+            aws_access_key_id=self._settings.object_storage_access_key.get_secret_value(),
+            aws_secret_access_key=self._settings.object_storage_secret_key.get_secret_value(),
             region_name=self._settings.object_storage_region,
             config=Config(s3={"addressing_style": addressing_style}),
         )

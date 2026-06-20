@@ -1,11 +1,19 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class ServiceSettings(BaseSettings):
+class ApiSettings(BaseSettings):
     app_env: str = "local"
+    app_name: str = "live-demo-agent-api"
     log_level: str = "info"
+    api_host: str = "0.0.0.0"  # noqa: S104 - local Docker/dev server bind address.
+    api_port: int = 8000
+    api_workers: int = 1
+    api_enable_docs: bool = True
+    api_request_timeout_ms: int = 30000
+    api_max_request_body_bytes: int = 1048576
 
     database_url: str = "postgresql+asyncpg://demo_agent:demo_agent@localhost:5432/demo_agent"
     database_sync_url: str = "postgresql+psycopg://demo_agent:demo_agent@localhost:5432/demo_agent"
@@ -33,8 +41,8 @@ class ServiceSettings(BaseSettings):
 
     object_storage_provider: str = "minio"
     object_storage_endpoint: str = "http://localhost:9000"
-    object_storage_access_key: str = ""
-    object_storage_secret_key: str = ""
+    object_storage_access_key: SecretStr = SecretStr("")
+    object_storage_secret_key: SecretStr = SecretStr("")
     object_storage_bucket: str = "demo-agent-artifacts"
     object_storage_region: str = "local"
     object_storage_force_path_style: bool = True
@@ -42,13 +50,61 @@ class ServiceSettings(BaseSettings):
     object_storage_presigned_url_ttl_seconds: int = 300
     allow_production_bucket_create: bool = False
 
+    auth_provider: str = "local"
+    cors_allowed_origins: str = "http://localhost:3000"
+    transport_provider: str = "small_webrtc"
+    transport_room_ttl_seconds: int = 3600
+
+    dev_allow_implicit_local_org: bool = True
+    dev_local_organization_id: str = "00000000-0000-0000-0000-000000000001"
+    dev_local_user_id: str = "00000000-0000-0000-0000-000000000002"
+    dev_local_user_role: str = "owner"
+
+    allow_local_product_urls: bool = False
+    max_product_url_length: int = 2048
+
+    default_page_limit: int = 25
+    max_page_limit: int = 100
+    max_transcript_page_limit: int = 500
+    max_cursor_length: int = 2048
+
+    guidance_max_content_bytes: int = 131072
+    guidance_max_json_depth: int = 10
+    guidance_max_json_keys: int = 1000
+
+    recipe_max_steps: int = 50
+    recipe_max_never_click_items: int = 100
+    recipe_max_text_field_length: int = 2000
+
+    rate_limit_enabled: bool = False
+    rate_limit_default_per_minute: int = 120
+    enable_tracing: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
+    def safe_log_dict(self) -> dict[str, object]:
+        safe: dict[str, object] = {}
+        for key, value in self.model_dump().items():
+            lowered = key.lower()
+            if (
+                "secret" in lowered
+                or "token" in lowered
+                or "api_key" in lowered
+                or isinstance(value, SecretStr)
+            ):
+                safe[key] = "***REDACTED***"
+            else:
+                safe[key] = value
+        return safe
+
+
+ServiceSettings = ApiSettings
+
 
 @lru_cache(maxsize=1)
-def get_settings() -> ServiceSettings:
-    return ServiceSettings()
+def get_settings() -> ApiSettings:
+    return ApiSettings()
