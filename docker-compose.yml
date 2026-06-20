@@ -1,0 +1,274 @@
+name: live-demo-agent
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: demo_agent
+      POSTGRES_USER: demo_agent
+      POSTGRES_PASSWORD: demo_agent
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demo_agent -d demo_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - live-demo-agent
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    environment:
+      APP_ENV: local
+      PUBLIC_BASE_URL: http://localhost:3000
+      API_BASE_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - live-demo-agent
+
+  agent-runtime:
+    build:
+      context: .
+      dockerfile: infra/docker/agent-runtime.Dockerfile
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/app/.venv/bin/python",
+          "-c",
+          "from live_demo_agent_runtime.health import health_check; raise SystemExit(0 if health_check()['status'] == 'ok' else 1)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - live-demo-agent
+
+  browser-runtime:
+    build:
+      context: .
+      dockerfile: infra/docker/browser-runtime.Dockerfile
+    env_file: .env
+    ports:
+      - "8010:8010"
+    shm_size: "2gb"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8010/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - live-demo-agent
+
+  learner-worker:
+    build:
+      context: .
+      dockerfile: infra/docker/learner-worker.Dockerfile
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/app/.venv/bin/python",
+          "-c",
+          "from live_demo_learner_worker.health import health_check; raise SystemExit(0 if health_check()['status'] == 'ok' else 1)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - live-demo-agent
+
+  tts-service:
+    profiles: ["tts-local"]
+    build:
+      context: .
+      dockerfile: infra/docker/tts-service.Dockerfile
+    env_file: .env
+    ports:
+      - "8100:8100"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - live-demo-agent
+
+  ollama:
+    profiles: ["ai-local"]
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+  otel-collector:
+    profiles: ["observability"]
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector.yaml"]
+    volumes:
+      - ./infra/observability/otel-collector.yaml:/etc/otel-collector.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:latest
+    volumes:
+      - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+  grafana:
+    profiles: ["observability"]
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+  loki:
+    profiles: ["observability"]
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./infra/observability/loki-config.yaml:/etc/loki/local-config.yaml:ro
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+  jaeger:
+    profiles: ["observability"]
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    restart: unless-stopped
+    networks:
+      - live-demo-agent
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  ollama_data:
+  grafana_data:
+
+networks:
+  live-demo-agent:
+    driver: bridge
