@@ -41,6 +41,7 @@ flowchart TB
 | [phase_0_acceptance_criteria.md](phase_0_acceptance_criteria.md)     | What must be true before Phase 0 is accepted?                                                               |
 | [phase_0_risks_and_assumptions.md](phase_0_risks_and_assumptions.md) | What can fail, what is assumed, and when is each mitigation implemented?                                    |
 | [phase_1_acceptance_checklist.md](phase_1_acceptance_checklist.md)   | What must be true before Phase 1 monorepo setup is accepted?                                                |
+| [phase_2_acceptance_checklist.md](phase_2_acceptance_checklist.md)   | What must be true before Phase 2 database, storage, and events foundation is accepted?                      |
 
 ## Architecture Views
 
@@ -174,3 +175,4 @@ Business services import interfaces only. Vendor-specific names belong inside ad
 4. Read [phase_0_environment_contract.md](phase_0_environment_contract.md) before adding configuration.
 5. Use [phase_0_acceptance_criteria.md](phase_0_acceptance_criteria.md) as the implementation gate.
 6. Review [phase_0_risks_and_assumptions.md](phase_0_risks_and_assumptions.md) before committing to Phase 1 scope.
+7. Use [phase_2_acceptance_checklist.md](phase_2_acceptance_checklist.md) as the storage/events implementation gate.

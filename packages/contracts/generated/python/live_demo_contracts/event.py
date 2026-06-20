@@ -47,6 +47,8 @@ class EventType(StrEnum):
     LEARNER_SCREEN_SUMMARY_READY = "learner.screen_summary.ready"
     LEARNER_DEMO_GRAPH_UPDATED = "learner.demo_graph.updated"
     LEAD_SUMMARY_READY = "lead_summary.ready"
+    ARTIFACT_CREATED = "artifact.created"
+    ARTIFACT_DELETED = "artifact.deleted"
     ERROR = "error"
 
 
@@ -54,7 +56,8 @@ class EventEnvelope(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     event_id: UuidString
-    session_id: UuidString
+    session_id: UuidString | None
+    organization_id: UuidString | None
     event_type: EventType
     created_at: IsoDateTimeString
     trace_id: TraceId

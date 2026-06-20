@@ -4,12 +4,16 @@ version = "0.1.0"
 description = "FastAPI backend for the live demo agent platform."
 requires-python = ">=3.12,<3.14"
 dependencies = [
+  "alembic>=1.13.0",
+  "boto3>=1.35.0",
   "fastapi>=0.115.0",
   "uvicorn[standard]>=0.30.0",
   "pydantic>=2.8.0",
   "pydantic-settings>=2.4.0",
   "sqlalchemy[asyncio]>=2.0.0",
   "asyncpg>=0.29.0",
+  "psycopg[binary]>=3.2.0",
+  "pgvector>=0.3.0",
   "redis>=5.0.0",
   "opentelemetry-api>=1.27.0",
   "opentelemetry-sdk>=1.27.0",
@@ -21,4 +25,3 @@ live-demo-api = "live_demo_api.main:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-

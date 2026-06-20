@@ -1,4 +1,4 @@
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -9,6 +9,8 @@ help:
 	@echo "  make typecheck        Run mypy and TypeScript type checks"
 	@echo "  make test             Run all tests"
 	@echo "  make contracts        Validate and generate contracts"
+	@echo "  make db-upgrade       Apply API database migrations"
+	@echo "  make db-current       Show current API database migration"
 	@echo "  make docker-config    Validate Docker Compose config"
 	@echo "  make docker-up        Start local stack"
 	@echo "  make docker-down      Stop local stack"
@@ -51,6 +53,26 @@ docker-up:
 docker-down:
 	docker compose down
 
+db-upgrade:
+	cd services/api && uv run alembic upgrade head
+
+db-downgrade:
+	cd services/api && uv run alembic downgrade -1
+
+db-current:
+	cd services/api && uv run alembic current
+
+db-history:
+	cd services/api && uv run alembic history
+
+db-revision:
+	cd services/api && uv run alembic revision --autogenerate -m "$(m)"
+
+db-reset:
+	docker compose down -v
+	docker compose up -d postgres
+	cd services/api && uv run alembic upgrade head
+
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
@@ -87,4 +109,3 @@ ts-test:
 
 secrets-check:
 	@echo "TODO: Add gitleaks or equivalent in CI."
-

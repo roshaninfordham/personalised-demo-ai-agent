@@ -34,19 +34,46 @@
         "learner.screen_summary.ready",
         "learner.demo_graph.updated",
         "lead_summary.ready",
+        "artifact.created",
+        "artifact.deleted",
         "error"
       ]
     },
     "EventEnvelope": {
       "type": "object",
-      "required": ["event_id", "session_id", "event_type", "created_at", "trace_id", "payload"],
+      "required": [
+        "event_id",
+        "session_id",
+        "organization_id",
+        "event_type",
+        "created_at",
+        "trace_id",
+        "payload"
+      ],
       "additionalProperties": false,
       "properties": {
         "event_id": {
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
         "session_id": {
-          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          "oneOf": [
+            {
+              "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "organization_id": {
+          "oneOf": [
+            {
+              "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "event_type": {
           "$ref": "https://schemas.live-demo-agent.local/event.schema.json#/$defs/EventType"
