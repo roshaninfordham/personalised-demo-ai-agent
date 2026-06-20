@@ -1,0 +1,19 @@
+[project]
+name = "live-demo-tts-service"
+version = "0.1.0"
+description = "Optional local TTS service skeleton for the live demo agent platform."
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.8.0",
+  "pydantic-settings>=2.4.0",
+]
+
+[project.scripts]
+live-demo-tts-service = "live_demo_tts_service.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
