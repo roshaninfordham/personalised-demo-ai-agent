@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/lead-summary.schema.json",
+  "title": "LeadSummaryContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "InsightType": {
+      "type": "string",
+      "enum": [
+        "pain_point",
+        "use_case",
+        "objection",
+        "buying_signal",
+        "question",
+        "feature_interest",
+        "persona",
+        "urgency"
+      ]
+    },
+    "LeadInsight": {
+      "type": "object",
+      "required": [
+        "insight_id",
+        "insight_type",
+        "value",
+        "confidence",
+        "evidence_transcript_event_ids",
+        "evidence_browser_action_ids",
+        "evidence_screen_ids",
+        "created_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "insight_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "insight_type": {
+          "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/InsightType"
+        },
+        "value": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_transcript_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          },
+          "default": []
+        },
+        "evidence_browser_action_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          },
+          "default": []
+        },
+        "evidence_screen_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          },
+          "default": []
+        },
+        "created_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        }
+      }
+    },
+    "DemoSummary": {
+      "type": "object",
+      "required": ["duration_seconds", "features_shown", "questions_asked", "screens_visited"],
+      "additionalProperties": false,
+      "properties": {
+        "duration_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "features_shown": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "questions_asked": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "screens_visited": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          },
+          "default": []
+        }
+      }
+    },
+    "Qualification": {
+      "type": "object",
+      "required": ["insights", "urgency_level", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "insights": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/LeadInsight"
+          },
+          "default": []
+        },
+        "urgency_level": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "CrmObject": {
+      "type": "object",
+      "required": ["object_type", "properties"],
+      "additionalProperties": false,
+      "properties": {
+        "object_type": {
+          "type": "string"
+        },
+        "properties": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        }
+      }
+    },
+    "CrmPayload": {
+      "type": "object",
+      "required": ["provider", "objects"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/CrmObject"
+          },
+          "default": []
+        }
+      }
+    },
+    "LeadSummary": {
+      "type": "object",
+      "required": [
+        "lead_summary_id",
+        "session_id",
+        "demo_summary",
+        "qualification",
+        "recommended_follow_up",
+        "crm_payload",
+        "created_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "lead_summary_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "session_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "demo_summary": {
+          "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/DemoSummary"
+        },
+        "qualification": {
+          "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/Qualification"
+        },
+        "recommended_follow_up": {
+          "type": "string"
+        },
+        "crm_payload": {
+          "$ref": "https://schemas.live-demo-agent.local/lead-summary.schema.json#/$defs/CrmPayload"
+        },
+        "created_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        }
+      }
+    }
+  }
+}

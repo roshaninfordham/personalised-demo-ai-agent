@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/common.schema.json",
+  "title": "CommonContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "UuidString": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "IsoDateTimeString": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "TraceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ProviderName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "JsonValue": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/JsonValue"
+      }
+    },
+    "RiskLevel": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "blocked", "unknown"]
+    },
+    "PolicyDecision": {
+      "type": "string",
+      "enum": ["allowed", "blocked", "confirmation_required"]
+    },
+    "DemoPhase": {
+      "type": "string",
+      "enum": [
+        "created",
+        "prewarming",
+        "discovery",
+        "overview",
+        "core_workflow",
+        "deep_dive",
+        "q_and_a",
+        "summary",
+        "recovery",
+        "completed",
+        "failed"
+      ]
+    },
+    "SessionStatus": {
+      "type": "string",
+      "enum": ["created", "prewarming", "waiting_for_user", "live", "ending", "completed", "failed"]
+    },
+    "BoundingBox": {
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

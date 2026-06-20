@@ -1,0 +1,23 @@
+{
+  "name": "@live-demo-agent/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./generated/typescript/src/index.ts",
+  "types": "./generated/typescript/src/index.ts",
+  "scripts": {
+    "validate": "tsx scripts/validate-schemas.ts",
+    "generate:python": "python3 scripts/generate-python-contracts.py",
+    "generate:typescript": "tsx scripts/generate-typescript-contracts.ts",
+    "generate": "pnpm validate && pnpm generate:typescript && pnpm generate:python",
+    "lint": "eslint scripts/**/*.ts tests/**/*.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  }
+}

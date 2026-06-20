@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/browser-action.schema.json",
+  "title": "BrowserActionContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "BrowserActionType": {
+      "type": "string",
+      "enum": [
+        "read_current_screen",
+        "highlight_element",
+        "click_element",
+        "type_into_element",
+        "type_demo_text",
+        "scroll",
+        "go_back",
+        "navigate_to_allowed_url",
+        "wait_for_idle",
+        "take_screenshot"
+      ]
+    },
+    "ScrollDirection": {
+      "type": "string",
+      "enum": ["up", "down", "left", "right"]
+    },
+    "BrowserActionCommand": {
+      "type": "object",
+      "required": ["command_id", "session_id", "browser_session_id", "action_type", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "session_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "browser_session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action_type": {
+          "$ref": "https://schemas.live-demo-agent.local/browser-action.schema.json#/$defs/BrowserActionType"
+        },
+        "created_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        },
+        "element_id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "direction": {
+          "$ref": "https://schemas.live-demo-agent.local/browser-action.schema.json#/$defs/ScrollDirection"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "requires_cursor_animation": {
+          "type": "boolean",
+          "default": true
+        },
+        "policy_context": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        }
+      }
+    },
+    "BrowserActionResult": {
+      "type": "object",
+      "required": [
+        "command_id",
+        "session_id",
+        "success",
+        "policy_decision",
+        "risk_level",
+        "latency_ms",
+        "created_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "browser_action_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "command_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "session_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "policy_decision": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/PolicyDecision"
+        },
+        "risk_level": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/RiskLevel"
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "created_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        },
+        "from_screen_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "to_screen_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "new_screen_summary": {
+          "type": "string"
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "error_message": {
+          "type": "string"
+        }
+      }
+    },
+    "SafeAction": {
+      "type": "object",
+      "required": [
+        "action_id",
+        "action_type",
+        "label",
+        "risk_level",
+        "policy_decision",
+        "confidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "action_type": {
+          "$ref": "https://schemas.live-demo-agent.local/browser-action.schema.json#/$defs/BrowserActionType"
+        },
+        "label": {
+          "type": "string"
+        },
+        "element_id": {
+          "type": "string"
+        },
+        "risk_level": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/RiskLevel"
+        },
+        "policy_decision": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/PolicyDecision"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "CursorMoveEventPayload": {
+      "type": "object",
+      "required": ["x", "y", "duration_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ElementHighlightEventPayload": {
+      "type": "object",
+      "required": ["element_id"],
+      "additionalProperties": false,
+      "properties": {
+        "element_id": {
+          "type": "string"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

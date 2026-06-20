@@ -1,0 +1,14 @@
+.git
+.venv
+node_modules
+.next
+dist
+coverage
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.env
+.env.*
+*.log
+__pycache__
+
