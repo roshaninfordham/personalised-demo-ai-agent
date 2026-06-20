@@ -179,14 +179,14 @@ T_response =
 
 ### Target Budgets
 
-| Metric | Target |
-| --- | --- |
-| p50 first audio latency after user turn end | <= 900 ms |
+| Metric                                      | Target     |
+| ------------------------------------------- | ---------- |
+| p50 first audio latency after user turn end | <= 900 ms  |
 | p95 first audio latency after user turn end | <= 1500 ms |
-| Context build latency from cache | <= 50 ms |
-| Browser action validation latency | <= 50 ms |
-| Cursor event emission latency | <= 100 ms |
-| First greeting in warm state | <= 1500 ms |
+| Context build latency from cache            | <= 50 ms   |
+| Browser action validation latency           | <= 50 ms   |
+| Cursor event emission latency               | <= 100 ms  |
+| First greeting in warm state                | <= 1500 ms |
 
 Local/free mode is best-effort. Optimized provider/API mode is the target mode for these budgets.
 
@@ -356,21 +356,21 @@ flowchart TD
 
 ### Deterministic Risk Levels
 
-| Risk level | Examples |
-| --- | --- |
-| LOW | highlight, scroll, open dashboard, open reports, change harmless filters |
-| MEDIUM | type demo text, change local filters, open modal, select dropdown |
-| HIGH | submit form, export data, invite user, connect integration, change setting |
-| BLOCKED | delete, payment, billing, publish, send email, remove data, destructive action |
+| Risk level | Examples                                                                       |
+| ---------- | ------------------------------------------------------------------------------ |
+| LOW        | highlight, scroll, open dashboard, open reports, change harmless filters       |
+| MEDIUM     | type demo text, change local filters, open modal, select dropdown              |
+| HIGH       | submit form, export data, invite user, connect integration, change setting     |
+| BLOCKED    | delete, payment, billing, publish, send email, remove data, destructive action |
 
 ### Decision Table
 
-| Risk level | Decision |
-| --- | --- |
-| LOW | Execute if visible and enabled. |
-| MEDIUM | Execute if recipe allows it or user intent clearly requests it. |
-| HIGH | Ask explicit confirmation before execution. |
-| BLOCKED | Do not execute. |
+| Risk level | Decision                                                        |
+| ---------- | --------------------------------------------------------------- |
+| LOW        | Execute if visible and enabled.                                 |
+| MEDIUM     | Execute if recipe allows it or user intent clearly requests it. |
+| HIGH       | Ask explicit confirmation before execution.                     |
+| BLOCKED    | Do not execute.                                                 |
 
 ### Action Risk Score
 

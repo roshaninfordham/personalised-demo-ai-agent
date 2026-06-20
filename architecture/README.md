@@ -32,14 +32,15 @@ flowchart TB
 
 ## Document Index
 
-| Document | Main questions answered |
-| --- | --- |
-| [phase_0_product_requirements.md](phase_0_product_requirements.md) | What does the product do, how does the live demo feel, and what must never happen? |
-| [phase_0_system_architecture.md](phase_0_system_architecture.md) | Which services exist, what does each own, and what is on the hot path? |
+| Document                                                             | Main questions answered                                                                                     |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [phase_0_product_requirements.md](phase_0_product_requirements.md)   | What does the product do, how does the live demo feel, and what must never happen?                          |
+| [phase_0_system_architecture.md](phase_0_system_architecture.md)     | Which services exist, what does each own, and what is on the hot path?                                      |
 | [phase_0_provider_abstractions.md](phase_0_provider_abstractions.md) | How can NVIDIA NIM, OpenAI, Ollama, local models, and future providers swap without business-logic changes? |
-| [phase_0_environment_contract.md](phase_0_environment_contract.md) | Which environment variables exist, who reads them, and which are secrets? |
-| [phase_0_acceptance_criteria.md](phase_0_acceptance_criteria.md) | What must be true before Phase 0 is accepted? |
-| [phase_0_risks_and_assumptions.md](phase_0_risks_and_assumptions.md) | What can fail, what is assumed, and when is each mitigation implemented? |
+| [phase_0_environment_contract.md](phase_0_environment_contract.md)   | Which environment variables exist, who reads them, and which are secrets?                                   |
+| [phase_0_acceptance_criteria.md](phase_0_acceptance_criteria.md)     | What must be true before Phase 0 is accepted?                                                               |
+| [phase_0_risks_and_assumptions.md](phase_0_risks_and_assumptions.md) | What can fail, what is assumed, and when is each mitigation implemented?                                    |
+| [phase_1_acceptance_checklist.md](phase_1_acceptance_checklist.md)   | What must be true before Phase 1 monorepo setup is accepted?                                                |
 
 ## Architecture Views
 
@@ -173,4 +174,3 @@ Business services import interfaces only. Vendor-specific names belong inside ad
 4. Read [phase_0_environment_contract.md](phase_0_environment_contract.md) before adding configuration.
 5. Use [phase_0_acceptance_criteria.md](phase_0_acceptance_criteria.md) as the implementation gate.
 6. Review [phase_0_risks_and_assumptions.md](phase_0_risks_and_assumptions.md) before committing to Phase 1 scope.
-

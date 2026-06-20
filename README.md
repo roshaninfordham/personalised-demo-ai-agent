@@ -1,168 +1,354 @@
-# Personalised Demo AI Agent
+# Live Demo Agent
 
-Production-grade foundation for a live AI product-demo agent. The agent opens a product URL in an isolated browser, learns the interface, presents the product conversationally, controls the browser through safe validated actions, answers only from grounded evidence, and generates CRM-ready sales intelligence after the demo.
+Monorepo foundation for a production-grade, low-latency, secure, deterministic, provider-agnostic AI product-demo agent platform.
 
-## Current Status
+Phase 1 provides the monorepo, contracts, tooling, and local stack foundation. It does not yet implement the live AI demo loop.
 
-This repository currently contains the Phase 0 product and architecture foundation only. It intentionally does not implement the full application yet.
+## What This Repo Is
 
-Phase 0 defines:
+The eventual system will run a live AI product-demo agent that opens a product URL in an isolated browser, learns the interface, speaks with a user in real time, controls the browser through safe actions, answers from grounded UI evidence, and creates CRM-ready sales intelligence.
 
-- Product requirements and live-demo behavior.
-- Service architecture and boundaries.
-- Provider-agnostic AI/browser/transport abstractions.
-- Environment variable contract and `.env.example`.
-- Security, determinism, latency, observability, and risk criteria.
+This repository currently contains:
 
-## System At A Glance
+- Phase 0 architecture and product requirements.
+- Phase 1 monorepo scaffold.
+- Python and TypeScript workspace tooling.
+- Shared JSON Schema contracts with generated Python and TypeScript outputs.
+- Local Docker Compose stack for lightweight development.
+- Observability placeholders.
+
+## System Components
 
 ```mermaid
 flowchart TB
-    User["User / Prospect"] --> Frontend["Frontend Web App"]
-    Frontend --> API["API Backend"]
-    Frontend <--> Transport["Realtime Transport"]
+    User["User / Prospect"]
 
-    API --> Agent["Pipecat Agent Runtime"]
-    API --> Browser["Browser Runtime"]
-    API --> Learner["Learner Worker"]
+    subgraph Web["apps/web"]
+        Start["Demo start skeleton"]
+        Panels["Call / browser / transcript panels"]
+    end
 
-    Agent <--> Browser
-    Browser --> Learner
+    subgraph PythonServices["Python services"]
+        API["services/api"]
+        Agent["services/agent_runtime"]
+        Learner["services/learner_worker"]
+        TTS["services/tts_service"]
+    end
 
-    Agent --> Providers["Provider Adapters"]
-    Browser --> Providers
-    Learner --> Providers
+    subgraph TypeScriptServices["TypeScript services"]
+        Browser["services/browser_runtime"]
+    end
 
-    API --> Storage["PostgreSQL / Redis / Object Storage"]
-    Agent --> Storage
-    Browser --> Storage
-    Learner --> Storage
+    subgraph Contracts["packages/contracts"]
+        Schemas["JSON Schemas"]
+        PyModels["Generated Pydantic models"]
+        TsTypes["Generated TypeScript types"]
+    end
 
-    API --> Obs["Observability"]
-    Agent --> Obs
-    Browser --> Obs
-    Learner --> Obs
+    subgraph Infra["infra"]
+        Compose["Docker Compose"]
+        Observability["Observability placeholders"]
+    end
+
+    User --> Web
+    Web --> API
+    API --> Contracts
+    Agent --> Contracts
+    Learner --> Contracts
+    TTS --> Contracts
+    Browser --> Contracts
+    Compose --> Web
+    Compose --> API
+    Compose --> Agent
+    Compose --> Browser
+    Compose --> Learner
+    Compose --> Infra
 ```
 
-## User And Agent Flow
+## Dependency Graph
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant FE as Frontend
-    participant API as API Backend
-    participant A as Agent Runtime
-    participant B as Browser Runtime
-    participant L as Learner Worker
-    participant S as Storage
-
-    U->>FE: Enter product URL and optional guidance
-    FE->>API: Create demo session
-    API->>B: Create isolated browser context
-    API->>A: Start realtime agent session
-    B->>B: Navigate and read first screen
-    B->>L: Enqueue product learning
-    A->>U: Greet and explain verified screen facts
-    U->>A: Ask question or give direction
-    A->>B: Request safe browser action by action ID
-    B->>B: Validate risk and execute if allowed
-    B->>FE: Emit cursor and screen events
-    A->>U: Answer grounded in observed evidence
-    A->>S: Store transcript events
-    L->>S: Store graph, summaries, and lead insights
-```
-
-## Safety Model
-
-The LLM is never given raw browser-control authority. It can choose only from precomputed safe actions, and the browser runtime validates every action before execution.
+The dependency graph is intentionally acyclic.
 
 ```mermaid
 flowchart LR
-    Intent["User intent / recipe step"] --> Candidates["Precomputed action candidates"]
-    Candidates --> Risk["Risk scoring"]
-    Risk --> Policy{"Policy decision"}
-    Policy -- Low/Medium allowed --> Execute["Execute browser action"]
-    Policy -- High risk --> Confirm["Ask explicit confirmation"]
-    Policy -- Blocked --> Stop["Do not execute"]
-    Execute --> Observe["Observe new screen state"]
-    Observe --> Ground["Ground next response in evidence"]
+    Contracts["packages/contracts"]
+    Web["apps/web"]
+    API["services/api"]
+    Agent["services/agent_runtime"]
+    Browser["services/browser_runtime"]
+    Learner["services/learner_worker"]
+    TTS["services/tts_service"]
+    Infra["infra/*"]
+    Tests["tests/*"]
+
+    Web --> Contracts
+    API --> Contracts
+    Agent --> Contracts
+    Browser --> Contracts
+    Learner --> Contracts
+    TTS --> Contracts
+    Infra --> Web
+    Infra --> API
+    Infra --> Agent
+    Infra --> Browser
+    Infra --> Learner
+    Infra --> TTS
+    Tests --> Contracts
+    Tests --> API
+    Tests --> Agent
+    Tests --> Browser
+    Tests --> Learner
+    Tests --> TTS
 ```
 
-## Provider-Agnostic Design
+Forbidden directions:
 
-Provider choices are environment-driven. Business logic imports generic interfaces only.
+- `packages/contracts` must not import apps or services.
+- `services/api` must not import `apps/web`.
+- `services/browser_runtime` must not import Python service internals.
+- `apps/web` must not import backend secrets or provider adapters.
 
-```mermaid
-flowchart TB
-    Logic["Agents / Context Builders / Learners / API Routers"]
-    Registry["Provider Registry"]
-    Text["AI_TEXT_PROVIDER"]
-    Vision["AI_VISION_PROVIDER"]
-    Embed["AI_EMBEDDING_PROVIDER"]
-    STT["AI_STT_PROVIDER"]
-    TTS["AI_TTS_PROVIDER"]
-    Browser["BROWSER_PROVIDER"]
-    Transport["TRANSPORT_PROVIDER"]
-
-    Logic --> Registry
-    Registry --> Text
-    Registry --> Vision
-    Registry --> Embed
-    Registry --> STT
-    Registry --> TTS
-    Registry --> Browser
-    Registry --> Transport
-```
-
-NVIDIA NIM, OpenAI, Ollama, local models, and custom OpenAI-compatible providers fit behind the same generic provider contracts.
-
-## Documentation Map
-
-| File | Purpose |
-| --- | --- |
-| [architecture/README.md](architecture/README.md) | Architecture documentation index and visual navigation |
-| [architecture/phase_0_product_requirements.md](architecture/phase_0_product_requirements.md) | Product behavior, modes, UX, safety, voice, cursor, learning, lead output |
-| [architecture/phase_0_system_architecture.md](architecture/phase_0_system_architecture.md) | Services, boundaries, diagrams, hot/cold path, data structures, cybersecurity |
-| [architecture/phase_0_provider_abstractions.md](architecture/phase_0_provider_abstractions.md) | Provider categories, interfaces, registry, errors, fallback, routing |
-| [architecture/phase_0_environment_contract.md](architecture/phase_0_environment_contract.md) | Environment variables, local/cloud modes, secrets, service readers |
-| [architecture/phase_0_acceptance_criteria.md](architecture/phase_0_acceptance_criteria.md) | Phase 0 completion checklist |
-| [architecture/phase_0_risks_and_assumptions.md](architecture/phase_0_risks_and_assumptions.md) | Risks, assumptions, impact, mitigation phase |
-| [.env.example](.env.example) | Complete provider-agnostic environment template |
-
-## Repository Structure
+## Folder Structure
 
 ```text
 .
-|-- README.md
-|-- .env.example
-`-- architecture
-    |-- README.md
-    |-- phase_0_product_requirements.md
-    |-- phase_0_system_architecture.md
-    |-- phase_0_provider_abstractions.md
-    |-- phase_0_environment_contract.md
-    |-- phase_0_acceptance_criteria.md
-    `-- phase_0_risks_and_assumptions.md
+|-- apps
+|   `-- web
+|-- architecture
+|-- infra
+|   |-- docker
+|   `-- observability
+|-- packages
+|   `-- contracts
+|       |-- schemas
+|       |-- generated
+|       `-- scripts
+|-- services
+|   |-- api
+|   |-- agent_runtime
+|   |-- browser_runtime
+|   |-- learner_worker
+|   `-- tts_service
+|-- tests
+|   |-- integration
+|   `-- e2e
+|-- docker-compose.yml
+|-- Makefile
+|-- package.json
+|-- pnpm-workspace.yaml
+|-- pyproject.toml
+`-- .env.example
 ```
 
-## Phase 0 Acceptance Gate
+## Local Prerequisites
+
+- Python `>=3.12,<3.14`.
+- `uv` with workspace support. This repo was verified with `uv 0.11.7`.
+- Node `>=20`. This repo was verified with Node `24.13.1`.
+- pnpm `>=9`. This repo was verified with pnpm `10.30.1`.
+- Docker and Docker Compose for the local stack.
+
+## Local Setup
+
+```bash
+cp .env.example .env
+pnpm install
+uv sync --all-packages
+make contracts
+make lint
+make test
+docker compose up --build
+```
+
+`uv sync --all-packages` is supported by the local `uv 0.11.7` toolchain and syncs every Python workspace package.
+
+## Common Commands
+
+```bash
+make install
+make contracts
+make lint
+make format
+make format-write
+make typecheck
+make test
+make docker-config
+make docker-up
+make docker-down
+make secrets-check
+```
+
+Python-only:
+
+```bash
+uv sync --all-packages
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy services packages/contracts/generated/python tests
+uv run pytest
+```
+
+TypeScript-only:
+
+```bash
+pnpm install
+pnpm lint
+pnpm format
+pnpm typecheck
+pnpm test
+```
+
+## Docker Compose
+
+Default lightweight stack:
+
+```bash
+docker compose up --build
+```
+
+Include local LLM runtime:
+
+```bash
+docker compose --profile ai-local up --build
+```
+
+Include local TTS service:
+
+```bash
+docker compose --profile tts-local up --build
+```
+
+Include observability stack:
+
+```bash
+docker compose --profile observability up --build
+```
+
+Include everything:
+
+```bash
+docker compose --profile ai-local --profile tts-local --profile observability up --build
+```
 
 ```mermaid
-flowchart TD
-    A["Product behavior defined"] --> B["Service boundaries defined"]
-    B --> C["Provider abstractions defined"]
-    C --> D["Environment contract defined"]
-    D --> E["Security and safety policies defined"]
-    E --> F["Latency and observability targets defined"]
-    F --> G["Risks and assumptions documented"]
-    G --> H["Ready for implementation phases"]
+flowchart TB
+    Default["Default stack"]
+    Web["web"]
+    API["api"]
+    Agent["agent-runtime"]
+    Browser["browser-runtime"]
+    Learner["learner-worker"]
+    Postgres["postgres / pgvector"]
+    Redis["redis"]
+    Minio["minio"]
+    AI["profile: ai-local / ollama"]
+    TTS["profile: tts-local / tts-service"]
+    Obs["profile: observability"]
+
+    Default --> Web
+    Default --> API
+    Default --> Agent
+    Default --> Browser
+    Default --> Learner
+    Default --> Postgres
+    Default --> Redis
+    Default --> Minio
+    Default -.optional.-> AI
+    Default -.optional.-> TTS
+    Default -.optional.-> Obs
 ```
 
-## Implementation Notes
+The default stack does not start Ollama, Grafana, Prometheus, Loki, Jaeger, or local TTS.
 
-- Do not put provider SDKs in business logic.
-- Do not let the LLM execute arbitrary JavaScript.
-- Do not put full raw DOM into hot-path prompts.
-- Do not make product claims without evidence.
-- Do not expose provider secrets to the frontend.
-- Keep the learner asynchronous so it never blocks live voice response.
+## How Contracts Work
+
+JSON Schema is the source of truth:
+
+```mermaid
+flowchart LR
+    Schemas["packages/contracts/schemas/*.schema.json"]
+    Validate["validate-schemas.ts"]
+    PyGen["generate-python-contracts.py"]
+    TsGen["generate-typescript-contracts.ts"]
+    PyOut["generated/python/live_demo_contracts"]
+    TsOut["generated/typescript/src"]
+    Services["apps and services"]
+
+    Schemas --> Validate
+    Schemas --> PyGen
+    Schemas --> TsGen
+    PyGen --> PyOut
+    TsGen --> TsOut
+    PyOut --> Services
+    TsOut --> Services
+```
+
+Run:
+
+```bash
+make contracts
+git diff --exit-code packages/contracts/generated
+```
+
+Generated files are marked with "Do not edit manually."
+
+## Provider Configuration Summary
+
+Provider choices are configured with generic environment variables:
+
+- `AI_TEXT_*`
+- `AI_VISION_*`
+- `AI_EMBEDDING_*`
+- `AI_STT_*`
+- `AI_TTS_*`
+- `BROWSER_*`
+- `TRANSPORT_*`
+
+Vendor-specific secrets are backend-only. Do not expose provider keys to the frontend and do not add `NEXT_PUBLIC_` provider key variables.
+
+## Security Notes
+
+- `.env` and `.env.*` are ignored.
+- `.env.example` contains local-only placeholder credentials; do not use them in production.
+- Docker images do not copy `.env`.
+- Frontend code must not receive provider API keys.
+- Browser runtime does not run privileged and does not use host networking.
+- Heavy local AI services are opt-in profiles.
+- `make secrets-check` is a placeholder for adding gitleaks or equivalent in CI.
+
+## Troubleshooting
+
+If `uv sync --all-packages` fails because no compatible Python is installed, allow `uv` to install Python `3.12` or install Python `3.12` manually.
+
+The contracts package uses `python3` for generation because this environment does not provide a `python` shim.
+
+If `pnpm install` uses a different pnpm version, ensure it is at least pnpm `9`. The committed lockfile is generated with pnpm `10.30.1`.
+
+If `docker compose config` fails because `.env` is missing, run:
+
+```bash
+cp .env.example .env
+```
+
+If Docker build fails on frozen lockfiles, rerun dependency installation and commit the updated lockfiles:
+
+```bash
+pnpm install
+uv sync --all-packages
+```
+
+## Phase 1 Limitations
+
+- Realtime voice and Pipecat pipeline are not implemented in Phase 1.
+- Browser automation and Playwright control are not implemented in Phase 1.
+- Product learning, summarization, and graph building are not implemented in Phase 1.
+- CRM export is not implemented in Phase 1.
+- Observability configs are placeholders until runtime metrics and traces are emitted.
+
+## Architecture Docs
+
+- [Phase 0 product requirements](architecture/phase_0_product_requirements.md)
+- [Phase 0 system architecture](architecture/phase_0_system_architecture.md)
+- [Phase 0 provider abstractions](architecture/phase_0_provider_abstractions.md)
+- [Phase 0 environment contract](architecture/phase_0_environment_contract.md)
+- [Phase 1 acceptance checklist](architecture/phase_1_acceptance_checklist.md)

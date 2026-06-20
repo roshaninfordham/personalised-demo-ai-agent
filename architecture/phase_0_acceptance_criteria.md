@@ -42,20 +42,20 @@ flowchart TD
 ## Provider Abstraction Acceptance
 
 [ ] Defines provider categories:
-    `AI_TEXT_PROVIDER`,
-    `AI_VISION_PROVIDER`,
-    `AI_EMBEDDING_PROVIDER`,
-    `AI_STT_PROVIDER`,
-    `AI_TTS_PROVIDER`,
-    `BROWSER_PROVIDER`,
-    `TRANSPORT_PROVIDER`.
+`AI_TEXT_PROVIDER`,
+`AI_VISION_PROVIDER`,
+`AI_EMBEDDING_PROVIDER`,
+`AI_STT_PROVIDER`,
+`AI_TTS_PROVIDER`,
+`BROWSER_PROVIDER`,
+`TRANSPORT_PROVIDER`.
 
 [ ] Supports:
-    `nvidia_nim`,
-    `openai`,
-    `ollama`,
-    `custom_openai_compatible`,
-    `local` providers.
+`nvidia_nim`,
+`openai`,
+`ollama`,
+`custom_openai_compatible`,
+`local` providers.
 
 [ ] Defines normalized provider interfaces.
 [ ] Defines provider factory/registry.

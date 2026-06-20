@@ -26,15 +26,15 @@ flowchart TB
     Registry --> Transport
 ```
 
-| Category | Supported values |
-| --- | --- |
-| `AI_TEXT_PROVIDER` | `nvidia_nim`, `openai`, `ollama`, `custom_openai_compatible`, `local` |
-| `AI_VISION_PROVIDER` | `nvidia_nim`, `openai`, `ollama`, `custom_openai_compatible`, `local`, `disabled` |
-| `AI_EMBEDDING_PROVIDER` | `nvidia_nim`, `openai`, `ollama`, `custom_openai_compatible`, `local` |
-| `AI_STT_PROVIDER` | `whisper_local`, `whisper_cpp`, `openai`, `deepgram`, `custom` |
-| `AI_TTS_PROVIDER` | `kokoro`, `piper`, `cartesia`, `elevenlabs`, `openai`, `custom` |
-| `BROWSER_PROVIDER` | `local_playwright`, `remote_playwright`, `browserbase`, `custom` |
-| `TRANSPORT_PROVIDER` | `small_webrtc`, `daily`, `livekit`, `websocket`, `custom` |
+| Category                | Supported values                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `AI_TEXT_PROVIDER`      | `nvidia_nim`, `openai`, `ollama`, `custom_openai_compatible`, `local`             |
+| `AI_VISION_PROVIDER`    | `nvidia_nim`, `openai`, `ollama`, `custom_openai_compatible`, `local`, `disabled` |
+| `AI_EMBEDDING_PROVIDER` | `nvidia_nim`, `openai`, `ollama`, `custom_openai_compatible`, `local`             |
+| `AI_STT_PROVIDER`       | `whisper_local`, `whisper_cpp`, `openai`, `deepgram`, `custom`                    |
+| `AI_TTS_PROVIDER`       | `kokoro`, `piper`, `cartesia`, `elevenlabs`, `openai`, `custom`                   |
+| `BROWSER_PROVIDER`      | `local_playwright`, `remote_playwright`, `browserbase`, `custom`                  |
+| `TRANSPORT_PROVIDER`    | `small_webrtc`, `daily`, `livekit`, `websocket`, `custom`                         |
 
 NVIDIA NIM is configured through the same generic `AI_TEXT_*`, `AI_VISION_*`, and `AI_EMBEDDING_*` variables as every other OpenAI-compatible provider. Core business logic must never import an NVIDIA-specific client.
 
@@ -445,17 +445,17 @@ stateDiagram-v2
 
 AI network provider timeout:
 
-| Path | Timeout |
-| --- | --- |
-| Hot path | 8000 ms |
+| Path      | Timeout  |
+| --------- | -------- |
+| Hot path  | 8000 ms  |
 | Cold path | 30000 ms |
 
 Retries:
 
-| Path | Retries |
-| --- | --- |
-| Hot path | 0 or 1 retry maximum |
-| Cold path | 2 retries maximum |
+| Path      | Retries              |
+| --------- | -------------------- |
+| Hot path  | 0 or 1 retry maximum |
+| Cold path | 2 retries maximum    |
 
 Backoff:
 
