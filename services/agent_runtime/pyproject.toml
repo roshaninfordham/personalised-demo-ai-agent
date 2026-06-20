@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Realtime agent runtime skeleton for the live demo agent platform."
 requires-python = ">=3.12,<3.14"
 dependencies = [
+  "live-demo-backend-common>=0.1.0",
   "pydantic>=2.8.0",
   "pydantic-settings>=2.4.0",
   "redis>=5.0.0",
@@ -15,4 +16,3 @@ live-demo-agent-runtime = "live_demo_agent_runtime.main:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-

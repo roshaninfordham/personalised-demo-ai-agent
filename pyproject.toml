@@ -8,8 +8,12 @@ dependencies = []
 [tool.uv]
 package = false
 
+[tool.uv.sources]
+live-demo-backend-common = { workspace = true }
+
 [tool.uv.workspace]
 members = [
+  "packages/backend_common",
   "services/api",
   "services/agent_runtime",
   "services/learner_worker",
@@ -37,6 +41,7 @@ src = [
   "services/learner_worker/src",
   "services/tts_service/src",
   "services/api/tests",
+  "packages/backend_common/src",
   "packages/contracts/generated/python",
 ]
 
@@ -83,6 +88,7 @@ mypy_path = [
   "services/agent_runtime/src",
   "services/learner_worker/src",
   "services/tts_service/src",
+  "packages/backend_common/src",
   "packages/contracts/generated/python",
 ]
 
@@ -106,6 +112,7 @@ testpaths = [
   "services/agent_runtime/tests",
   "services/learner_worker/tests",
   "services/tts_service/tests",
+  "packages/backend_common/src/live_demo_backend_common/tests",
   "tests",
 ]
 pythonpath = [
@@ -113,9 +120,11 @@ pythonpath = [
   "services/agent_runtime/src",
   "services/learner_worker/src",
   "services/tts_service/src",
+  "packages/backend_common/src",
   "packages/contracts/generated/python",
 ]
 asyncio_mode = "auto"
 markers = [
   "integration: tests that require local Docker Compose services",
+  "live: tests that call configured live AI providers",
 ]

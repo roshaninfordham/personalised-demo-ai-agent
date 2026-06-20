@@ -1,6 +1,6 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python
 
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -16,6 +16,7 @@ help:
 	@echo "  make api-dev          Run API development server"
 	@echo "  make api-test         Run API tests excluding integration markers"
 	@echo "  make api-openapi      Export OpenAPI JSON"
+	@echo "  make ai-test          Run AI provider abstraction tests without live providers"
 	@echo "  make docker-config    Validate Docker Compose config"
 	@echo "  make docker-up        Start local stack"
 	@echo "  make docker-down      Stop local stack"
@@ -38,7 +39,7 @@ format-write:
 	pnpm format:write
 
 typecheck:
-	uv run mypy services packages/contracts/generated/python tests
+	uv run mypy services packages/backend_common/src packages/contracts/generated/python tests
 	pnpm typecheck
 
 test:
@@ -90,6 +91,15 @@ api-test-integration:
 api-openapi:
 	@PYTHONPATH=$(API_PYTHONPATH) uv run python -m live_demo_api.export_openapi
 
+ai-test:
+	uv run pytest packages/backend_common/src/live_demo_backend_common/tests/ai -m "not live"
+
+ai-test-live:
+	RUN_LIVE_PROVIDER_TESTS=true uv run pytest packages/backend_common/src/live_demo_backend_common/tests/ai -m live
+
+ai-test-unit:
+	uv run pytest packages/backend_common/src/live_demo_backend_common/tests/ai
+
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
@@ -104,7 +114,7 @@ py-format:
 	uv run ruff format .
 
 py-typecheck:
-	uv run mypy services packages/contracts/generated/python tests
+	uv run mypy services packages/backend_common/src packages/contracts/generated/python tests
 
 py-test:
 	uv run pytest
