@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from live_demo_api.db.models import DemoSession, Organization, Product
-from live_demo_api.db.session import get_sessionmaker
+from live_demo_api.db.session import dispose_database_engine, get_sessionmaker
 from live_demo_api.db.types import ArtifactKind
 from live_demo_api.repositories.artifacts import ArtifactRepository
 from live_demo_api.repositories.demo_sessions import DemoSessionRepository
@@ -54,38 +54,41 @@ async def _create_session(session: AsyncSession) -> tuple[Organization, Product,
 
 async def test_s3_artifact_store_and_metadata_repository() -> None:
     store = S3ArtifactStore()
-    await ensure_artifact_bucket_if_allowed(store)
-
     object_key = screenshot_key(str(uuid4()), str(uuid4()), str(uuid4()))
-    content = b"x" * 200_000
-    stored = await store.put_bytes(
-        object_key,
-        content,
-        "image/webp",
-        metadata={"phase": "2"},
-    )
-    assert stored.sha256_hex
-    assert await store.get_bytes(object_key) == content
-    assert await store.create_presigned_get_url(object_key, 60)
+    try:
+        await ensure_artifact_bucket_if_allowed(store)
 
-    sessionmaker = get_sessionmaker()
-    async with sessionmaker() as session, session.begin():
-        organization, product, demo_session = await _create_session(session)
-        artifact_repo = ArtifactRepository(session)
-        artifact = await artifact_repo.insert_artifact(
-            organization_id=organization.organization_id,
-            session_id=demo_session.session_id,
-            product_id=product.product_id,
-            stored_object=stored,
-            kind=ArtifactKind.SCREENSHOT,
+        content = b"x" * 200_000
+        stored = await store.put_bytes(
+            object_key,
+            content,
+            "image/webp",
+            metadata={"phase": "2"},
         )
-        found = await artifact_repo.find_by_session(
-            organization_id=organization.organization_id,
-            session_id=demo_session.session_id,
-            kind=ArtifactKind.SCREENSHOT,
-        )
-        assert found[0].artifact_id == artifact.artifact_id
+        assert stored.sha256_hex
+        assert await store.get_bytes(object_key) == content
+        assert await store.create_presigned_get_url(object_key, 60)
 
-    await store.delete_object(object_key)
-    with pytest.raises(ClientError):
-        await store.get_bytes(object_key)
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as session, session.begin():
+            organization, product, demo_session = await _create_session(session)
+            artifact_repo = ArtifactRepository(session)
+            artifact = await artifact_repo.insert_artifact(
+                organization_id=organization.organization_id,
+                session_id=demo_session.session_id,
+                product_id=product.product_id,
+                stored_object=stored,
+                kind=ArtifactKind.SCREENSHOT,
+            )
+            found = await artifact_repo.find_by_session(
+                organization_id=organization.organization_id,
+                session_id=demo_session.session_id,
+                kind=ArtifactKind.SCREENSHOT,
+            )
+            assert found[0].artifact_id == artifact.artifact_id
+
+        await store.delete_object(object_key)
+        with pytest.raises(ClientError):
+            await store.get_bytes(object_key)
+    finally:
+        await dispose_database_engine()

@@ -8,6 +8,7 @@ export default [
       "**/.next/**",
       "**/dist/**",
       "**/coverage/**",
+      "**/next-env.d.ts",
       "**/packages/contracts/generated/**",
     ],
   },

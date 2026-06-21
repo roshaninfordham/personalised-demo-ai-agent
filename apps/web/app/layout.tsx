@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import "./globals.css";
+import { AppShell } from "../components/layout/AppShell";
+
 export const metadata: Metadata = {
   title: "Live Demo Agent",
-  description: "Phase 1 skeleton for the live AI demo-agent platform.",
+  description: "Frontend shell for live AI product-demo sessions.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: "Inter, system-ui, sans-serif" }}>{children}</body>
+      <body>
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }

@@ -1,0 +1,65 @@
+export type EventTransport = "sse" | "websocket";
+export type BrowserFrameMode = "screenshot" | "video" | "webrtc";
+
+export type PublicConfig = {
+  appName: string;
+  apiBaseUrl: string;
+  eventsBaseUrl: string;
+  eventTransport: EventTransport;
+  enableDebugPanel: boolean;
+  enableMockEvents: boolean;
+  enableWebrtcPlaceholder: boolean;
+  browserFrameMode: BrowserFrameMode;
+  maxEventBufferSize: number;
+  maxTranscriptEvents: number;
+  maxLatencySamples: number;
+  frameStaleAfterMs: number;
+  defaultProductUrl: string;
+  maxEventPayloadBytes: number;
+};
+
+export function getPublicConfig(): PublicConfig {
+  return {
+    appName: readString("NEXT_PUBLIC_APP_NAME", "Live Demo Agent"),
+    apiBaseUrl: readString("NEXT_PUBLIC_API_BASE_URL", "http://localhost:8000"),
+    eventsBaseUrl: readString("NEXT_PUBLIC_EVENTS_BASE_URL", "http://localhost:8000"),
+    eventTransport: readEventTransport(process.env.NEXT_PUBLIC_EVENT_TRANSPORT),
+    enableDebugPanel: readBoolean("NEXT_PUBLIC_ENABLE_DEBUG_PANEL", true),
+    enableMockEvents: readBoolean("NEXT_PUBLIC_ENABLE_MOCK_EVENTS", false),
+    enableWebrtcPlaceholder: readBoolean("NEXT_PUBLIC_ENABLE_WEBRTC_PLACEHOLDER", true),
+    browserFrameMode: readBrowserFrameMode(process.env.NEXT_PUBLIC_BROWSER_FRAME_MODE),
+    maxEventBufferSize: readInteger("NEXT_PUBLIC_MAX_EVENT_BUFFER_SIZE", 1000, 10, 5000),
+    maxTranscriptEvents: readInteger("NEXT_PUBLIC_MAX_TRANSCRIPT_EVENTS", 500, 10, 2000),
+    maxLatencySamples: readInteger("NEXT_PUBLIC_MAX_LATENCY_SAMPLES", 512, 10, 5000),
+    frameStaleAfterMs: readInteger("NEXT_PUBLIC_FRAME_STALE_AFTER_MS", 10_000, 1000, 120_000),
+    defaultProductUrl: readString("NEXT_PUBLIC_DEFAULT_PRODUCT_URL", "https://example.com"),
+    maxEventPayloadBytes: readInteger("NEXT_PUBLIC_MAX_EVENT_PAYLOAD_BYTES", 262_144, 1024, 1_048_576),
+  };
+}
+
+function readString(key: string, fallback: string): string {
+  const value = process.env[key];
+  return value === undefined || value.trim() === "" ? fallback : value;
+}
+
+function readBoolean(key: string, fallback: boolean): boolean {
+  const value = process.env[key];
+  if (value === undefined || value.trim() === "") return fallback;
+  return value.toLowerCase() === "true";
+}
+
+function readInteger(key: string, fallback: number, min: number, max: number): number {
+  const value = process.env[key];
+  const parsed = value === undefined || value.trim() === "" ? fallback : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function readEventTransport(value: string | undefined): EventTransport {
+  return value === "websocket" ? "websocket" : "sse";
+}
+
+function readBrowserFrameMode(value: string | undefined): BrowserFrameMode {
+  if (value === "video" || value === "webrtc") return value;
+  return "screenshot";
+}

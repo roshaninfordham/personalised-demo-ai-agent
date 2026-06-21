@@ -2,7 +2,7 @@
 
 Monorepo foundation for a production-grade, low-latency, secure, deterministic, provider-agnostic AI product-demo agent platform.
 
-Phase 5 provides the monorepo, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, and a deterministic Playwright browser runtime. It does not yet implement the live voice agent, AI planner, product learner, frontend cursor rendering, or CRM export workflow.
+Phase 6 provides the monorepo, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, a deterministic Playwright browser runtime, and the frontend live demo UI shell. It does not yet implement the live Pipecat voice agent, AI planner, product learner intelligence, true WebRTC media session, or CRM export workflow.
 
 ## What This Repo Is
 
@@ -16,6 +16,7 @@ This repository currently contains:
 - Phase 3 FastAPI backend API and orchestration placeholders.
 - Phase 4 reusable AI provider abstraction package.
 - Phase 5 deterministic browser runtime service.
+- Phase 6 Next.js frontend live demo shell.
 - Python and TypeScript workspace tooling.
 - Shared JSON Schema contracts with generated Python and TypeScript outputs.
 - Local Docker Compose stack for lightweight development.
@@ -191,6 +192,9 @@ make db-downgrade
 make ai-test
 make browser-test
 make browser-test-integration
+make web-dev
+make web-test
+make web-build
 make secrets-check
 ```
 
@@ -212,6 +216,180 @@ pnpm lint
 pnpm format
 pnpm typecheck
 pnpm test
+```
+
+## Phase 6 Frontend Live Demo UI
+
+Phase 6 implements the user-facing live demo shell in `apps/web` with Next.js App Router, React, TypeScript strict mode, a centralized API client, a centralized event client, and a bounded external event store based on `useSyncExternalStore`.
+
+It does not implement the actual Pipecat voice agent, true WebRTC media session, AI reasoning, browser runtime internals, product learner intelligence, or CRM export. UI states are explicit when a backend capability is unavailable.
+
+### Frontend Architecture
+
+```mermaid
+flowchart TB
+    User["User"]
+
+    subgraph NextApp["Next.js Frontend"]
+        Landing["Landing Page"]
+        DemoForm["Demo Start Form"]
+        SessionPage["Session Page"]
+        LiveShell["Live Demo Shell"]
+        BrowserViewport["Browser Viewport"]
+        CursorOverlay["Cursor Overlay"]
+        CallPanel["Mic/WebRTC Placeholder"]
+        LearningSidebar["Learning Sidebar"]
+        TranscriptPanel["Transcript Panel"]
+        LatencyPanel["Latency Debug Panel"]
+    end
+
+    subgraph ClientLib["Frontend Libraries"]
+        ApiClient["API Client"]
+        EventClient["SSE/WebSocket Event Client"]
+        EventStore["Bounded Event Store"]
+        FrameStore["Browser Frame Store"]
+        MetricsStore["Latency Metrics Store"]
+        MediaClient["Microphone/WebRTC Client"]
+    end
+
+    subgraph Backend["Backend Services"]
+        API["FastAPI Backend"]
+        EventGateway["SSE/WebSocket Event Gateway"]
+        BrowserRuntime["Browser Runtime"]
+        Redis["Redis Streams/State"]
+        ObjectStorage["MinIO/S3"]
+    end
+
+    User --> Landing
+    Landing --> DemoForm
+    DemoForm --> ApiClient
+    ApiClient --> API
+    API --> SessionPage
+    SessionPage --> LiveShell
+    LiveShell --> BrowserViewport
+    BrowserViewport --> CursorOverlay
+    LiveShell --> CallPanel
+    LiveShell --> LearningSidebar
+    LiveShell --> TranscriptPanel
+    LiveShell --> LatencyPanel
+    LiveShell --> EventClient
+    EventClient --> EventGateway
+    EventGateway --> Redis
+    BrowserRuntime --> Redis
+    BrowserRuntime --> ObjectStorage
+    API --> ObjectStorage
+    EventClient --> EventStore
+    EventStore --> BrowserViewport
+    EventStore --> LearningSidebar
+    EventStore --> TranscriptPanel
+    EventStore --> LatencyPanel
+```
+
+### Page Structure
+
+- `/` is a Server Component landing page with a lightweight CTA and status-aware copy.
+- `/demo` renders the client demo start form.
+- `/demo/[sessionId]` validates UUID-like session IDs and renders the client-only live demo shell.
+- `app/error.tsx`, `app/not-found.tsx`, and loading states provide safe deterministic fallbacks.
+
+### Demo Start Flow
+
+The demo form collects `product_url`, optional product name, target persona, text guidance, and recipe JSON. Submission uses the centralized API client:
+
+1. Create product.
+2. Save text guidance if provided.
+3. Create and validate recipe if recipe JSON is provided.
+4. Create demo session.
+5. Start demo session.
+6. Navigate to `/demo/{session_id}`.
+
+Frontend validation is a UX layer only. Backend validation remains the security boundary. Partial optional failures are displayed without pretending the guidance or recipe was saved.
+
+### Event Transport And Store
+
+SSE is the default event transport at `/api/v1/demo-sessions/{session_id}/events`. A WebSocket adapter interface exists for later bidirectional transport.
+
+All live events are reduced through `lib/events/eventStore.ts` and `lib/events/eventReducer.ts`. The store uses bounded ring buffers for recent events, transcript items, click ripples, scroll indicators, errors, and latency samples. Event dedupe is O(1) by `event_id`, cursor updates are O(1), and transcript partial/final replacement is O(1) by turn key.
+
+```mermaid
+sequenceDiagram
+    participant Browser as Browser Runtime
+    participant Redis as Redis Streams
+    participant API as API Event Gateway
+    participant Client as Frontend Event Client
+    participant Store as Event Store
+    participant UI as Live Demo UI
+
+    Browser->>Redis: browser.screen.updated
+    Browser->>Redis: browser.cursor.move
+    Browser->>Redis: browser.element.highlight
+    Browser->>Redis: transcript.final
+    API->>Client: SSE event
+    Client->>Store: append normalized event
+    Store->>Store: reduce into bounded state
+    Store->>UI: notify subscribers
+    UI->>UI: render frame/cursor/transcript/metrics
+```
+
+### Browser Viewport
+
+Phase 6 implements screenshot frame mode only. The browser viewport renders backend-controlled screenshot URLs and keeps only the latest frame plus a preload target. It never stores base64 screenshots in React state and does not use an iframe for controlled browser output.
+
+Video and WebRTC frame modes are represented as explicit not-implemented states so later phases can upgrade the renderer without changing the shell layout.
+
+### Cursor Overlay
+
+Cursor movement, element highlights, click ripples, and scroll indicators are visual-only overlays with `pointer-events: none`. Cursor animation uses deterministic quadratic Bezier math and `requestAnimationFrame`, so React state is not updated for every animation frame.
+
+Coordinate mapping uses object-fit contain math:
+
+```text
+scale = min(display_width / source_width, display_height / source_height)
+render_x = offset_x + browser_x * scale
+render_y = offset_y + browser_y * scale
+```
+
+### Microphone And Call Panel
+
+The call panel requests microphone access only after an explicit button click through `navigator.mediaDevices.getUserMedia({ audio: true, video: false })`. Mute toggles local audio track `enabled`, cleanup stops tracks, and the mic level meter uses a bounded Web Audio analyser loop.
+
+The WebRTC client is a placeholder in Phase 6. It fetches join config and shows `not_available` when the backend returns a placeholder such as `not_implemented_in_phase_3`. It does not fake an active agent audio call.
+
+### Transcript And Learning UI
+
+The transcript panel handles `transcript.partial`, `transcript.final`, and `agent.interrupted` deterministically. Final transcript events replace matching partials by speaker and turn ID. The list is bounded and auto-scrolls only when the user is already near the bottom.
+
+The learning sidebar maps browser and learner events to milestones. Dashboard detection is marked as possible unless event payloads explicitly prove the milestone. Ready-to-present is not marked without event evidence.
+
+### Debug Metrics
+
+The latency panel is controlled by `NEXT_PUBLIC_ENABLE_DEBUG_PANEL`. It displays event lag, first audio, turn, STT, LLM, TTS, browser action, and screen-read latency summaries. Quantiles sort bounded samples of at most `NEXT_PUBLIC_MAX_LATENCY_SAMPLES`, so p50/p95 calculation is deterministic and memory-bounded.
+
+### Mock Event Mode
+
+Set `NEXT_PUBLIC_ENABLE_MOCK_EVENTS=true` to run deterministic mock event replay for frontend development without backend or browser runtime services. The UI displays a visible mock-mode banner. Mock mode is disabled by default.
+
+### Frontend Security Notes
+
+- Browser code reads only `NEXT_PUBLIC_*` variables.
+- No AI provider keys, object storage secrets, database URLs, Redis URLs, JWT secrets, or session secrets are referenced by frontend source.
+- All API calls go through `lib/api/apiClient.ts`.
+- All live events go through `lib/events/*`.
+- Event payload text, transcript text, guidance, and product content are rendered as text nodes.
+- No untrusted `dangerouslySetInnerHTML` is used.
+- The frontend never calls the internal browser runtime directly.
+- Microphone access is user-initiated and no audio is uploaded in Phase 6.
+
+### Frontend Commands
+
+```bash
+pnpm --filter @live-demo-agent/web dev
+pnpm --filter @live-demo-agent/web lint
+pnpm --filter @live-demo-agent/web typecheck
+pnpm --filter @live-demo-agent/web test
+pnpm --filter @live-demo-agent/web build
+
+NEXT_PUBLIC_ENABLE_MOCK_EVENTS=true pnpm --filter @live-demo-agent/web dev
 ```
 
 ## Docker Compose

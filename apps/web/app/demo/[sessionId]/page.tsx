@@ -1,39 +1,22 @@
-import { BrowserViewport } from "../../../components/BrowserViewport";
-import { CallPanel } from "../../../components/CallPanel";
-import { EventSidebar } from "../../../components/EventSidebar";
-import { LatencyDebugPanel } from "../../../components/LatencyDebugPanel";
-import { TranscriptPanel } from "../../../components/TranscriptPanel";
-import { createInitialSessionState } from "../../../lib/sessionStore";
+import { notFound } from "next/navigation";
 
-type DemoPageProps = {
+import { LiveDemoShell } from "../../../components/live-demo/LiveDemoShell";
+
+const UUID_LIKE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+type DemoSessionPageProps = {
   params: Promise<{
     sessionId: string;
   }>;
 };
 
-export default async function DemoPage({ params }: DemoPageProps) {
+export default async function DemoSessionPage({ params }: DemoSessionPageProps) {
   const { sessionId } = await params;
-  const session = createInitialSessionState(sessionId);
+  if (!UUID_LIKE.test(sessionId)) notFound();
 
   return (
-    <main
-      style={{
-        display: "grid",
-        gap: 16,
-        gridTemplateColumns: "minmax(0, 1fr) 320px",
-        minHeight: "100vh",
-        padding: 16,
-      }}
-    >
-      <section style={{ display: "grid", gap: 16 }}>
-        <CallPanel sessionId={session.session_id} status={session.status} />
-        <BrowserViewport sessionId={session.session_id} />
-        <LatencyDebugPanel />
-      </section>
-      <aside style={{ display: "grid", gap: 16 }}>
-        <EventSidebar />
-        <TranscriptPanel />
-      </aside>
+    <main className="page" style={{ maxWidth: 1480 }}>
+      <LiveDemoShell sessionId={sessionId} />
     </main>
   );
 }
