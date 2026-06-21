@@ -1551,6 +1551,94 @@ make recipe-test-integration
 Phase 11 implements the recipe engine foundation. It does not implement a visual recipe editor,
 pixel-level screenshot redaction, or autonomous high-risk confirmation workflows.
 
+## Phase 12 End-to-End Session Orchestration
+
+Phase 12 connects the API, browser runtime, agent runtime, learner worker, recipe engine, Redis live
+state, Redis Streams events, and durable Postgres state into a state-machine driven session
+lifecycle:
+
+```text
+created -> prewarming -> waiting_for_user -> live -> recovery -> ending -> completed
+```
+
+Runtime-only degraded states such as `degraded_ready`, `live_degraded`, `recovery`,
+`finalizing`, and `completed_with_warnings` are stored in orchestration state without breaking the
+existing public session status contract.
+
+Orchestrator responsibilities:
+
+- `SessionOrchestrator` coordinates prewarm, live start, recovery, shutdown, and state reads.
+- Redis locks protect start/prewarm/recovery/shutdown per session.
+- Idempotency keys prevent duplicate start/end calls from allocating unbounded resources.
+- `session_resource_allocations` tracks browser, voice, learner, compiled recipe, transport, and
+  Redis resources for deterministic cleanup.
+- `session_lifecycle_events` is append-only and records lifecycle transitions.
+
+Prewarm DAG:
+
+```text
+load session
+  -> compile recipe
+  -> create browser -> navigate -> read first screen -> write Redis screen/safe actions
+  -> create voice session -> get join config
+  -> warm providers
+  -> enqueue learner job
+  -> compute readiness
+```
+
+Readiness is deterministic and weighted across browser session, URL load, first screen, safe
+actions, voice session, join config, compiled recipe, learner enqueue, and provider warmup. Learner
+completion is never awaited by the realtime path.
+
+Live start:
+
+- If a session is not prewarmed, the start endpoint runs minimal prewarm first.
+- Join config is returned without provider secrets or internal credentials.
+- The session remains `waiting_for_user` until a transport-connected signal marks it live.
+- A deterministic greeting is available once the voice session is connected.
+
+Browser-agent synchronization:
+
+- Speech starts before browser actions when configured.
+- One pending action is allowed per session by default.
+- The expected order is speech, action queued, cursor movement, highlight, click, action complete,
+  then screen update.
+- User interruption cancels queued-but-not-started actions.
+
+Recovery:
+
+- Recovery is triggered by stale elements, unexpected screens, screen-read timeouts, navigation
+  blocks, high-risk screens, browser crashes, and invalid agent output.
+- Recovery first blocks new risky actions, then reads the current screen, tries safe go-back, tries
+  start-url navigation when allowed, and asks the user if still uncertain.
+- Attempts are bounded by `RECOVERY_MAX_ATTEMPTS`.
+
+Shutdown:
+
+- Shutdown stops voice, flushes transcripts where supported, closes browser sessions, detaches or
+  cancels learner work, creates a deterministic technical summary, releases Redis live state, and
+  marks resources released.
+- Partial cleanup failures produce `completed_with_warnings` instead of hiding the failure.
+
+Security and audit behavior:
+
+- RBAC and organization scoping remain enforced by API dependencies and repositories.
+- The orchestrator does not execute Playwright or Pipecat internals directly; it calls runtime
+  clients.
+- Events and resource metadata are redacted before persistence or frontend publication.
+- High-impact transitions such as live start, recovery, and shutdown are audited.
+
+Local verification:
+
+```bash
+make orchestration-test
+make orchestration-test-integration
+make orchestration-smoke
+```
+
+Phase 12 orchestrates summary generation and creates a deterministic technical session summary.
+Full AI lead intelligence remains the responsibility of the post-demo intelligence phase.
+
 ## Troubleshooting
 
 If `uv sync --all-packages` fails because no compatible Python is installed, allow `uv` to install Python `3.12` or install Python `3.12` manually.

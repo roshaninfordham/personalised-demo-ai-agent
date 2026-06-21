@@ -131,5 +131,6 @@ pythonpath = [
 asyncio_mode = "auto"
 markers = [
   "integration: tests that require local Docker Compose services",
+  "orchestration_integration: session orchestration integration tests with fake services",
   "live: tests that call configured live AI providers",
 ]

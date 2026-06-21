@@ -21,6 +21,7 @@ from live_demo_api.events.event_bus import EventBus
 from live_demo_api.security import Principal, RequestContext
 from live_demo_api.services.demo_session_service import DemoSessionService
 from live_demo_api.services.recipe_service import RecipeService
+from live_demo_api.services.session_orchestration_service import SessionOrchestrationService
 from live_demo_api.services.transcript_service import TranscriptService
 from live_demo_contracts.browser_action import BrowserActionsResponse
 from live_demo_contracts.demo_recipe import RecipeProgressResponse
@@ -98,15 +99,15 @@ async def get_session(
 @router.post("/{session_id}/start", response_model=StartDemoSessionResponse)
 async def start_session(
     session_id: UUID,
-    request: StartDemoSessionRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     redis: Annotated[Any, Depends(get_redis_client)],
     event_bus: Annotated[EventBus, Depends(get_event_bus)],
     principal: Annotated[Principal, Depends(get_current_principal)],
     request_context: Annotated[RequestContext, Depends(get_request_context)],
+    request: StartDemoSessionRequest | None = None,
 ) -> StartDemoSessionResponse:
     _ = request
-    return await DemoSessionService().start_session(
+    return await SessionOrchestrationService().start(
         db, redis, event_bus, principal, session_id, request_context
     )
 
@@ -114,15 +115,65 @@ async def start_session(
 @router.post("/{session_id}/end", response_model=EndDemoSessionResponse)
 async def end_session(
     session_id: UUID,
-    request: EndDemoSessionRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     redis: Annotated[Any, Depends(get_redis_client)],
     event_bus: Annotated[EventBus, Depends(get_event_bus)],
     principal: Annotated[Principal, Depends(get_current_principal)],
     request_context: Annotated[RequestContext, Depends(get_request_context)],
+    request: EndDemoSessionRequest | None = None,
 ) -> EndDemoSessionResponse:
-    return await DemoSessionService().end_session(
+    return await SessionOrchestrationService().end(
         db, redis, event_bus, principal, session_id, request, request_context
+    )
+
+
+@router.post("/{session_id}/prewarm")
+async def prewarm_session(
+    session_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    event_bus: Annotated[EventBus, Depends(get_event_bus)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    request_context: Annotated[RequestContext, Depends(get_request_context)],
+) -> dict[str, object]:
+    return await SessionOrchestrationService().prewarm(
+        db, redis, event_bus, principal, session_id, request_context
+    )
+
+
+@router.post("/{session_id}/recover")
+async def recover_session(
+    session_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    event_bus: Annotated[EventBus, Depends(get_event_bus)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    request_context: Annotated[RequestContext, Depends(get_request_context)],
+    body: dict[str, object] | None = None,
+) -> dict[str, object]:
+    reason_code = str((body or {}).get("reason_code") or "unknown")
+    return await SessionOrchestrationService().recover(
+        db,
+        redis,
+        event_bus,
+        principal,
+        session_id,
+        request_context,
+        reason_code=reason_code,
+    )
+
+
+@router.get("/{session_id}/orchestration-state")
+async def get_orchestration_state(
+    session_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    event_bus: Annotated[EventBus, Depends(get_event_bus)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    request_context: Annotated[RequestContext, Depends(get_request_context)],
+) -> dict[str, object]:
+    return await SessionOrchestrationService().get_state(
+        db, redis, event_bus, principal, session_id, request_context
     )
 
 
@@ -142,7 +193,7 @@ async def get_join_config(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     principal: Annotated[Principal, Depends(get_current_principal)],
 ) -> JoinConfigResponse:
-    return await DemoSessionService().get_join_config(db, principal, session_id)
+    return await SessionOrchestrationService().get_join_config(db, principal, session_id)
 
 
 @router.get("/{session_id}/browser-actions", response_model=BrowserActionsResponse)

@@ -55,6 +55,62 @@ class ApiSettings(BaseSettings):
     transport_provider: str = "small_webrtc"
     transport_room_ttl_seconds: int = 3600
 
+    session_orchestration_enabled: bool = True
+    session_orchestration_fail_closed: bool = True
+    session_orchestration_lock_ttl_ms: int = 30000
+    session_orchestration_idempotency_ttl_seconds: int = 600
+    session_orchestration_max_concurrent_prewarms: int = 5
+    session_orchestration_max_concurrent_live_starts: int = 5
+    session_orchestration_run_timeout_seconds: int = 120
+    prewarm_enabled: bool = True
+    prewarm_total_timeout_ms: int = 20000
+    prewarm_browser_timeout_ms: int = 12000
+    prewarm_screen_read_timeout_ms: int = 3000
+    prewarm_provider_health_timeout_ms: int = 3000
+    prewarm_recipe_compile_timeout_ms: int = 3000
+    prewarm_learner_enqueue_timeout_ms: int = 1000
+    prewarm_require_browser_ready: bool = True
+    prewarm_require_voice_ready: bool = False
+    prewarm_allow_degraded_ready: bool = True
+    prewarm_min_readiness_score: float = 0.70
+    live_start_timeout_ms: int = 15000
+    live_start_require_voice_session: bool = True
+    live_start_require_join_config: bool = True
+    live_start_greeting_enabled: bool = True
+    live_start_greeting_text: str = (
+        "Hi, I'm opening the product now and learning the interface. "
+        "What role are you viewing this from?"
+    )
+    live_start_send_greeting_after_connect: bool = True
+    live_start_allow_text_only_degraded_mode: bool = True
+    sync_speech_before_action: bool = True
+    sync_cursor_before_click: bool = True
+    sync_wait_for_action_started_event_ms: int = 1000
+    sync_wait_for_screen_update_ms: int = 3000
+    sync_followup_after_screen_update: bool = False
+    sync_max_pending_actions_per_session: int = 1
+    recovery_enabled: bool = True
+    recovery_max_attempts: int = 2
+    recovery_read_screen_timeout_ms: int = 3000
+    recovery_go_back_allowed: bool = True
+    recovery_navigate_home_allowed: bool = True
+    recovery_ask_user_on_failure: bool = True
+    recovery_block_actions_during_recovery: bool = True
+    session_shutdown_timeout_ms: int = 15000
+    session_shutdown_stop_voice_timeout_ms: int = 5000
+    session_shutdown_close_browser_timeout_ms: int = 5000
+    session_shutdown_flush_transcript_timeout_ms: int = 5000
+    session_shutdown_finalization_timeout_ms: int = 10000
+    session_shutdown_release_redis_state: bool = True
+    session_shutdown_enqueue_lead_summary: bool = True
+    session_shutdown_generate_deterministic_summary: bool = True
+    browser_runtime_base_url: str = "http://browser-runtime:8200"
+    agent_runtime_base_url: str = "http://agent-runtime:8300"
+    learner_worker_base_url: str = "http://learner-worker:8400"
+    internal_service_timeout_ms: int = 5000
+    internal_service_max_retries: int = 1
+    internal_service_retry_base_delay_ms: int = 100
+
     dev_allow_implicit_local_org: bool = True
     dev_local_organization_id: str = "00000000-0000-0000-0000-000000000001"
     dev_local_user_id: str = "00000000-0000-0000-0000-000000000002"

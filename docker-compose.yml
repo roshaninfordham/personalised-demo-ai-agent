@@ -75,6 +75,10 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      browser-runtime:
+        condition: service_healthy
+      agent-runtime:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
       interval: 10s

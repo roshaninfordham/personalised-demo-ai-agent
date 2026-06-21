@@ -69,6 +69,52 @@ def session_lock_key(session_id: UUID | str) -> str:
     return f"{_prefix()}:session:{_segment(session_id)}:lock"
 
 
+def orchestration_state_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:orchestration_state"
+
+
+def orchestration_readiness_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:readiness"
+
+
+def prewarm_status_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:prewarm_status"
+
+
+def resource_registry_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:resource_registry"
+
+
+def active_resources_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:active_resources"
+
+
+def sync_state_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:sync_state"
+
+
+def recovery_state_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:recovery_state"
+
+
+def shutdown_state_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:shutdown_state"
+
+
+def orchestration_idempotency_key(session_id: UUID | str, operation: str, key: str) -> str:
+    return (
+        f"{_prefix()}:session:{_segment(session_id)}:"
+        f"{_segment(operation)}_idempotency:{_segment(key)}"
+    )
+
+
+def action_sync_key(session_id: UUID | str, turn_id: UUID | str, action_id: str) -> str:
+    return (
+        f"{_prefix()}:session:{_segment(session_id)}:"
+        f"action_sync:{_segment(turn_id)}:{_segment(action_id)}"
+    )
+
+
 def browser_state_key(browser_session_id: UUID | str) -> str:
     return f"{_prefix()}:browser:{_segment(browser_session_id)}:state"
 

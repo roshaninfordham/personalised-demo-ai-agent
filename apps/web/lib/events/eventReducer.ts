@@ -30,11 +30,48 @@ export function reduceEvent(
       state.sessionStatus = "prewarming";
       markMilestone(state, "loaded_product_url", "Loading product URL", event.created_at);
       break;
+    case "session.prewarming.completed":
+    case "session.waiting_for_user":
+      state.sessionStatus = "waiting_for_user";
+      markMilestone(state, "ready_to_present", "Ready to present", event.created_at);
+      break;
+    case "session.prewarming.degraded":
+      state.sessionStatus = "waiting_for_user";
+      state.errors.push({
+        code: "prewarm_degraded",
+        message: "Session is ready with degraded capabilities.",
+        receivedAt: nowIso(),
+      });
+      break;
+    case "session.prewarming.failed":
+    case "session.failed":
+      state.sessionStatus = "failed";
+      state.errors.push({ code: "session_failed", message: "Session setup failed.", receivedAt: nowIso() });
+      break;
     case "session.started":
+    case "session.live.started":
       state.sessionStatus = "live";
       break;
     case "session.ended":
       state.sessionStatus = "completed";
+      break;
+    case "session.completed_with_warnings":
+      state.sessionStatus = "completed";
+      state.errors.push({
+        code: "completed_with_warnings",
+        message: "Session ended with cleanup warnings.",
+        receivedAt: nowIso(),
+      });
+      break;
+    case "session.recovery.started":
+      state.sessionStatus = "recovery";
+      state.errors.push({ code: "session_recovery", message: "Re-checking browser state.", receivedAt: nowIso() });
+      break;
+    case "session.recovery.resolved":
+      state.sessionStatus = "live";
+      break;
+    case "session.ending":
+      state.sessionStatus = "ending";
       break;
     case "browser.navigation.started":
       markMilestone(state, "loaded_product_url", "Loading product URL", event.created_at);

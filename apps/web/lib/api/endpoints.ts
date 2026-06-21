@@ -26,6 +26,22 @@ export function demoSessionStartEndpoint(sessionId: string): string {
   return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/start`;
 }
 
+export function demoSessionPrewarmEndpoint(sessionId: string): string {
+  return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/prewarm`;
+}
+
+export function demoSessionEndEndpoint(sessionId: string): string {
+  return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/end`;
+}
+
+export function demoSessionRecoverEndpoint(sessionId: string): string {
+  return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/recover`;
+}
+
+export function demoSessionOrchestrationStateEndpoint(sessionId: string): string {
+  return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/orchestration-state`;
+}
+
 export function demoSessionStateEndpoint(sessionId: string): string {
   return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/state`;
 }

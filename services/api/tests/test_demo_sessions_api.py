@@ -42,7 +42,7 @@ def test_start_session_transitions_to_prewarming_and_is_idempotent(api_client: T
         json={},
     )
     assert first.status_code == 200, first.text
-    assert first.json()["session"]["status"] == "prewarming"
+    assert first.json()["session"]["status"] == "waiting_for_user"
     assert first.json()["join_config"]["status"] == "not_implemented_in_phase_3"
     assert first.json()["join_config"]["join_token"] is None
 
@@ -52,7 +52,7 @@ def test_start_session_transitions_to_prewarming_and_is_idempotent(api_client: T
         json={},
     )
     assert second.status_code == 200
-    assert second.json()["session"]["status"] == "prewarming"
+    assert second.json()["session"]["status"] == "waiting_for_user"
 
 
 def test_end_session_transitions_to_completed(api_client: TestClient) -> None:
@@ -97,9 +97,9 @@ def test_get_session_state_merges_db_and_redis_state(api_client: TestClient) -> 
     )
     assert response.status_code == 200
     body = response.json()
-    assert body["session"]["status"] == "prewarming"
+    assert body["session"]["status"] == "waiting_for_user"
     assert body["live_state"]["available"] is True
-    assert body["live_state"]["safe_actions"] == []
+    assert len(body["live_state"]["safe_actions"]) >= 1
 
 
 def test_list_sessions_and_join_config(api_client: TestClient) -> None:

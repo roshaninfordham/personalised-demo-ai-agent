@@ -586,6 +586,158 @@ class DemoSession(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
 
 
+class SessionOrchestrationRun(Base):
+    __tablename__ = "session_orchestration_runs"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "run_type IN ('prewarm','live_start','recovery','shutdown','finalization')",
+            name="session_orchestration_runs_run_type",
+        ),
+        sa.CheckConstraint(
+            "status IN ('pending','running','completed','completed_with_warnings',"
+            "'failed','cancelled')",
+            name="session_orchestration_runs_status",
+        ),
+        sa.CheckConstraint(
+            "attempt_count >= 0", name="session_orchestration_runs_attempt_non_negative"
+        ),
+        sa.CheckConstraint(
+            "jsonb_typeof(metrics) = 'object'", name="session_orchestration_runs_metrics_object"
+        ),
+        sa.Index(
+            "ix_session_orchestration_runs_session_created",
+            "session_id",
+            sa.text("created_at DESC"),
+        ),
+        sa.Index(
+            "ix_session_orchestration_runs_org_status",
+            "organization_id",
+            "status",
+            sa.text("created_at DESC"),
+        ),
+    )
+
+    orchestration_run_id: Mapped[PyUUID] = uuid_pk("orchestration_run_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    session_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id"), nullable=False
+    )
+    run_type: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    status: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="pending")
+    attempt_count: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default="0")
+    started_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(sa.Text)
+    error_message: Mapped[str | None] = mapped_column(sa.Text)
+    metrics: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    trace_id: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+
+
+class SessionResourceAllocation(Base):
+    __tablename__ = "session_resource_allocations"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "resource_type IN ('browser_session','voice_session','transport_session',"
+            "'learner_run','compiled_recipe','object_artifact','redis_live_state')",
+            name="session_resource_allocations_resource_type",
+        ),
+        sa.CheckConstraint(
+            "status IN ('allocating','allocated','ready','failed','releasing','released',"
+            "'release_failed')",
+            name="session_resource_allocations_status",
+        ),
+        sa.CheckConstraint(
+            "jsonb_typeof(metadata) = 'object'",
+            name="session_resource_allocations_metadata_object",
+        ),
+        sa.Index(
+            "ix_session_resource_allocations_session_status",
+            "session_id",
+            "status",
+        ),
+        sa.Index(
+            "uq_session_resource_type_provider_active",
+            "session_id",
+            "resource_type",
+            "provider",
+            unique=True,
+            postgresql_where=sa.text(
+                "status IN ('allocating','allocated','ready','releasing')"
+            ),
+        ),
+    )
+
+    resource_allocation_id: Mapped[PyUUID] = uuid_pk("resource_allocation_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    session_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id"), nullable=False
+    )
+    resource_type: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    resource_id: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    provider: Mapped[str | None] = mapped_column(sa.Text)
+    status: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="allocated")
+    metadata_json: Mapped[dict[str, object]] = mapped_column(
+        "metadata", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+    released_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(sa.Text)
+    error_message: Mapped[str | None] = mapped_column(sa.Text)
+
+
+class SessionLifecycleEvent(Base):
+    __tablename__ = "session_lifecycle_events"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "severity IN ('debug','info','warning','error')",
+            name="session_lifecycle_events_severity",
+        ),
+        sa.CheckConstraint(
+            "jsonb_typeof(metadata) = 'object'",
+            name="session_lifecycle_events_metadata_object",
+        ),
+        sa.Index(
+            "ix_session_lifecycle_events_session_created",
+            "session_id",
+            sa.text("created_at ASC"),
+        ),
+        sa.Index(
+            "ix_session_lifecycle_events_org_created",
+            "organization_id",
+            sa.text("created_at DESC"),
+        ),
+    )
+
+    session_lifecycle_event_id: Mapped[PyUUID] = uuid_pk("session_lifecycle_event_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    session_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id"), nullable=False
+    )
+    event_type: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    previous_status: Mapped[str | None] = mapped_column(sa.Text)
+    next_status: Mapped[str | None] = mapped_column(sa.Text)
+    resource_type: Mapped[str | None] = mapped_column(sa.Text)
+    resource_id: Mapped[str | None] = mapped_column(sa.Text)
+    severity: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="info")
+    message: Mapped[str | None] = mapped_column(sa.Text)
+    metadata_json: Mapped[dict[str, object]] = mapped_column(
+        "metadata", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    trace_id: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    created_at: Mapped[datetime] = created_at_column()
+
+
 class BrowserSession(Base):
     __tablename__ = "browser_sessions"
     __table_args__ = (

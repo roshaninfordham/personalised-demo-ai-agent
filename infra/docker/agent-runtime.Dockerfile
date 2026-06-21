@@ -3,6 +3,7 @@ FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
+ENV PYTHONPATH=/app/services/agent_runtime/src:/app/packages/contracts/generated/python:/app/packages/backend_common/src:/app/packages/policies/generated/python
 
 WORKDIR /app
 
@@ -17,6 +18,7 @@ COPY services/learner_worker/pyproject.toml services/learner_worker/pyproject.to
 COPY services/tts_service/pyproject.toml services/tts_service/pyproject.toml
 COPY services/agent_runtime services/agent_runtime
 COPY packages/backend_common packages/backend_common
+COPY packages/policies packages/policies
 COPY packages/contracts/generated/python packages/contracts/generated/python
 
 RUN uv sync --frozen --package live-demo-agent-runtime --no-dev
