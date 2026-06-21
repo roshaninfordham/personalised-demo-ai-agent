@@ -1,0 +1,68 @@
+// Generated from packages/policies/rules. Do not edit manually.
+
+export const rbacPermissions = {
+  "version": 1,
+  "roles": {
+    "owner": [
+      "*"
+    ],
+    "admin": [
+      "organization:read",
+      "product:*",
+      "guidance:*",
+      "recipe:*",
+      "session:*",
+      "browser:*",
+      "lead_insight:*",
+      "transcript:*",
+      "artifact:*",
+      "audit:read",
+      "crm:export",
+      "user:manage"
+    ],
+    "demo_builder": [
+      "product:create",
+      "product:read",
+      "product:update",
+      "guidance:create",
+      "guidance:read",
+      "guidance:update",
+      "recipe:create",
+      "recipe:read",
+      "recipe:update",
+      "recipe:activate",
+      "session:create",
+      "session:read",
+      "session:start",
+      "session:end",
+      "browser:read_screen",
+      "browser:execute_low",
+      "browser:execute_medium",
+      "browser:request_high_risk",
+      "lead_insight:create",
+      "lead_insight:read",
+      "transcript:read",
+      "artifact:read",
+      "artifact:write"
+    ],
+    "viewer": [
+      "product:read",
+      "guidance:read",
+      "recipe:read",
+      "session:read",
+      "transcript:read",
+      "lead_insight:read",
+      "artifact:read"
+    ],
+    "agent_runtime": [
+      "session:read",
+      "browser:read_screen",
+      "browser:execute_low",
+      "browser:execute_medium",
+      "lead_insight:create",
+      "transcript:create",
+      "artifact:write",
+      "audit:create"
+    ]
+  }
+} as const;

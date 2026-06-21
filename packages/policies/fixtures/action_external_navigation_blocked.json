@@ -1,0 +1,21 @@
+{
+  "kind": "action_policy",
+  "request": {
+    "action_type": "navigate",
+    "action_label": "Open outside site",
+    "element_role": "link",
+    "element_label": "Open outside site",
+    "element_text": "Open",
+    "surrounding_text": "External link",
+    "input_type": null,
+    "current_url": "https://example.com",
+    "target_url": "https://evil.example.net",
+    "allowed_domains": ["example.com"],
+    "recipe_never_click": []
+  },
+  "expected": {
+    "decision": "blocked",
+    "risk_level": "blocked",
+    "reason_code": "domain_not_allowed"
+  }
+}

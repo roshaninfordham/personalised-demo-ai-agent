@@ -1,0 +1,9 @@
+{
+  "kind": "redaction",
+  "context": "log",
+  "input": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456",
+  "expected": {
+    "redacted": "Authorization: [REDACTED_BEARER_TOKEN]",
+    "applied": true
+  }
+}

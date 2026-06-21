@@ -1,0 +1,50 @@
+// Generated from packages/policies/rules. Do not edit manually.
+
+export const auditActionCatalog = {
+  "version": 1,
+  "high_impact_actions": [
+    "browser.command.blocked",
+    "browser.command.confirmation_required",
+    "browser.command.executed",
+    "recipe.activate",
+    "crm.export.requested",
+    "crm.export.sent",
+    "crm.export.failed",
+    "rbac.denied",
+    "policy.denied"
+  ],
+  "actions": [
+    "product.create",
+    "product.update",
+    "product.delete",
+    "guidance.create",
+    "guidance.update",
+    "guidance.delete",
+    "recipe.create",
+    "recipe.update",
+    "recipe.activate",
+    "recipe.archive",
+    "recipe.delete",
+    "session.create",
+    "session.start",
+    "session.end",
+    "browser.command.requested",
+    "browser.command.allowed",
+    "browser.command.blocked",
+    "browser.command.confirmation_required",
+    "browser.command.executed",
+    "browser.command.failed",
+    "policy.confirmation.created",
+    "policy.confirmation.accepted",
+    "policy.confirmation.expired",
+    "policy.confirmation.rejected",
+    "lead_insight.create",
+    "lead_summary.generate",
+    "crm.export.requested",
+    "crm.export.sent",
+    "crm.export.failed",
+    "rbac.denied",
+    "policy.denied",
+    "redaction.applied"
+  ]
+};

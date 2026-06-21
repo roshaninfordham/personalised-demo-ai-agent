@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/audit.schema.json",
+  "title": "AuditActionCatalog",
+  "type": "object",
+  "required": ["version", "high_impact_actions", "actions"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer" },
+    "high_impact_actions": { "type": "array", "items": { "type": "string" } },
+    "actions": { "type": "array", "items": { "type": "string" } }
+  }
+}

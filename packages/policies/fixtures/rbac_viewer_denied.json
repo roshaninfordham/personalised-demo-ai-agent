@@ -1,0 +1,10 @@
+{
+  "kind": "rbac",
+  "principal": {
+    "role": "viewer"
+  },
+  "permission": "recipe:activate",
+  "expected": {
+    "allowed": false
+  }
+}

@@ -1,76 +1,22 @@
-export const blockedKeywords = [
-  "delete",
-  "remove",
-  "destroy",
-  "drop",
-  "wipe",
-  "erase",
-  "reset account",
-  "close account",
-  "cancel subscription",
-  "payment",
-  "billing",
-  "purchase",
-  "checkout",
-  "pay now",
-  "send email",
-  "send invite",
-  "invite user",
-  "publish",
-  "go live",
-  "deploy",
-  "upgrade",
-  "connect bank",
-  "connect integration",
-  "revoke",
-  "disable account",
-];
+import { actionSafetyRules } from "@live-demo-agent/policies";
 
-export const highRiskKeywords = [
-  "submit",
-  "save changes",
-  "export",
-  "download",
-  "invite",
-  "send",
-  "connect",
-  "sync",
-  "authorize",
-  "install",
-  "change plan",
-  "settings",
-  "admin",
-  "api key",
-  "token",
-  "webhook",
-];
+const categories = actionSafetyRules.categories;
 
-export const mediumRiskKeywords = [
-  "create",
-  "add",
-  "new",
-  "edit",
-  "update",
-  "filter",
-  "apply",
-  "generate",
-  "import",
-];
+export const blockedKeywords = categories
+  .filter((category) => category.risk_level === "blocked")
+  .flatMap((category) => [...category.phrases]);
 
-export const lowRiskKeywords = [
-  "view",
-  "open",
-  "show",
-  "dashboard",
-  "reports",
-  "analytics",
-  "metrics",
-  "back",
-  "next",
-  "search",
-  "scroll",
-  "learn more",
-];
+export const highRiskKeywords = categories
+  .filter((category) => category.risk_level === "high")
+  .flatMap((category) => [...category.phrases]);
+
+export const mediumRiskKeywords = categories
+  .filter((category) => category.risk_level === "medium")
+  .flatMap((category) => [...category.phrases]);
+
+export const lowRiskKeywords = categories
+  .filter((category) => category.risk_level === "low")
+  .flatMap((category) => [...category.phrases]);
 
 export function containsPhrase(text: string, phrases: string[]): boolean {
   const normalized = normalizeRiskText(text);
@@ -87,4 +33,3 @@ export function normalizeRiskText(text: string): string {
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-

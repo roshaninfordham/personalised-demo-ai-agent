@@ -1,0 +1,9 @@
+{
+  "kind": "redaction",
+  "context": "prompt",
+  "input": "Contact alice@example.com for details.",
+  "expected": {
+    "redacted": "Contact [REDACTED_EMAIL] for details.",
+    "applied": true
+  }
+}

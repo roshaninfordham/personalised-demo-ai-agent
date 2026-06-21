@@ -1,0 +1,21 @@
+{
+  "kind": "action_policy",
+  "request": {
+    "action_type": "read_current_screen",
+    "action_label": "Read current screen",
+    "element_role": null,
+    "element_label": null,
+    "element_text": null,
+    "surrounding_text": null,
+    "input_type": null,
+    "current_url": "https://example.com/dashboard",
+    "target_url": null,
+    "allowed_domains": ["example.com"],
+    "recipe_never_click": []
+  },
+  "expected": {
+    "decision": "allowed",
+    "risk_level": "low",
+    "reason_code": "safe_read_action"
+  }
+}

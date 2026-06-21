@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/rbac.schema.json",
+  "title": "RbacPermissions",
+  "type": "object",
+  "required": ["version", "roles"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer" },
+    "roles": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "kind": "rbac",
+  "principal": {
+    "role": "owner"
+  },
+  "permission": "crm:export",
+  "expected": {
+    "allowed": true
+  }
+}

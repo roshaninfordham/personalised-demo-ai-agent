@@ -4,6 +4,7 @@ import type { BrowserRuntimeConfig } from "../config.js";
 import { BrowserRuntimeError } from "../errors.js";
 import type { BrowserSessionRecord } from "../browser/browserSession.js";
 import { validateNavigationUrl } from "../browser/navigation.js";
+import { DeterministicActionSafetyPolicy } from "../policy/actionPolicy.js";
 import { resolveElement, type ResolvedElement } from "./elementResolver.js";
 
 export type ValidatedAction = {
@@ -52,6 +53,40 @@ export function validateAction(
     if (!element.enabled) {
       throw new BrowserRuntimeError("element_not_enabled", "Element is not enabled.", 409);
     }
+    const policyDecision = new DeterministicActionSafetyPolicy().evaluate({
+      organization_id: session.organizationId,
+      session_id: session.demoSessionId,
+      actor: { actor_type: "agent", actor_id: "browser-runtime", role: "agent_runtime" },
+      action_type: command.action_type,
+      action_label: element.label,
+      element_role: element.role,
+      element_label: element.label,
+      element_text: element.text ?? null,
+      surrounding_text: element.surroundingText,
+      input_type: element.inputType ?? null,
+      current_url: session.currentScreenState?.url ?? null,
+      target_url: element.href ?? null,
+      allowed_domains: session.allowedDomains,
+      recipe_never_click: config.defaultNeverClick,
+      confirmation: { confirmed: command.policy_context?.["user_confirmed"] === true },
+      trace_id: command.command_id,
+    });
+    if (policyDecision.decision === "blocked") {
+      throw new BrowserRuntimeError(
+        "action_blocked_by_policy",
+        "Action is blocked by policy.",
+        403,
+        { reason_codes: policyDecision.reason_codes },
+      );
+    }
+    if (policyDecision.decision === "confirmation_required") {
+      return {
+        command,
+        policyDecision: "confirmation_required",
+        riskLevel: "high",
+        resolvedElement,
+      };
+    }
     if (element.risk_level === "blocked" && !(config.appEnv === "local" && config.allowDestructiveActions)) {
       throw new BrowserRuntimeError("action_blocked_by_policy", "Action is blocked by policy.", 403);
     }
@@ -72,10 +107,16 @@ export function validateAction(
     return {
       command,
       policyDecision: "allowed",
-      riskLevel: element.risk_level,
+      riskLevel: policyRiskLevel(policyDecision.risk_level, element.risk_level),
       resolvedElement,
     };
   }
   return { command, policyDecision: "allowed", riskLevel: "low" };
 }
 
+function policyRiskLevel(policyRisk: string, fallback: RiskLevel): RiskLevel {
+  if (policyRisk === "low" || policyRisk === "medium" || policyRisk === "high" || policyRisk === "blocked") {
+    return policyRisk;
+  }
+  return fallback;
+}

@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "patterns": [
+    {
+      "finding_type": "email",
+      "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b",
+      "replacement": "[REDACTED_EMAIL]"
+    },
+    {
+      "finding_type": "bearer_token",
+      "regex": "\\bBearer\\s+[A-Za-z0-9._~+/=-]{16,}\\b",
+      "replacement": "[REDACTED_BEARER_TOKEN]"
+    },
+    {
+      "finding_type": "jwt",
+      "regex": "\\beyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\b",
+      "replacement": "[REDACTED_JWT]"
+    },
+    {
+      "finding_type": "private_key",
+      "regex": "-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY-----[\\s\\S]*?-----END (?:RSA |OPENSSH )?PRIVATE KEY-----",
+      "replacement": "[REDACTED_PRIVATE_KEY]"
+    }
+  ],
+  "sensitive_keys": [
+    "password",
+    "passwd",
+    "pwd",
+    "secret",
+    "token",
+    "api_key",
+    "apikey",
+    "access_token",
+    "refresh_token",
+    "client_secret",
+    "private_key",
+    "authorization",
+    "cookie",
+    "set_cookie",
+    "session",
+    "jwt",
+    "credit_card",
+    "card_number",
+    "cvv",
+    "ssn",
+    "social_security",
+    "bank_account",
+    "routing_number"
+  ],
+  "contexts": {
+    "log": "mask",
+    "prompt": "mask",
+    "audit": "mask",
+    "screen_summary": "mask",
+    "screenshot_metadata": "mask",
+    "lead_summary": "partial",
+    "crm_payload": "mask",
+    "knowledge_chunk": "mask"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/policy-decision.schema.json",
+  "title": "PolicyDecision",
+  "type": "object",
+  "required": ["decision_id", "decision", "risk_level", "risk_score", "requires_confirmation", "reason_codes", "matched_rules", "actor", "resource", "organization_id", "session_id", "trace_id", "created_at"],
+  "additionalProperties": false,
+  "properties": {
+    "decision_id": { "type": "string" },
+    "decision": { "type": "string", "enum": ["allowed", "blocked", "confirmation_required", "not_applicable"] },
+    "risk_level": { "type": "string", "enum": ["low", "medium", "high", "blocked", "unknown"] },
+    "risk_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "requires_confirmation": { "type": "boolean" },
+    "reason_codes": { "type": "array", "items": { "type": "string" } },
+    "matched_rules": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "actor": { "type": "object", "additionalProperties": true },
+    "resource": { "type": "object", "additionalProperties": true },
+    "organization_id": { "type": "string" },
+    "session_id": { "type": ["string", "null"] },
+    "trace_id": { "type": "string" },
+    "created_at": { "type": "string" }
+  }
+}

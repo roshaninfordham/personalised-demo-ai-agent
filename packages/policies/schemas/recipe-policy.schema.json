@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/recipe-policy.schema.json",
+  "title": "RecipePolicy",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {
+    "allowed_actions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "required": ["action_type", "label_pattern", "risk_level_max"],
+        "additionalProperties": false,
+        "properties": {
+          "action_type": { "type": "string" },
+          "label_pattern": { "type": "string" },
+          "risk_level_max": { "type": "string" }
+        }
+      }
+    },
+    "never_click": { "type": "array", "maxItems": 100, "items": { "type": "string" } },
+    "allowed_domains": { "type": "array", "maxItems": 50, "items": { "type": "string" } },
+    "allowed_form_fields": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "required": ["field_label_pattern", "field_type", "max_chars"],
+        "additionalProperties": false,
+        "properties": {
+          "field_label_pattern": { "type": "string" },
+          "field_type": { "type": "string" },
+          "max_chars": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "confirmation_required_actions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "required": ["action_type", "label_pattern", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "action_type": { "type": "string" },
+          "label_pattern": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

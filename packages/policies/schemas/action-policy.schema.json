@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/action-policy.schema.json",
+  "title": "ActionPolicyRules",
+  "type": "object",
+  "required": ["version", "weights", "categories", "forbidden_authority", "sensitive_field_phrases"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer" },
+    "weights": { "type": "object", "additionalProperties": { "type": "number" } },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "risk_level", "default_decision", "reason_code", "phrases"],
+        "additionalProperties": false,
+        "properties": {
+          "category": { "type": "string" },
+          "risk_level": { "type": "string" },
+          "default_decision": { "type": "string" },
+          "reason_code": { "type": "string" },
+          "phrases": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "forbidden_authority": {
+      "type": "object",
+      "required": ["javascript_markers", "selector_markers"],
+      "additionalProperties": false,
+      "properties": {
+        "javascript_markers": { "type": "array", "items": { "type": "string" } },
+        "selector_markers": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "sensitive_field_phrases": { "type": "array", "items": { "type": "string" } }
+  }
+}

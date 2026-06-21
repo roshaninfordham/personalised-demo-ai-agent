@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/redaction.schema.json",
+  "title": "RedactionRules",
+  "type": "object",
+  "required": ["version", "patterns", "sensitive_keys", "contexts"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer" },
+    "patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_type", "regex", "replacement"],
+        "additionalProperties": false,
+        "properties": {
+          "finding_type": { "type": "string" },
+          "regex": { "type": "string" },
+          "replacement": { "type": "string" }
+        }
+      }
+    },
+    "sensitive_keys": { "type": "array", "items": { "type": "string" } },
+    "contexts": { "type": "object", "additionalProperties": { "type": "string" } }
+  }
+}

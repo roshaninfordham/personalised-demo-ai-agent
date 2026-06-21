@@ -1,0 +1,21 @@
+{
+  "kind": "action_policy",
+  "request": {
+    "action_type": "click_element",
+    "action_label": "Invite User",
+    "element_role": "button",
+    "element_label": "Invite User",
+    "element_text": "Invite",
+    "surrounding_text": "Team members",
+    "input_type": null,
+    "current_url": "https://example.com/team",
+    "target_url": null,
+    "allowed_domains": ["example.com"],
+    "recipe_never_click": []
+  },
+  "expected": {
+    "decision": "confirmation_required",
+    "risk_level": "high",
+    "reason_code": "high_risk_requires_confirmation"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "kind": "action_policy",
+  "request": {
+    "action_type": "click_element",
+    "action_label": "Delete Project",
+    "element_role": "button",
+    "element_label": "Delete Project",
+    "element_text": "Delete Project",
+    "surrounding_text": "Project settings",
+    "input_type": null,
+    "current_url": "https://example.com/settings",
+    "target_url": null,
+    "allowed_domains": ["example.com"],
+    "recipe_never_click": []
+  },
+  "expected": {
+    "decision": "blocked",
+    "risk_level": "blocked",
+    "reason_code": "blocked_destructive_action"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "kind": "action_policy",
+  "request": {
+    "action_type": "click_element",
+    "action_label": "Export",
+    "element_role": "button",
+    "element_label": "Export",
+    "element_text": "Export",
+    "surrounding_text": "Reports",
+    "input_type": null,
+    "current_url": "https://example.com/reports",
+    "target_url": null,
+    "allowed_domains": ["example.com"],
+    "recipe_never_click": ["Export"]
+  },
+  "expected": {
+    "decision": "blocked",
+    "risk_level": "blocked",
+    "reason_code": "recipe_never_click_match"
+  }
+}
