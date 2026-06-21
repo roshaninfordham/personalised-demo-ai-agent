@@ -1,0 +1,10 @@
+{
+  "screen_id": "screen_settings",
+  "screen_hash": "hash_settings",
+  "url_path": "/settings/billing",
+  "title": "Billing Settings",
+  "summary": "Billing and payment settings.",
+  "visible_text": "Billing Payment Delete Account",
+  "screen_type": "settings",
+  "confidence": 0.9
+}

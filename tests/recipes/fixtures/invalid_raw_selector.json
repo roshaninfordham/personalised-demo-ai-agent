@@ -1,0 +1,12 @@
+{
+  "recipe_name": "Bad Recipe",
+  "demo_goal": "Selector.",
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "selector",
+      "goal": "Click raw selector",
+      "click_hint": "#settings-button"
+    }
+  ]
+}

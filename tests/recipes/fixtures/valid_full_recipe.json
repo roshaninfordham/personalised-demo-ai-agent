@@ -1,0 +1,61 @@
+{
+  "recipe_name": "Founder Analytics Demo",
+  "target_persona": "founder",
+  "demo_goal": "Show how a founder can understand business metrics quickly.",
+  "global_talk_track": "Keep the story focused on speed to insight.",
+  "never_click": ["Delete", "Billing", "Invite", "Payment"],
+  "allowed_domains": ["example.com", "*.example.com"],
+  "allowed_form_fields": [
+    {
+      "field_label_pattern": "Metric Name",
+      "field_type": "text",
+      "max_chars": 120
+    }
+  ],
+  "confirmation_required_actions": [
+    {
+      "action_type": "type_demo_text",
+      "label_pattern": "Save",
+      "reason": "Saving may change demo data"
+    }
+  ],
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "overview",
+      "goal": "Show dashboard overview.",
+      "phase": "OVERVIEW",
+      "screen_hint": "dashboard or metrics overview",
+      "click_hint": null,
+      "talk_track": "This is where the team sees business performance.",
+      "allowed_actions": ["read_current_screen", "highlight_element", "scroll"],
+      "success_criteria": ["dashboard visible", "metric cards visible"],
+      "fallback_strategy": "If dashboard is not visible, read the current screen and explain what can be verified.",
+      "max_attempts": 2,
+      "required": true
+    },
+    {
+      "step_order": 1,
+      "step_key": "core_workflow",
+      "goal": "Show metric creation.",
+      "phase": "CORE_WORKFLOW",
+      "screen_hint": "dashboard",
+      "click_hint": "Add Metric",
+      "talk_track": "Now I’ll show how a team defines a metric.",
+      "allowed_actions": ["highlight_element", "click_element"],
+      "success_criteria": ["metric creation modal visible"],
+      "fallback_strategy": "If Add Metric is not visible, ask whether to continue with Reports.",
+      "max_attempts": 2,
+      "required": false
+    },
+    {
+      "step_order": 2,
+      "step_key": "recap",
+      "goal": "Recap verified areas.",
+      "phase": "SUMMARY",
+      "allowed_actions": [],
+      "success_criteria": ["recap delivered"],
+      "required": true
+    }
+  ]
+}

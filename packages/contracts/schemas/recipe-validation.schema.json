@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/recipe-validation.schema.json",
+  "title": "RecipeValidationContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "RecipeValidationSummary": {
+      "type": "object",
+      "required": ["valid", "error_count", "warning_count"],
+      "additionalProperties": false,
+      "properties": {
+        "valid": { "type": "boolean" },
+        "error_count": { "type": "integer" },
+        "warning_count": { "type": "integer" }
+      }
+    }
+  }
+}

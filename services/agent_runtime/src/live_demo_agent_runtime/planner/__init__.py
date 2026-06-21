@@ -1,1 +1,1 @@
-"""Demo phase planner."""
+"""Recipe planner adapters for the realtime agent runtime."""

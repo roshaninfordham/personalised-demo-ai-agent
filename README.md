@@ -1508,6 +1508,49 @@ make learner-test-integration
 Phase 10 implements the learner foundation. It does not implement autonomous destructive workflows,
 full product intelligence, visual screenshot redaction, CRM export, or browser runtime internals.
 
+## Phase 11 Demo Recipe Engine
+
+Phase 11 adds the deterministic recipe layer used by the realtime agent. Recipes can be authored as
+JSON or generated from text guidance, but generated output is treated as untrusted until it passes
+schema validation, semantic safety checks, redaction checks, and policy-compatible compilation.
+
+Recipe flow:
+
+- Raw recipe JSON or text guidance is validated in the cold path.
+- Safe defaults merge global never-click items such as Delete, Billing, Invite, Send, Publish,
+  Upgrade, Payment, and Account Settings.
+- The compiler writes a bounded `compiled_demo_recipes` artifact and caches it in Redis at
+  `live_demo:recipe:{recipe_id}:compiled`.
+- The hot path reads only the compiled active step, adjacent step brief, progress ratio, and
+  never-click summary instead of raw recipe JSON.
+
+Runtime behavior:
+
+- `RecipeToScreenMatcher` maps steps to screens/actions using deterministic token similarity,
+  screen metadata, safe actions, risk level, and graph confidence.
+- `RecipeProgressTracker` records pending, in-progress, completed, skipped, failed, adapted, and
+  blocked step states in Postgres and Redis.
+- `FallbackStrategyHandler` chooses safe fallbacks such as read current screen, safe go back,
+  safe alternative action, ask user, explain uncertainty, skip optional step, or enter recovery.
+
+Safety:
+
+- Recipes cannot contain executable JavaScript or raw selector authority.
+- Recipe policy can make execution stricter but cannot bypass global hard blocks.
+- `never_click` overrides allowed actions, and global destructive/payment blocks override recipes.
+- Guidance is redacted before generation, and generated recipes are draft/provisional by default.
+- Phase 11 does not make LLM-generated recipes active automatically.
+
+Local verification:
+
+```bash
+make recipe-test
+make recipe-test-integration
+```
+
+Phase 11 implements the recipe engine foundation. It does not implement a visual recipe editor,
+pixel-level screenshot redaction, or autonomous high-risk confirmation workflows.
+
 ## Troubleshooting
 
 If `uv sync --all-packages` fails because no compatible Python is installed, allow `uv` to install Python `3.12` or install Python `3.12` manually.

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/compiled-recipe.schema.json",
+  "title": "CompiledRecipeContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "CompiledRecipeStatus": {
+      "type": "string",
+      "enum": ["active", "stale", "invalid", "archived"]
+    },
+    "CompiledRecipeArtifact": {
+      "type": "object",
+      "required": ["recipe_id", "recipe_hash", "compiled_hash", "compiled_payload", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "recipe_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "recipe_hash": { "type": "string" },
+        "compiled_hash": { "type": "string" },
+        "compiled_payload": { "type": "object", "additionalProperties": true },
+        "status": {
+          "$ref": "https://schemas.live-demo-agent.local/compiled-recipe.schema.json#/$defs/CompiledRecipeStatus"
+        }
+      }
+    }
+  }
+}

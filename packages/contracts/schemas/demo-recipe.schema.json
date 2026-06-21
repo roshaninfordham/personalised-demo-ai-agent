@@ -11,6 +11,45 @@
       "type": "string",
       "enum": ["draft", "active", "archived"]
     },
+    "RecipeProgressStatus": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "completed", "skipped", "failed", "adapted", "blocked"]
+    },
+    "RecipeDemoPhase": {
+      "type": "string",
+      "enum": ["START", "DISCOVERY", "OVERVIEW", "CORE_WORKFLOW", "DEEP_DIVE", "Q_AND_A", "SUMMARY", "END", "RECOVERY"]
+    },
+    "RecipeValidationIssue": {
+      "type": "object",
+      "required": ["path", "code", "message", "severity"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "severity": { "type": "string", "enum": ["error", "warning"], "default": "error" }
+      }
+    },
+    "AllowedFormFieldInput": {
+      "type": "object",
+      "required": ["field_label_pattern", "field_type", "max_chars"],
+      "additionalProperties": false,
+      "properties": {
+        "field_label_pattern": { "type": "string" },
+        "field_type": { "type": "string", "default": "text" },
+        "max_chars": { "type": "integer", "default": 120 }
+      }
+    },
+    "ConfirmationRequiredActionInput": {
+      "type": "object",
+      "required": ["action_type", "label_pattern", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "action_type": { "type": "string" },
+        "label_pattern": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
     "DemoStep": {
       "type": "object",
       "required": ["step_id", "step_order", "step_key", "goal"],
@@ -19,42 +58,20 @@
         "step_id": {
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
-        "step_order": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "step_key": {
-          "type": "string"
-        },
-        "goal": {
-          "type": "string"
-        },
-        "screen_hint": {
-          "type": "string"
-        },
-        "click_hint": {
-          "type": "string"
-        },
-        "talk_track": {
-          "type": "string"
-        },
-        "allowed_actions": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        },
-        "success_criteria": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        },
-        "fallback_strategy": {
-          "type": "string"
-        }
+        "step_order": { "type": "integer", "minimum": 0 },
+        "step_key": { "type": "string" },
+        "goal": { "type": "string" },
+        "phase": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeDemoPhase" },
+        "screen_hint": { "type": "string" },
+        "click_hint": { "type": "string" },
+        "talk_track": { "type": "string" },
+        "allowed_actions": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "success_criteria": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "fallback_strategy": { "type": "string" },
+        "max_attempts": { "type": "integer", "default": 2 },
+        "required": { "type": "boolean", "default": true },
+        "confidence": { "type": "number", "default": 1.0 },
+        "source_references": { "type": "array", "items": { "type": "string" }, "default": [] }
       }
     },
     "DemoStepInput": {
@@ -62,41 +79,72 @@
       "required": ["step_order", "step_key", "goal"],
       "additionalProperties": false,
       "properties": {
-        "step_order": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "step_key": {
-          "type": "string"
-        },
-        "goal": {
-          "type": "string"
-        },
-        "screen_hint": {
-          "type": "string"
-        },
-        "click_hint": {
-          "type": "string"
-        },
-        "talk_track": {
-          "type": "string"
-        },
-        "allowed_actions": {
+        "step_order": { "type": "integer", "minimum": 0 },
+        "step_key": { "type": "string" },
+        "goal": { "type": "string" },
+        "phase": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeDemoPhase" },
+        "screen_hint": { "type": "string" },
+        "click_hint": { "type": "string" },
+        "talk_track": { "type": "string" },
+        "allowed_actions": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "success_criteria": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "fallback_strategy": { "type": "string" },
+        "max_attempts": { "type": "integer", "default": 2 },
+        "required": { "type": "boolean", "default": true },
+        "confidence": { "type": "number", "default": 1.0 },
+        "source_references": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "CreateDemoRecipeRequest": {
+      "type": "object",
+      "required": ["recipe_name", "demo_goal", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "recipe_name": { "type": "string" },
+        "target_persona": { "type": "string" },
+        "demo_goal": { "type": "string" },
+        "never_click": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "allowed_domains": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "allowed_form_fields": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/AllowedFormFieldInput" },
           "default": []
         },
-        "success_criteria": {
+        "confirmation_required_actions": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/ConfirmationRequiredActionInput" },
           "default": []
         },
-        "fallback_strategy": {
-          "type": "string"
+        "global_talk_track": { "type": "string" },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoStepInput" },
+          "minItems": 1
+        }
+      }
+    },
+    "UpdateDemoRecipeRequest": {
+      "type": "object",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "recipe_name": { "type": "string" },
+        "target_persona": { "type": "string" },
+        "demo_goal": { "type": "string" },
+        "never_click": { "type": "array", "items": { "type": "string" } },
+        "allowed_domains": { "type": "array", "items": { "type": "string" } },
+        "allowed_form_fields": {
+          "type": "array",
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/AllowedFormFieldInput" }
+        },
+        "confirmation_required_actions": {
+          "type": "array",
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/ConfirmationRequiredActionInput" }
+        },
+        "global_talk_track": { "type": "string" },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoStepInput" }
         }
       }
     },
@@ -122,38 +170,20 @@
         "product_id": {
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
-        "recipe_name": {
-          "type": "string"
-        },
-        "target_persona": {
-          "type": "string"
-        },
-        "demo_goal": {
-          "type": "string"
-        },
+        "recipe_name": { "type": "string" },
+        "target_persona": { "type": "string" },
+        "demo_goal": { "type": "string" },
         "status": {
           "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeStatus"
         },
-        "is_active": {
-          "type": "boolean"
-        },
+        "is_active": { "type": "boolean" },
         "steps": {
           "type": "array",
           "minItems": 1,
-          "items": {
-            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoStep"
-          }
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoStep" }
         },
-        "never_click": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        },
-        "global_talk_track": {
-          "type": "string"
-        },
+        "never_click": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "global_talk_track": { "type": "string" },
         "created_at": {
           "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
         },
@@ -162,72 +192,129 @@
         }
       }
     },
-    "CreateDemoRecipeRequest": {
+    "ValidateDemoRecipeRequest": {
       "type": "object",
-      "required": ["recipe_name", "demo_goal", "steps"],
+      "required": ["recipe"],
       "additionalProperties": false,
       "properties": {
-        "recipe_name": {
-          "type": "string"
-        },
-        "target_persona": {
-          "type": "string"
-        },
-        "demo_goal": {
-          "type": "string"
-        },
-        "never_click": {
+        "recipe": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "ValidateDemoRecipeResponse": {
+      "type": "object",
+      "required": ["valid", "errors", "warnings"],
+      "additionalProperties": false,
+      "properties": {
+        "valid": { "type": "boolean" },
+        "errors": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeValidationIssue" },
           "default": []
         },
-        "global_talk_track": {
-          "type": "string"
-        },
-        "steps": {
+        "warnings": {
           "type": "array",
-          "items": {
-            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoStepInput"
-          },
-          "minItems": 1
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeValidationIssue" },
+          "default": []
+        },
+        "normalized_recipe": {
+          "oneOf": [
+            { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/CreateDemoRecipeRequest" },
+            { "type": "null" }
+          ]
         }
       }
     },
-    "UpdateDemoRecipeRequest": {
+    "GenerateDemoRecipeRequest": {
       "type": "object",
-      "required": [],
+      "required": ["text_guidance"],
       "additionalProperties": false,
       "properties": {
-        "recipe_name": {
-          "type": "string"
+        "target_persona": { "type": "string" },
+        "text_guidance": { "type": "string" }
+      }
+    },
+    "GenerateDemoRecipeResponse": {
+      "type": "object",
+      "required": ["recipe", "validation", "generation_run_id", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "recipe": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/CreateDemoRecipeRequest" },
+        "validation": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/ValidateDemoRecipeResponse" },
+        "generation_run_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
-        "target_persona": {
-          "type": "string"
+        "recipe_id": {
+          "oneOf": [
+            { "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString" },
+            { "type": "null" }
+          ]
         },
-        "demo_goal": {
-          "type": "string"
+        "status": { "type": "string" }
+      }
+    },
+    "CompiledDemoRecipeResponse": {
+      "type": "object",
+      "required": ["compiled_recipe_id", "recipe_id", "recipe_hash", "compiled_hash", "compiled_payload", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "compiled_recipe_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
-        "never_click": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "recipe_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
         },
-        "global_talk_track": {
-          "type": "string"
+        "recipe_hash": { "type": "string" },
+        "compiled_hash": { "type": "string" },
+        "compiled_payload": { "type": "object", "additionalProperties": true },
+        "status": { "type": "string" }
+      }
+    },
+    "RecipeStepProgressResponse": {
+      "type": "object",
+      "required": ["step_key", "status", "attempt_count", "matched_confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "step_key": { "type": "string" },
+        "status": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeProgressStatus" },
+        "attempt_count": { "type": "integer" },
+        "matched_screen_id": { "type": "string" },
+        "matched_action_id": { "type": "string" },
+        "matched_confidence": { "type": "number" },
+        "failure_reason": { "type": "string" },
+        "evidence": { "type": "object", "additionalProperties": true, "default": {} }
+      }
+    },
+    "RecipeProgressResponse": {
+      "type": "object",
+      "required": ["session_id", "recipe_id", "active_step_key", "steps", "completed_count", "total_count", "progress_ratio"],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "recipe_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "active_step_key": {
+          "oneOf": [{ "type": "string" }, { "type": "null" }]
         },
         "steps": {
           "type": "array",
-          "items": {
-            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoStepInput"
-          }
-        }
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeStepProgressResponse" },
+          "default": []
+        },
+        "completed_count": { "type": "integer" },
+        "total_count": { "type": "integer" },
+        "progress_ratio": { "type": "number" }
       }
     },
-    "DemoRecipeResponse": {
-      "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoRecipe"
+    "ActivateDemoRecipeResponse": {
+      "type": "object",
+      "required": ["recipe"],
+      "additionalProperties": false,
+      "properties": {
+        "recipe": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoRecipe" }
+      }
     },
     "ListDemoRecipesResponse": {
       "type": "object",
@@ -236,87 +323,11 @@
       "properties": {
         "items": {
           "type": "array",
-          "items": {
-            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoRecipe"
-          },
+          "items": { "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoRecipe" },
           "default": []
         },
         "next_cursor": {
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      }
-    },
-    "RecipeValidationIssue": {
-      "type": "object",
-      "required": ["path", "code", "message"],
-      "additionalProperties": false,
-      "properties": {
-        "path": {
-          "type": "string"
-        },
-        "code": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        }
-      }
-    },
-    "RecipeValidationResult": {
-      "type": "object",
-      "required": ["valid", "errors"],
-      "additionalProperties": false,
-      "properties": {
-        "valid": {
-          "type": "boolean"
-        },
-        "errors": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        }
-      }
-    },
-    "ValidateDemoRecipeResponse": {
-      "type": "object",
-      "required": ["valid", "errors", "warnings"],
-      "additionalProperties": false,
-      "properties": {
-        "valid": {
-          "type": "boolean"
-        },
-        "errors": {
-          "type": "array",
-          "items": {
-            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeValidationIssue"
-          },
-          "default": []
-        },
-        "warnings": {
-          "type": "array",
-          "items": {
-            "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/RecipeValidationIssue"
-          },
-          "default": []
-        }
-      }
-    },
-    "ActivateDemoRecipeResponse": {
-      "type": "object",
-      "required": ["recipe"],
-      "additionalProperties": false,
-      "properties": {
-        "recipe": {
-          "$ref": "https://schemas.live-demo-agent.local/demo-recipe.schema.json#/$defs/DemoRecipe"
+          "oneOf": [{ "type": "string" }, { "type": "null" }]
         }
       }
     }

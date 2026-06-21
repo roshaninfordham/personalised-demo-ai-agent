@@ -41,6 +41,26 @@ def latency_key(session_id: UUID | str) -> str:
     return f"{_prefix()}:session:{_segment(session_id)}:latency"
 
 
+def compiled_recipe_key(recipe_id: UUID | str) -> str:
+    return f"{_prefix()}:recipe:{_segment(recipe_id)}:compiled"
+
+
+def recipe_hash_key(recipe_id: UUID | str) -> str:
+    return f"{_prefix()}:recipe:{_segment(recipe_id)}:hash"
+
+
+def recipe_progress_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:recipe_progress"
+
+
+def active_recipe_step_key(session_id: UUID | str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:active_recipe_step"
+
+
+def recipe_match_cache_key(session_id: UUID | str, screen_hash: str) -> str:
+    return f"{_prefix()}:session:{_segment(session_id)}:recipe_match_cache:{_segment(screen_hash)}"
+
+
 def browser_status_key(session_id: UUID | str) -> str:
     return f"{_prefix()}:session:{_segment(session_id)}:browser_status"
 

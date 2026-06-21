@@ -9,6 +9,7 @@ const HEADER = "// Generated from packages/contracts/schemas. Do not edit manual
 
 const FILE_NAME_MAP = new Map<string, string>([
   ["browser-action.schema.json", "browserAction.ts"],
+  ["compiled-recipe.schema.json", "compiledRecipe.ts"],
   ["common.schema.json", "common.ts"],
   ["demo-graph.schema.json", "demoGraph.ts"],
   ["demo-recipe.schema.json", "demoRecipe.ts"],
@@ -19,6 +20,9 @@ const FILE_NAME_MAP = new Map<string, string>([
   ["lead-summary.schema.json", "leadSummary.ts"],
   ["learner-job.schema.json", "learnerJob.ts"],
   ["product-learning.schema.json", "productLearning.ts"],
+  ["recipe-match.schema.json", "recipeMatch.ts"],
+  ["recipe-progress.schema.json", "recipeProgress.ts"],
+  ["recipe-validation.schema.json", "recipeValidation.ts"],
   ["screen-state.schema.json", "screenState.ts"],
   ["transcript.schema.json", "transcript.ts"],
 ]);

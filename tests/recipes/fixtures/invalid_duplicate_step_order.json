@@ -1,0 +1,8 @@
+{
+  "recipe_name": "Bad Recipe",
+  "demo_goal": "Bad order.",
+  "steps": [
+    { "step_order": 0, "step_key": "overview", "goal": "Overview" },
+    { "step_order": 0, "step_key": "workflow", "goal": "Workflow" }
+  ]
+}

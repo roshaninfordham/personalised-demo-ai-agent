@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/recipe-progress.schema.json",
+  "title": "RecipeProgressContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "RecipeProgressEvent": {
+      "type": "object",
+      "required": ["session_id", "recipe_id", "step_key", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "recipe_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "step_key": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    }
+  }
+}

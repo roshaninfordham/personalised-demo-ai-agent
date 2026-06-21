@@ -1,0 +1,1 @@
+Show dashboard first, then metric creation, then reporting. Avoid billing, delete, invite, and payment. Target persona: founder.

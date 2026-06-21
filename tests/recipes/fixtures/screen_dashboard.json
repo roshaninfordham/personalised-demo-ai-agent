@@ -1,0 +1,27 @@
+{
+  "screen_id": "screen_dashboard",
+  "screen_hash": "hash_dashboard",
+  "url_path": "/dashboard",
+  "title": "Dashboard",
+  "summary": "Dashboard with metric cards and revenue KPIs.",
+  "visible_text": "Dashboard Revenue Metrics Add Metric Reports",
+  "screen_type": "dashboard",
+  "confidence": 0.9,
+  "safe_actions": [
+    {
+      "action_id": "act_add_metric",
+      "action_type": "click_element",
+      "label": "Add Metric",
+      "risk_level": "low",
+      "score": 0.93,
+      "reason": "Visible Add Metric button"
+    },
+    {
+      "action_id": "act_delete",
+      "action_type": "click_element",
+      "label": "Delete Project",
+      "risk_level": "blocked",
+      "score": 0.1
+    }
+  ]
+}

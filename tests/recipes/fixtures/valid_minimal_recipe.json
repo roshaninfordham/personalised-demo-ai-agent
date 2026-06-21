@@ -1,0 +1,15 @@
+{
+  "recipe_name": "Founder Metrics Demo",
+  "target_persona": "founder",
+  "demo_goal": "Show the dashboard overview.",
+  "never_click": ["Delete", "Billing"],
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "overview",
+      "goal": "Show dashboard overview",
+      "allowed_actions": ["read_current_screen", "highlight_element", "scroll"],
+      "success_criteria": ["dashboard visible"]
+    }
+  ]
+}

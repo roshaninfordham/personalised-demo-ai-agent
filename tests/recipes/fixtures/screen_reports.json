@@ -1,0 +1,10 @@
+{
+  "screen_id": "screen_reports",
+  "screen_hash": "hash_reports",
+  "url_path": "/reports",
+  "title": "Reports",
+  "summary": "Reports screen with charts and export knowledge.",
+  "visible_text": "Reports Charts Metrics",
+  "screen_type": "reports",
+  "confidence": 0.86
+}

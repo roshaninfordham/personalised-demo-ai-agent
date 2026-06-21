@@ -20,8 +20,10 @@ from live_demo_api.errors import ValidationAppError
 from live_demo_api.events.event_bus import EventBus
 from live_demo_api.security import Principal, RequestContext
 from live_demo_api.services.demo_session_service import DemoSessionService
+from live_demo_api.services.recipe_service import RecipeService
 from live_demo_api.services.transcript_service import TranscriptService
 from live_demo_contracts.browser_action import BrowserActionsResponse
+from live_demo_contracts.demo_recipe import RecipeProgressResponse
 from live_demo_contracts.demo_session import (
     CreateDemoSessionRequest,
     CreateDemoSessionResponse,
@@ -175,6 +177,48 @@ async def get_features_shown(
     principal: Annotated[Principal, Depends(get_current_principal)],
 ) -> FeaturesShownResponse:
     return await TranscriptService().features_shown(db, principal, session_id)
+
+
+@router.get("/{session_id}/recipe-progress", response_model=RecipeProgressResponse)
+async def get_recipe_progress(
+    session_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+) -> RecipeProgressResponse:
+    return await RecipeService().initialize_or_get_progress(db, redis, principal, session_id)
+
+
+@router.post("/{session_id}/recipe-progress/{step_key}/skip", response_model=RecipeProgressResponse)
+async def skip_recipe_step(
+    session_id: UUID,
+    step_key: str,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    event_bus: Annotated[EventBus, Depends(get_event_bus)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    request_context: Annotated[RequestContext, Depends(get_request_context)],
+) -> RecipeProgressResponse:
+    return await RecipeService().update_progress_step(
+        db, redis, event_bus, principal, session_id, step_key, "skipped", request_context
+    )
+
+
+@router.post(
+    "/{session_id}/recipe-progress/{step_key}/reset", response_model=RecipeProgressResponse
+)
+async def reset_recipe_step(
+    session_id: UUID,
+    step_key: str,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    event_bus: Annotated[EventBus, Depends(get_event_bus)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    request_context: Annotated[RequestContext, Depends(get_request_context)],
+) -> RecipeProgressResponse:
+    return await RecipeService().update_progress_step(
+        db, redis, event_bus, principal, session_id, step_key, "in_progress", request_context
+    )
 
 
 @product_router.get("", response_model=ListDemoSessionsResponse)

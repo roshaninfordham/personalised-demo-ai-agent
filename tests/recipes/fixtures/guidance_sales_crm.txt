@@ -1,0 +1,1 @@
+Show pipeline first, then lead details, finally recap. Avoid send, invite, billing, and delete. Target persona: sales.

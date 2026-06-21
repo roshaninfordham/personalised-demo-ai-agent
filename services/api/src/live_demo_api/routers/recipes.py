@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response, status
@@ -12,6 +12,7 @@ from live_demo_api.dependencies import (
     get_current_principal,
     get_db_session,
     get_event_bus,
+    get_redis_client,
     get_request_context,
 )
 from live_demo_api.events.event_bus import EventBus
@@ -19,8 +20,11 @@ from live_demo_api.security import Principal, RequestContext
 from live_demo_api.services.recipe_service import RecipeService
 from live_demo_contracts.demo_recipe import (
     ActivateDemoRecipeResponse,
+    CompiledDemoRecipeResponse,
     CreateDemoRecipeRequest,
     DemoRecipe,
+    GenerateDemoRecipeRequest,
+    GenerateDemoRecipeResponse,
     ListDemoRecipesResponse,
     UpdateDemoRecipeRequest,
     ValidateDemoRecipeResponse,
@@ -52,6 +56,31 @@ async def list_recipes(
     cursor: str | None = None,
 ) -> ListDemoRecipesResponse:
     return await RecipeService().list_recipes(db, principal, product_id, limit=limit, cursor=cursor)
+
+
+@router.post("/validate", response_model=ValidateDemoRecipeResponse)
+async def validate_submitted_recipe(
+    product_id: UUID,
+    request: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+) -> ValidateDemoRecipeResponse:
+    return await RecipeService().validate_submitted_recipe(db, principal, product_id, request)
+
+
+@router.post("/generate", response_model=GenerateDemoRecipeResponse)
+async def generate_recipe(
+    product_id: UUID,
+    request: GenerateDemoRecipeRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    event_bus: Annotated[EventBus, Depends(get_event_bus)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    request_context: Annotated[RequestContext, Depends(get_request_context)],
+) -> GenerateDemoRecipeResponse:
+    return await RecipeService().generate_recipe(
+        db, redis, event_bus, principal, product_id, request, request_context
+    )
 
 
 @router.get("/{recipe_id}", response_model=DemoRecipe)
@@ -102,6 +131,32 @@ async def validate_recipe(
     principal: Annotated[Principal, Depends(get_current_principal)],
 ) -> ValidateDemoRecipeResponse:
     return await RecipeService().validate_existing_recipe(db, principal, product_id, recipe_id)
+
+
+@router.post("/{recipe_id}/compile", response_model=CompiledDemoRecipeResponse)
+async def compile_recipe(
+    product_id: UUID,
+    recipe_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    event_bus: Annotated[EventBus, Depends(get_event_bus)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    request_context: Annotated[RequestContext, Depends(get_request_context)],
+) -> CompiledDemoRecipeResponse:
+    return await RecipeService().compile_recipe(
+        db, redis, event_bus, principal, product_id, recipe_id, request_context
+    )
+
+
+@router.get("/{recipe_id}/compiled", response_model=CompiledDemoRecipeResponse)
+async def get_compiled_recipe(
+    product_id: UUID,
+    recipe_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+) -> CompiledDemoRecipeResponse:
+    return await RecipeService().get_compiled_recipe(db, redis, principal, product_id, recipe_id)
 
 
 @router.post("/{recipe_id}/activate", response_model=ActivateDemoRecipeResponse)

@@ -2,6 +2,7 @@
 
 export type * from "./browserAction";
 export type * from "./common";
+export type * from "./compiledRecipe";
 export type * from "./demoGraph";
 export type * from "./demoRecipe";
 export type * from "./demoSession";
@@ -11,5 +12,8 @@ export type * from "./knowledgeRetrieval";
 export type * from "./leadSummary";
 export type * from "./learnerJob";
 export type * from "./productLearning";
+export type * from "./recipeMatch";
+export type * from "./recipeProgress";
+export type * from "./recipeValidation";
 export type * from "./screenState";
 export type * from "./transcript";

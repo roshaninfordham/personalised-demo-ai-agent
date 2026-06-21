@@ -1,0 +1,12 @@
+{
+  "recipe_name": "Bad Recipe",
+  "demo_goal": "Unsafe.",
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "delete_it",
+      "goal": "Delete project",
+      "allowed_actions": ["delete project"]
+    }
+  ]
+}

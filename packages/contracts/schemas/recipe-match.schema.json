@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/recipe-match.schema.json",
+  "title": "RecipeMatchContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "RecipeMatchResult": {
+      "type": "object",
+      "required": ["matched", "step_key", "confidence", "decision", "reason_codes"],
+      "additionalProperties": false,
+      "properties": {
+        "matched": { "type": "boolean" },
+        "step_key": { "type": "string" },
+        "screen_id": { "type": "string" },
+        "action_id": { "type": "string" },
+        "confidence": { "type": "number" },
+        "decision": { "type": "string" },
+        "reason_codes": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    }
+  }
+}

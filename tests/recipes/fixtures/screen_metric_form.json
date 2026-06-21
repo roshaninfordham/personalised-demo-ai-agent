@@ -1,0 +1,10 @@
+{
+  "screen_id": "screen_metric_form",
+  "screen_hash": "hash_metric_form",
+  "url_path": "/metrics/new",
+  "title": "Create Metric",
+  "summary": "Metric creation form with metric name.",
+  "visible_text": "Create Metric Metric Name",
+  "screen_type": "form",
+  "confidence": 0.8
+}

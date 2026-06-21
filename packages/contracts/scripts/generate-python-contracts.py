@@ -15,6 +15,7 @@ INIT_HEADER = "# Generated from packages/contracts/schemas. Do not edit manually
 
 FILE_NAME_MAP = {
     "browser-action.schema.json": "browser_action.py",
+    "compiled-recipe.schema.json": "compiled_recipe.py",
     "common.schema.json": "common.py",
     "demo-graph.schema.json": "demo_graph.py",
     "demo-recipe.schema.json": "demo_recipe.py",
@@ -25,6 +26,9 @@ FILE_NAME_MAP = {
     "lead-summary.schema.json": "lead_summary.py",
     "learner-job.schema.json": "learner_job.py",
     "product-learning.schema.json": "product_learning.py",
+    "recipe-match.schema.json": "recipe_match.py",
+    "recipe-progress.schema.json": "recipe_progress.py",
+    "recipe-validation.schema.json": "recipe_validation.py",
     "screen-state.schema.json": "screen_state.py",
     "transcript.schema.json": "transcript.py",
 }

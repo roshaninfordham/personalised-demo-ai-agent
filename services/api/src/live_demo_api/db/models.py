@@ -397,6 +397,134 @@ class DemoStep(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
 
 
+class CompiledDemoRecipe(Base):
+    __tablename__ = "compiled_demo_recipes"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "status IN ('active','stale','invalid','archived')",
+            name="compiled_demo_recipes_status",
+        ),
+        sa.UniqueConstraint("recipe_id", "recipe_version", name="uq_compiled_recipes_version"),
+        sa.UniqueConstraint("recipe_id", "recipe_hash", name="uq_compiled_recipes_hash"),
+        sa.Index("ix_compiled_demo_recipes_product_status", "product_id", "status"),
+        sa.Index("ix_compiled_demo_recipes_recipe_status", "recipe_id", "status"),
+    )
+
+    compiled_recipe_id: Mapped[PyUUID] = uuid_pk("compiled_recipe_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    product_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("products.product_id"), nullable=False
+    )
+    recipe_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_recipes.recipe_id"), nullable=False
+    )
+    recipe_version: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default="1")
+    recipe_hash: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    compiled_hash: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    compiled_payload: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="active")
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+    deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+
+class RecipeGenerationRun(Base):
+    __tablename__ = "recipe_generation_runs"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "status IN ('pending','running','completed','failed','validation_failed')",
+            name="recipe_generation_runs_status",
+        ),
+        sa.Index(
+            "ix_recipe_generation_runs_product_created",
+            "product_id",
+            sa.text("created_at DESC"),
+        ),
+        sa.Index("ix_recipe_generation_runs_org_status", "organization_id", "status"),
+    )
+
+    generation_run_id: Mapped[PyUUID] = uuid_pk("generation_run_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    product_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("products.product_id"), nullable=False
+    )
+    source_guidance_id: Mapped[PyUUID | None] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("product_guidance.guidance_id")
+    )
+    status: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="pending")
+    provider: Mapped[str | None] = mapped_column(sa.Text)
+    model: Mapped[str | None] = mapped_column(sa.Text)
+    input_hash: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    output_hash: Mapped[str | None] = mapped_column(sa.Text)
+    validation_passed: Mapped[bool | None] = mapped_column(sa.Boolean)
+    error_code: Mapped[str | None] = mapped_column(sa.Text)
+    error_message: Mapped[str | None] = mapped_column(sa.Text)
+    created_at: Mapped[datetime] = created_at_column()
+    finished_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+
+class RecipeStepProgress(Base):
+    __tablename__ = "recipe_step_progress"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "status IN ("
+            "'pending','in_progress','completed','skipped','failed','adapted','blocked'"
+            ")",
+            name="recipe_step_progress_status",
+        ),
+        sa.CheckConstraint("attempt_count >= 0", name="recipe_step_progress_attempt_non_negative"),
+        sa.CheckConstraint(
+            "matched_confidence >= 0 AND matched_confidence <= 1",
+            name="recipe_step_progress_confidence_range",
+        ),
+        sa.CheckConstraint(
+            "jsonb_typeof(evidence) = 'object'", name="recipe_step_progress_evidence_object"
+        ),
+        sa.UniqueConstraint("session_id", "step_id", name="uq_recipe_step_progress_session_step"),
+        sa.Index("ix_recipe_step_progress_session_status", "session_id", "status"),
+        sa.Index("ix_recipe_step_progress_session_recipe", "session_id", "recipe_id"),
+    )
+
+    recipe_step_progress_id: Mapped[PyUUID] = uuid_pk("recipe_step_progress_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    session_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id"), nullable=False
+    )
+    recipe_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_recipes.recipe_id"), nullable=False
+    )
+    step_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_steps.step_id"), nullable=False
+    )
+    step_key: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    status: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="pending")
+    attempt_count: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default="0")
+    matched_screen_id: Mapped[PyUUID | None] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("screen_snapshots.screen_id")
+    )
+    matched_action_id: Mapped[str | None] = mapped_column(sa.Text)
+    matched_confidence: Mapped[Decimal] = mapped_column(
+        sa.Numeric(4, 3), nullable=False, server_default="0.000"
+    )
+    started_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    skipped_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    failed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    adapted_from_step_id: Mapped[PyUUID | None] = mapped_column(UUID(as_uuid=True))
+    failure_reason: Mapped[str | None] = mapped_column(sa.Text)
+    evidence: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+
+
 class DemoSession(Base):
     __tablename__ = "demo_sessions"
     __table_args__ = (
