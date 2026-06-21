@@ -1,9 +1,10 @@
 # Generated from packages/contracts/schemas. Do not edit manually.
-# ruff: noqa: F401
+# ruff: noqa: E501, F401, RUF100
 
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 

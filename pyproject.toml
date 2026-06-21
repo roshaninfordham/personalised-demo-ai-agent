@@ -10,10 +10,12 @@ package = false
 
 [tool.uv.sources]
 live-demo-backend-common = { workspace = true }
+live-demo-policies = { workspace = true }
 
 [tool.uv.workspace]
 members = [
   "packages/backend_common",
+  "packages/policies",
   "services/api",
   "services/agent_runtime",
   "services/learner_worker",
@@ -42,6 +44,7 @@ src = [
   "services/tts_service/src",
   "services/api/tests",
   "packages/backend_common/src",
+  "packages/policies/generated/python",
   "packages/contracts/generated/python",
 ]
 
@@ -89,6 +92,7 @@ mypy_path = [
   "services/learner_worker/src",
   "services/tts_service/src",
   "packages/backend_common/src",
+  "packages/policies/generated/python",
   "packages/contracts/generated/python",
 ]
 
@@ -121,6 +125,7 @@ pythonpath = [
   "services/learner_worker/src",
   "services/tts_service/src",
   "packages/backend_common/src",
+  "packages/policies/generated/python",
   "packages/contracts/generated/python",
 ]
 asyncio_mode = "auto"

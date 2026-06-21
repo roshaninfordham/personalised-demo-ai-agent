@@ -88,6 +88,21 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.21)(jsdom@29.1.1)
 
+  packages/policies:
+    devDependencies:
+      ajv:
+        specifier: ^8.17.0
+        version: 8.20.0
+      tsx:
+        specifier: ^4.19.0
+        version: 4.22.4
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.19.21)(jsdom@29.1.1)
+
   services/browser_runtime:
     dependencies:
       '@aws-sdk/client-s3':
@@ -99,6 +114,9 @@ importers:
       '@live-demo-agent/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@live-demo-agent/policies':
+        specifier: workspace:*
+        version: link:../../packages/policies
       fastify:
         specifier: ^5.0.0
         version: 5.8.5

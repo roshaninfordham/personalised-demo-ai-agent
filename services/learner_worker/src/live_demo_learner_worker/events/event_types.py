@@ -1,0 +1,20 @@
+"""Learner event type constants."""
+
+from __future__ import annotations
+
+LEARNER_STARTED = "learner.started"
+LEARNER_JOB_STARTED = "learner.job.started"
+LEARNER_JOB_COMPLETED = "learner.job.completed"
+LEARNER_JOB_FAILED = "learner.job.failed"
+LEARNER_FIRST_SCREEN_LOADED = "learner.first_screen.loaded"
+LEARNER_SCREEN_SUMMARY_READY = "learner.screen_summary.ready"
+LEARNER_PRODUCT_CATEGORY_DETECTED = "learner.product_category.detected"
+LEARNER_ACTION_EXPLORATION_STARTED = "learner.action_exploration.started"
+LEARNER_ACTION_EXPLORATION_COMPLETED = "learner.action_exploration.completed"
+LEARNER_DEMO_GRAPH_UPDATED = "learner.demo_graph.updated"
+LEARNER_SCREEN_MATCH_CREATED = "learner.screen_match.created"
+LEARNER_DEMO_ROUTE_GENERATED = "learner.demo_route.generated"
+LEARNER_KNOWLEDGE_CHUNKED = "learner.knowledge.chunked"
+LEARNER_KNOWLEDGE_EMBEDDED = "learner.knowledge.embedded"
+LEARNER_KNOWLEDGE_RETRIEVAL_READY = "learner.knowledge.retrieval.ready"
+LEARNER_FAILED = "learner.failed"

@@ -9,6 +9,7 @@ members = [
     "live-demo-api",
     "live-demo-backend-common",
     "live-demo-learner-worker",
+    "live-demo-policies",
     "live-demo-tts-service",
 ]
 
@@ -513,18 +514,28 @@ name = "live-demo-agent-runtime"
 version = "0.1.0"
 source = { editable = "services/agent_runtime" }
 dependencies = [
+    { name = "asyncpg" },
+    { name = "fastapi" },
+    { name = "httpx" },
     { name = "live-demo-backend-common" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "redis" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "asyncpg", specifier = ">=0.29.0" },
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "live-demo-backend-common", editable = "packages/backend_common" },
     { name = "pydantic", specifier = ">=2.8.0" },
     { name = "pydantic-settings", specifier = ">=2.4.0" },
     { name = "redis", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.0" },
+    { name = "uvicorn", specifier = ">=0.30.0" },
 ]
 
 [[package]]
@@ -567,6 +578,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "boto3" },
     { name = "fastapi" },
+    { name = "live-demo-backend-common" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-sdk" },
     { name = "pgvector" },
@@ -584,6 +596,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "boto3", specifier = ">=1.35.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "live-demo-backend-common", editable = "packages/backend_common" },
     { name = "opentelemetry-api", specifier = ">=1.27.0" },
     { name = "opentelemetry-sdk", specifier = ">=1.27.0" },
     { name = "pgvector", specifier = ">=0.3.0" },
@@ -601,6 +614,7 @@ version = "0.1.0"
 source = { editable = "packages/backend_common" }
 dependencies = [
     { name = "httpx" },
+    { name = "live-demo-policies" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "tenacity" },
@@ -616,6 +630,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.27.0" },
+    { name = "live-demo-policies", editable = "packages/policies" },
     { name = "pydantic", specifier = ">=2.8.0" },
     { name = "pydantic-settings", specifier = ">=2.4.0" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.0" },
@@ -630,21 +645,30 @@ name = "live-demo-learner-worker"
 version = "0.1.0"
 source = { editable = "services/learner_worker" }
 dependencies = [
+    { name = "asyncpg" },
     { name = "httpx" },
     { name = "live-demo-backend-common" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "redis" },
+    { name = "sqlalchemy" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "live-demo-backend-common", editable = "packages/backend_common" },
     { name = "pydantic", specifier = ">=2.8.0" },
     { name = "pydantic-settings", specifier = ">=2.4.0" },
     { name = "redis", specifier = ">=5.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
 ]
+
+[[package]]
+name = "live-demo-policies"
+version = "0.1.0"
+source = { editable = "packages/policies" }
 
 [[package]]
 name = "live-demo-tts-service"

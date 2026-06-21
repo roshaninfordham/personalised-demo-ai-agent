@@ -7,6 +7,7 @@ dependencies = [
   "alembic>=1.13.0",
   "boto3>=1.35.0",
   "fastapi>=0.115.0",
+  "live-demo-backend-common>=0.1.0",
   "uvicorn[standard]>=0.30.0",
   "pydantic>=2.8.0",
   "pydantic-settings>=2.4.0",

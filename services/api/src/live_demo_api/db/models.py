@@ -12,7 +12,7 @@ from uuid import UUID as PyUUID
 
 import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from live_demo_api.db.base import Base
@@ -168,6 +168,153 @@ class ProductGuidance(Base):
     created_at: Mapped[datetime] = created_at_column()
     updated_at: Mapped[datetime] = updated_at_column()
     deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+
+class ProductLearningRun(Base):
+    __tablename__ = "product_learning_runs"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "status IN ('pending','running','completed','failed','cancelled','dead_letter')",
+            name="product_learning_runs_status",
+        ),
+        sa.CheckConstraint(
+            "trigger_type IN ('product_created','session_created','manual','recipe_missing',"
+            "'screen_unknown','scheduled_refresh')",
+            name="product_learning_runs_trigger_type",
+        ),
+        sa.CheckConstraint("attempt_count >= 0", name="product_learning_runs_attempt_non_negative"),
+        sa.CheckConstraint("max_attempts > 0", name="product_learning_runs_max_attempts_positive"),
+        sa.CheckConstraint(
+            "jsonb_typeof(metrics) = 'object'", name="product_learning_runs_metrics_object"
+        ),
+        sa.Index(
+            "ix_product_learning_runs_org_status_created",
+            "organization_id",
+            "status",
+            sa.text("created_at DESC"),
+        ),
+        sa.Index(
+            "ix_product_learning_runs_product_created",
+            "product_id",
+            sa.text("created_at DESC"),
+        ),
+        sa.Index(
+            "ix_product_learning_runs_session_created",
+            "session_id",
+            sa.text("created_at DESC"),
+        ),
+    )
+
+    learning_run_id: Mapped[PyUUID] = uuid_pk("learning_run_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    product_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("products.product_id"), nullable=False
+    )
+    session_id: Mapped[PyUUID | None] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id")
+    )
+    start_url: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    status: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="pending")
+    trigger_type: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    attempt_count: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default="3")
+    started_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(sa.Text)
+    error_message: Mapped[str | None] = mapped_column(sa.Text)
+    metrics: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+
+
+class GeneratedDemoRoute(Base):
+    __tablename__ = "generated_demo_routes"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "route_type IN ('generated','manual','hybrid')", name="generated_demo_routes_route_type"
+        ),
+        sa.CheckConstraint(
+            "status IN ('draft','active','archived','invalid')", name="generated_demo_routes_status"
+        ),
+        sa.CheckConstraint(
+            "confidence >= 0 AND confidence <= 1", name="generated_demo_routes_confidence_range"
+        ),
+        sa.Index("ix_generated_demo_routes_product_status", "product_id", "status"),
+        sa.Index(
+            "ix_generated_demo_routes_product_confidence",
+            "product_id",
+            sa.text("confidence DESC"),
+        ),
+    )
+
+    route_id: Mapped[PyUUID] = uuid_pk("route_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    product_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("products.product_id"), nullable=False
+    )
+    learning_run_id: Mapped[PyUUID | None] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("product_learning_runs.learning_run_id")
+    )
+    route_name: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    route_type: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="generated")
+    target_persona: Mapped[str | None] = mapped_column(sa.Text)
+    status: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="draft")
+    confidence: Mapped[Decimal] = mapped_column(
+        sa.Numeric(4, 3), nullable=False, server_default="0.000"
+    )
+    summary: Mapped[str | None] = mapped_column(sa.Text)
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+    deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+
+class GeneratedDemoRouteStep(Base):
+    __tablename__ = "generated_demo_route_steps"
+    __table_args__ = (
+        sa.CheckConstraint("step_order >= 0", name="generated_demo_route_steps_order_non_negative"),
+        sa.CheckConstraint(
+            "confidence >= 0 AND confidence <= 1",
+            name="generated_demo_route_steps_confidence_range",
+        ),
+        sa.CheckConstraint(
+            "jsonb_typeof(evidence) = 'object'", name="generated_demo_route_steps_evidence_object"
+        ),
+        sa.UniqueConstraint("route_id", "step_order", name="uq_generated_demo_route_steps_order"),
+        sa.UniqueConstraint("route_id", "step_key", name="uq_generated_demo_route_steps_key"),
+    )
+
+    route_step_id: Mapped[PyUUID] = uuid_pk("route_step_id")
+    route_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("generated_demo_routes.route_id"), nullable=False
+    )
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    step_order: Mapped[int] = mapped_column(sa.Integer, nullable=False)
+    step_key: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    phase: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    goal: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    screen_id: Mapped[PyUUID | None] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("screen_snapshots.screen_id")
+    )
+    recommended_action_id: Mapped[str | None] = mapped_column(sa.Text)
+    recommended_action_label: Mapped[str | None] = mapped_column(sa.Text)
+    talk_track: Mapped[str | None] = mapped_column(sa.Text)
+    fallback_strategy: Mapped[str | None] = mapped_column(sa.Text)
+    confidence: Mapped[Decimal] = mapped_column(
+        sa.Numeric(4, 3), nullable=False, server_default="0.000"
+    )
+    evidence: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
 
 
 class DemoRecipe(Base):
@@ -391,6 +538,54 @@ class ScreenSnapshot(Base):
     confidence: Mapped[Decimal] = mapped_column(
         sa.Numeric(4, 3), nullable=False, server_default="0.000"
     )
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class ScreenMatchHistory(Base):
+    __tablename__ = "screen_match_history"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "similarity_score >= 0 AND similarity_score <= 1",
+            name="screen_match_history_similarity_range",
+        ),
+        sa.CheckConstraint(
+            "decision IN ('matched','possible_match','not_match','manual_override')",
+            name="screen_match_history_decision",
+        ),
+        sa.CheckConstraint(
+            "jsonb_typeof(match_features) = 'object'",
+            name="screen_match_history_match_features_object",
+        ),
+        sa.Index(
+            "ix_screen_match_history_product_source",
+            "product_id",
+            "source_screen_id",
+        ),
+        sa.Index(
+            "ix_screen_match_history_product_score",
+            "product_id",
+            sa.text("similarity_score DESC"),
+        ),
+    )
+
+    screen_match_id: Mapped[PyUUID] = uuid_pk("screen_match_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    product_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("products.product_id"), nullable=False
+    )
+    source_screen_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("screen_snapshots.screen_id"), nullable=False
+    )
+    matched_screen_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("screen_snapshots.screen_id"), nullable=False
+    )
+    similarity_score: Mapped[Decimal] = mapped_column(sa.Numeric(5, 4), nullable=False)
+    match_features: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    decision: Mapped[str] = mapped_column(sa.Text, nullable=False)
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -622,6 +817,8 @@ class KnowledgeChunk(Base):
         ),
         sa.Index("ix_knowledge_chunks_product_id_source_type", "product_id", "source_type"),
         sa.Index("ix_knowledge_chunks_organization_id_product_id", "organization_id", "product_id"),
+        sa.Index("ix_knowledge_chunks_product_chunk_type", "product_id", "chunk_type"),
+        sa.Index("ix_knowledge_chunks_product_content_hash", "product_id", "content_hash"),
     )
 
     chunk_id: Mapped[PyUUID] = uuid_pk("chunk_id")
@@ -641,6 +838,14 @@ class KnowledgeChunk(Base):
         "metadata", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
     )
     embedding: Mapped[list[float] | None] = mapped_column(Vector(768))
+    search_vector: Mapped[str | None] = mapped_column(TSVECTOR)
+    chunk_type: Mapped[str | None] = mapped_column(sa.Text)
+    source_confidence: Mapped[Decimal | None] = mapped_column(
+        sa.Numeric(4, 3), server_default="0.000"
+    )
+    redaction_applied: Mapped[bool] = mapped_column(
+        sa.Boolean, nullable=False, server_default=sa.false()
+    )
     created_at: Mapped[datetime] = created_at_column()
     updated_at: Mapped[datetime] = updated_at_column()
     deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
@@ -833,7 +1038,14 @@ class AuditLog(Base):
         sa.Index(
             "ix_audit_logs_organization_id_actor", "organization_id", "actor_type", "actor_id"
         ),
+        sa.Index(
+            "ix_audit_logs_org_action_created",
+            "organization_id",
+            "action",
+            sa.text("created_at DESC"),
+        ),
         sa.Index("ix_audit_logs_resource", "resource_type", "resource_id"),
+        sa.Index("ix_audit_logs_session", "session_id", sa.text("created_at DESC")),
     )
 
     audit_log_id: Mapped[PyUUID] = uuid_pk("audit_log_id")
@@ -845,6 +1057,18 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(sa.Text, nullable=False)
     resource_type: Mapped[str | None] = mapped_column(sa.Text)
     resource_id: Mapped[str | None] = mapped_column(sa.Text)
+    session_id: Mapped[PyUUID | None] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id")
+    )
+    risk_level: Mapped[str | None] = mapped_column(sa.Text)
+    policy_decision: Mapped[str | None] = mapped_column(sa.Text)
+    reason_codes: Mapped[list[str]] = mapped_column(
+        ARRAY(sa.Text), nullable=False, server_default=sa.text("'{}'::text[]")
+    )
+    request_id: Mapped[str | None] = mapped_column(sa.Text)
+    trace_id: Mapped[str | None] = mapped_column(sa.Text)
+    event_hash: Mapped[str | None] = mapped_column(sa.Text)
+    previous_event_hash: Mapped[str | None] = mapped_column(sa.Text)
     metadata_: Mapped[dict[str, object]] = mapped_column(
         "metadata", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
     )

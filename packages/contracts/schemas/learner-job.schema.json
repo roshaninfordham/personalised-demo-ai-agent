@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://live-demo-agent.local/schemas/learner-job.schema.json",
+  "title": "LearnerJobEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "job_id",
+    "organization_id",
+    "product_id",
+    "learning_run_id",
+    "job_type",
+    "start_url",
+    "attempt",
+    "max_attempts",
+    "created_at",
+    "trace_id"
+  ],
+  "properties": {
+    "job_id": { "type": "string", "format": "uuid" },
+    "organization_id": { "type": "string", "format": "uuid" },
+    "product_id": { "type": "string", "format": "uuid" },
+    "session_id": { "type": ["string", "null"], "format": "uuid" },
+    "learning_run_id": { "type": "string", "format": "uuid" },
+    "job_type": {
+      "type": "string",
+      "enum": [
+        "learn_product_from_url",
+        "summarize_first_screen",
+        "explore_candidate_actions",
+        "build_demo_graph",
+        "generate_demo_route",
+        "chunk_product_knowledge",
+        "embed_knowledge_chunks",
+        "refresh_product_learning"
+      ]
+    },
+    "start_url": { "type": "string", "minLength": 1, "maxLength": 2048 },
+    "priority": { "type": "integer", "minimum": 0, "maximum": 100, "default": 50 },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "max_attempts": { "type": "integer", "minimum": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "trace_id": { "type": "string" },
+    "payload": { "type": "object", "additionalProperties": true, "default": {} }
+  }
+}

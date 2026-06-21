@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://live-demo-agent.local/schemas/demo-graph.schema.json",
+  "title": "DemoGraph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["screens", "edges"],
+  "properties": {
+    "screens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["screen_id", "screen_hash", "confidence"],
+        "properties": {
+          "screen_id": { "type": "string", "format": "uuid" },
+          "screen_hash": { "type": "string" },
+          "url_path": { "type": ["string", "null"] },
+          "title": { "type": ["string", "null"] },
+          "summary": { "type": ["string", "null"] },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["edge_id", "action_type", "risk_level", "confidence"],
+        "properties": {
+          "edge_id": { "type": "string", "format": "uuid" },
+          "from_screen_id": { "type": ["string", "null"], "format": "uuid" },
+          "to_screen_id": { "type": ["string", "null"], "format": "uuid" },
+          "action_type": { "type": "string" },
+          "action_label": { "type": ["string", "null"] },
+          "risk_level": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    }
+  }
+}

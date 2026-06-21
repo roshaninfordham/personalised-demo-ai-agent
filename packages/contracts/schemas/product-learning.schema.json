@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://live-demo-agent.local/schemas/product-learning.schema.json",
+  "title": "ProductLearningRun",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "learning_run_id",
+    "organization_id",
+    "product_id",
+    "start_url",
+    "status",
+    "trigger_type",
+    "attempt_count",
+    "max_attempts",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "learning_run_id": { "type": "string", "format": "uuid" },
+    "organization_id": { "type": "string", "format": "uuid" },
+    "product_id": { "type": "string", "format": "uuid" },
+    "session_id": { "type": ["string", "null"], "format": "uuid" },
+    "start_url": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "running", "completed", "failed", "cancelled", "dead_letter"]
+    },
+    "trigger_type": {
+      "type": "string",
+      "enum": [
+        "product_created",
+        "session_created",
+        "manual",
+        "recipe_missing",
+        "screen_unknown",
+        "scheduled_refresh"
+      ]
+    },
+    "attempt_count": { "type": "integer", "minimum": 0 },
+    "max_attempts": { "type": "integer", "minimum": 1 },
+    "error_code": { "type": ["string", "null"] },
+    "metrics": { "type": "object", "additionalProperties": true },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  }
+}

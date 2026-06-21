@@ -18,10 +18,13 @@ from live_demo_api.logging_config import configure_logging
 from live_demo_api.middleware import setup_middleware
 from live_demo_api.observability.tracing import configure_tracing
 from live_demo_api.routers import (
+    audit_logs,
     demo_sessions,
     guidance,
     health,
     lead_summaries,
+    learner,
+    policy_debug,
     products,
     recipes,
     transcripts,
@@ -80,4 +83,8 @@ def create_app() -> FastAPI:
     app.include_router(demo_sessions.product_router)
     app.include_router(transcripts.router)
     app.include_router(lead_summaries.router)
+    app.include_router(learner.router)
+    app.include_router(audit_logs.router)
+    if settings.policy_debug_endpoints_enabled:
+        app.include_router(policy_debug.router)
     return app

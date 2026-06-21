@@ -1,0 +1,6 @@
+{
+  "turns": [
+    { "speaker": "user", "text": "Can I export reports?" },
+    { "speaker": "assistant", "text": "I can verify export only if it is visible or sourced." }
+  ]
+}

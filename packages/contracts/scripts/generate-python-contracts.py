@@ -9,17 +9,22 @@ CONTRACTS_ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = CONTRACTS_ROOT / "schemas"
 OUT_DIR = CONTRACTS_ROOT / "generated" / "python" / "live_demo_contracts"
 BASE_HEADER = "# Generated from packages/contracts/schemas. Do not edit manually.\n"
-NOQA_HEADER = BASE_HEADER + "# ruff: noqa: F401\n\n"
+NOQA_HEADER = BASE_HEADER + "# ruff: noqa: E501, F401, RUF100\n\n"
 PLAIN_HEADER = BASE_HEADER + "\n"
 INIT_HEADER = "# Generated from packages/contracts/schemas. Do not edit manually.\n\n"
 
 FILE_NAME_MAP = {
     "browser-action.schema.json": "browser_action.py",
     "common.schema.json": "common.py",
+    "demo-graph.schema.json": "demo_graph.py",
     "demo-recipe.schema.json": "demo_recipe.py",
     "demo-session.schema.json": "demo_session.py",
     "event.schema.json": "event.py",
+    "generated-route.schema.json": "generated_route.py",
+    "knowledge-retrieval.schema.json": "knowledge_retrieval.py",
     "lead-summary.schema.json": "lead_summary.py",
+    "learner-job.schema.json": "learner_job.py",
+    "product-learning.schema.json": "product_learning.py",
     "screen-state.schema.json": "screen_state.py",
     "transcript.schema.json": "transcript.py",
 }
@@ -74,11 +79,20 @@ def python_type(schema: dict[str, Any]) -> str:
     if isinstance(one_of, list):
         return " | ".join(python_type(item) for item in one_of if isinstance(item, dict))
 
+    any_of = schema.get("anyOf")
+    if isinstance(any_of, list):
+        return " | ".join(python_type(item) for item in any_of if isinstance(item, dict))
+
     enum = schema.get("enum")
     if isinstance(enum, list):
-        return " | ".join(json.dumps(item) for item in enum if isinstance(item, str))
+        values = ", ".join(json.dumps(item) for item in enum if isinstance(item, str))
+        return f"Literal[{values}]"
 
     schema_type = schema.get("type")
+    if isinstance(schema_type, list):
+        return " | ".join(
+            python_type({**schema, "type": item}) for item in schema_type if isinstance(item, str)
+        )
     if schema_type == "string":
         return "str"
     if schema_type == "integer":
@@ -98,6 +112,8 @@ def python_type(schema: dict[str, Any]) -> str:
         additional_properties = schema.get("additionalProperties")
         if isinstance(additional_properties, dict):
             return f"dict[str, {python_type(additional_properties)}]"
+        if additional_properties is True:
+            return "dict[str, JsonValue]"
         return "dict[str, JsonValue]"
 
     raise ValueError(f"Unsupported schema type: {schema}")
@@ -168,10 +184,23 @@ def uses_field(schema: Any) -> bool:
     return False
 
 
+def uses_literal(schema: Any) -> bool:
+    if isinstance(schema, dict):
+        if isinstance(schema.get("enum"), list):
+            return True
+        return any(uses_literal(value) for value in schema.values())
+    if isinstance(schema, list):
+        return any(uses_literal(item) for item in schema)
+    return False
+
+
 def render_file(schema_file_name: str, schema: dict[str, Any]) -> str:
     defs = schema.get("$defs")
     if not isinstance(defs, dict):
-        raise TypeError(f"{schema_file_name} must define $defs")
+        title = schema.get("title")
+        if not isinstance(title, str):
+            raise TypeError(f"{schema_file_name} must define $defs or string title")
+        defs = {title: schema}
 
     pydantic_imports = ["BaseModel", "ConfigDict"]
     if uses_field(schema):
@@ -181,9 +210,12 @@ def render_file(schema_file_name: str, schema: dict[str, Any]) -> str:
         "from __future__ import annotations",
         "",
         "from enum import StrEnum",
-        "",
-        f"from pydantic import {', '.join(pydantic_imports)}",
     ]
+    if uses_literal(schema):
+        imports.extend(["from typing import Literal", ""])
+    else:
+        imports.append("")
+    imports.append(f"from pydantic import {', '.join(pydantic_imports)}")
 
     if schema_file_name != "common.schema.json":
         imports.extend(
@@ -201,7 +233,7 @@ def render_file(schema_file_name: str, schema: dict[str, Any]) -> str:
         if isinstance(definition, dict)
     )
 
-    header = NOQA_HEADER if schema_file_name != "common.schema.json" else PLAIN_HEADER
+    header = NOQA_HEADER
     separator = "\n\n\n" if schema_file_name != "common.schema.json" else "\n\n"
     return header + "\n".join(imports) + separator + body
 

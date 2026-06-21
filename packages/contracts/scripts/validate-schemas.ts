@@ -9,10 +9,15 @@ const SCHEMA_DIR = join(CONTRACTS_ROOT, "schemas");
 const EXPECTED_FILES = [
   "browser-action.schema.json",
   "common.schema.json",
+  "demo-graph.schema.json",
   "demo-recipe.schema.json",
   "demo-session.schema.json",
   "event.schema.json",
+  "generated-route.schema.json",
+  "knowledge-retrieval.schema.json",
   "lead-summary.schema.json",
+  "learner-job.schema.json",
+  "product-learning.schema.json",
   "screen-state.schema.json",
   "transcript.schema.json",
 ];

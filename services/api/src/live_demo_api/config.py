@@ -80,6 +80,47 @@ class ApiSettings(BaseSettings):
     rate_limit_default_per_minute: int = 120
     enable_tracing: bool = False
 
+    policy_engine_enabled: bool = True
+    policy_fail_closed: bool = True
+    policy_debug_endpoints_enabled: bool = False
+    policy_max_text_chars: int = 8000
+    policy_max_rules_per_recipe: int = 100
+
+    allow_destructive_actions: bool = False
+    require_confirmation_for_high_risk: bool = True
+    allow_payment_pages: bool = False
+    allow_external_navigation: bool = False
+    allow_account_settings_actions: bool = False
+    action_policy_confirmation_ttl_seconds: int = 120
+
+    rbac_enabled: bool = True
+    rbac_local_dev_allow_header_principal: bool = True
+    rbac_agent_runtime_role: str = "agent_runtime"
+
+    audit_logging_enabled: bool = True
+    audit_fail_closed_for_high_risk: bool = True
+    audit_hash_chain_enabled: bool = False
+    audit_metadata_max_bytes: int = 32768
+    audit_read_max_page_size: int = 100
+
+    redaction_enabled: bool = True
+    redaction_hash_secret: SecretStr = SecretStr("")
+    redaction_fail_on_secret_in_prompt: bool = True
+    redaction_max_text_chars: int = 100000
+    redaction_max_json_depth: int = 10
+    redaction_max_json_keys: int = 5000
+    redaction_customer_name_list: str = ""
+    redaction_visual_screenshot_redaction_enabled: bool = False
+
+    learner_enabled: bool = True
+    learner_job_stream: str = "live_demo:stream:learner:jobs"
+    learner_consumer_group: str = "learner-worker"
+    learner_max_attempts: int = 3
+    learner_job_enqueue_maxlen: int = 10000
+    generated_route_activate_automatically: bool = False
+    knowledge_retrieval_top_k: int = 5
+    knowledge_retrieval_min_score: float = 0.72
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -1,0 +1,5 @@
+{
+  "title": "Settings",
+  "visible_text": "Account Settings Billing Payment Delete Workspace",
+  "safe_actions": ["Billing", "Delete Workspace"]
+}

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response, status
@@ -12,10 +12,12 @@ from live_demo_api.dependencies import (
     get_current_principal,
     get_db_session,
     get_event_bus,
+    get_redis_client,
     get_request_context,
 )
 from live_demo_api.events.event_bus import EventBus
 from live_demo_api.security import Principal, RequestContext
+from live_demo_api.services.learner_service import LearnerService
 from live_demo_api.services.product_service import ProductService
 from live_demo_contracts.common import (
     CreateProductRequest,
@@ -31,11 +33,23 @@ router = APIRouter(prefix="/api/v1/products", tags=["products"])
 async def create_product(
     request: CreateProductRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
     event_bus: Annotated[EventBus, Depends(get_event_bus)],
     principal: Annotated[Principal, Depends(get_current_principal)],
     request_context: Annotated[RequestContext, Depends(get_request_context)],
 ) -> ProductResponse:
-    return await ProductService().create_product(db, event_bus, principal, request, request_context)
+    response = await ProductService().create_product(
+        db, event_bus, principal, request, request_context
+    )
+    await LearnerService().best_effort_enqueue_product_created(
+        db,
+        redis,
+        principal,
+        product_id=UUID(response.product_id),
+        product_url=response.product_url,
+        request_context=request_context,
+    )
+    return response
 
 
 @router.get("", response_model=ListProductsResponse)

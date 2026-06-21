@@ -10,10 +10,15 @@ const HEADER = "// Generated from packages/contracts/schemas. Do not edit manual
 const FILE_NAME_MAP = new Map<string, string>([
   ["browser-action.schema.json", "browserAction.ts"],
   ["common.schema.json", "common.ts"],
+  ["demo-graph.schema.json", "demoGraph.ts"],
   ["demo-recipe.schema.json", "demoRecipe.ts"],
   ["demo-session.schema.json", "demoSession.ts"],
   ["event.schema.json", "event.ts"],
+  ["generated-route.schema.json", "generatedRoute.ts"],
+  ["knowledge-retrieval.schema.json", "knowledgeRetrieval.ts"],
   ["lead-summary.schema.json", "leadSummary.ts"],
+  ["learner-job.schema.json", "learnerJob.ts"],
+  ["product-learning.schema.json", "productLearning.ts"],
   ["screen-state.schema.json", "screenState.ts"],
   ["transcript.schema.json", "transcript.ts"],
 ]);
@@ -55,6 +60,13 @@ function asObject(value: unknown, context: string): JsonObject {
   return value;
 }
 
+function asString(value: unknown, context: string): string {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`${context} must be a non-empty string`);
+  }
+  return value;
+}
+
 function refName(ref: string): string {
   const parts = ref.split("/");
   const lastPart = parts.at(-1);
@@ -84,10 +96,20 @@ function schemaType(schema: JsonObject): string {
     return oneOf.map((item) => schemaType(asObject(item, "oneOf item"))).join(" | ");
   }
 
+  const anyOf = schema.anyOf;
+  if (Array.isArray(anyOf)) {
+    return anyOf.map((item) => schemaType(asObject(item, "anyOf item"))).join(" | ");
+  }
+
   if (Array.isArray(schema.enum)) {
     return schema.enum.map(literal).join(" | ");
   }
 
+  if (Array.isArray(schema.type)) {
+    return schema.type
+      .map((item) => schemaType({ ...schema, type: item }))
+      .join(" | ");
+  }
   if (schema.type === "string") {
     return "string";
   }
@@ -109,6 +131,9 @@ function schemaType(schema: JsonObject): string {
     const additionalProperties = schema.additionalProperties;
     if (isObject(additionalProperties)) {
       return `Record<string, ${schemaType(additionalProperties)}>`;
+    }
+    if (additionalProperties === true) {
+      return "Record<string, JsonValue>";
     }
     return "Record<string, never>";
   }
@@ -154,7 +179,9 @@ function renderType(name: string, schema: JsonObject): string {
 }
 
 function renderFile(schemaFileName: string, schema: JsonObject): string {
-  const defs = asObject(schema.$defs, `${schemaFileName} $defs`);
+  const defs = isObject(schema.$defs)
+    ? schema.$defs
+    : { [asString(schema.title, `${schemaFileName} title`)]: schema };
   const imports =
     schemaFileName === "common.schema.json"
       ? ""

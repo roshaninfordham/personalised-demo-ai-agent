@@ -116,23 +116,28 @@ services:
       dockerfile: infra/docker/agent-runtime.Dockerfile
     env_file: .env
     environment:
+      DATABASE_URL: postgresql+asyncpg://demo_agent:demo_agent@postgres:5432/demo_agent
       REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8300:8300"
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
-      api:
-        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test:
         [
           "CMD",
           "/app/.venv/bin/python",
           "-c",
-          "from live_demo_agent_runtime.health import health_check; raise SystemExit(0 if health_check()['status'] == 'ok' else 1)",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8300/healthz', timeout=2).read()",
         ]
-      interval: 30s
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - live-demo-agent
 
@@ -183,6 +188,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      api:
+        condition: service_healthy
+      browser-runtime:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test:
         [

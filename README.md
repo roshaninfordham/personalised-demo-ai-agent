@@ -2,7 +2,7 @@
 
 Monorepo foundation for a production-grade, low-latency, secure, deterministic, provider-agnostic AI product-demo agent platform.
 
-Phase 6 provides the monorepo, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, a deterministic Playwright browser runtime, and the frontend live demo UI shell. It does not yet implement the live Pipecat voice agent, AI planner, product learner intelligence, true WebRTC media session, or CRM export workflow.
+Phase 8 provides the monorepo, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, a deterministic Playwright browser runtime, the frontend live demo UI shell, Pipecat voice runtime foundation, and a realtime grounded agent brain. It does not yet implement autonomous product crawling, full product learner intelligence, CRM export workflow, or production WebRTC media infrastructure.
 
 ## What This Repo Is
 
@@ -17,6 +17,8 @@ This repository currently contains:
 - Phase 4 reusable AI provider abstraction package.
 - Phase 5 deterministic browser runtime service.
 - Phase 6 Next.js frontend live demo shell.
+- Phase 7 Pipecat voice runtime foundation.
+- Phase 8 realtime grounded agent brain.
 - Python and TypeScript workspace tooling.
 - Shared JSON Schema contracts with generated Python and TypeScript outputs.
 - Local Docker Compose stack for lightweight development.
@@ -1254,6 +1256,257 @@ Vendor-specific secrets are backend-only. Do not expose provider keys to the fro
 - Browser runtime does not run privileged and does not use host networking.
 - Heavy local AI services are opt-in profiles.
 - `make secrets-check` is a placeholder for adding gitleaks or equivalent in CI.
+
+## Phase 7 Pipecat Voice Runtime
+
+The agent runtime is an internal FastAPI service at `services/agent_runtime`:
+
+```bash
+make agent-dev
+make agent-test
+```
+
+It exposes:
+
+- `GET /healthz`
+- `GET /readyz`
+- `POST /internal/agent/v1/voice-sessions`
+- `GET /internal/agent/v1/voice-sessions/{voice_session_id}`
+- `POST /internal/agent/v1/voice-sessions/{voice_session_id}/start`
+- `POST /internal/agent/v1/voice-sessions/{voice_session_id}/stop`
+- `GET /internal/agent/v1/voice-sessions/{voice_session_id}/join-config`
+
+Voice session lifecycle is deterministic:
+
+```text
+created -> starting -> waiting_for_client -> connected -> active -> stopping -> stopped
+```
+
+The runtime owns provider registries for transport, STT, and TTS. Defaults are no-cost fake
+providers for CI and local development:
+
+- Transport: `small_webrtc`
+- STT: `fake`
+- TTS: `fake`
+
+Optional provider adapters exist as honest skeletons for Daily, Whisper local, whisper.cpp,
+Deepgram, Kokoro, Piper, Cartesia, and custom providers. Provider keys stay server-side and are
+never returned in join config.
+
+Pipeline-specific Pipecat imports are isolated under `pipecat_adapters/`. This keeps Pipecat API
+changes localized when the runtime dependency is pinned. The Phase 7 fake pipeline simulates one
+deterministic turn:
+
+```mermaid
+flowchart LR
+    A["transport.input()"] --> B["Audio Preprocessor"]
+    B --> C["VAD"]
+    C --> D["Turn Detector"]
+    D --> E["STT Provider"]
+    E --> F["User Transcript Sink"]
+    F --> G["Placeholder Responder"]
+    G --> H["Assistant Transcript Sink"]
+    H --> I["TTS Provider"]
+    I --> J["transport.output()"]
+```
+
+Transcript behavior:
+
+- User partials publish to Redis but do not persist by default.
+- User finals publish and persist.
+- Assistant finals publish and persist only after the fake TTS output completes.
+- Interrupted assistant text is estimated from emitted audio/text alignment and marked as interrupted.
+
+Privacy and latency rules:
+
+- Raw audio is not persisted.
+- Provider websocket frames, API keys, and full transcripts are not logged by default.
+- Transcript queues are bounded and drop partials before finals under pressure.
+- Latency metrics use monotonic clock and publish only bounded per-turn events.
+
+Phase 7 implements the voice runtime foundation. It does not implement the final AI demo brain,
+browser-action planner, product learner, or CRM intelligence. The placeholder responder is
+deterministic and intentionally limited.
+
+## Phase 8 Realtime Agent Brain
+
+Phase 8 replaces the placeholder-only voice response path with a bounded realtime host-agent
+runner in `services/agent_runtime/src/live_demo_agent_runtime/agent_brain`.
+
+The runtime flow is:
+
+```mermaid
+sequenceDiagram
+    participant STT as Final Transcript
+    participant Context as Context Builder
+    participant LLM as TextGenerationProvider
+    participant Validator as Output Validator
+    participant Router as Browser Tool Router
+    participant Memory as Memory Handler
+
+    STT->>Context: user utterance + session IDs
+    Context-->>LLM: compact grounded context
+    LLM-->>Validator: strict JSON decision
+    Validator-->>Router: safe action_id only
+    Validator-->>Memory: evidenced memory updates
+```
+
+Key pieces:
+
+- `context/` builds compact source-attributed context from current screen, safe actions, recipe
+  step, recent turns, persona, product summary, bounded knowledge, and safety rules.
+- `prompts/host_agent_system.md` enforces grounded claims, concise speech, uncertainty behavior,
+  and safe action selection.
+- `agent_brain/output_validator.py` validates strict structured JSON, rejects raw selectors and
+  JavaScript, and blocks common unsupported integration/security/pricing claims.
+- `tools/browser_tool_router.py` maps LLM-selected safe `action_id` values to deterministic browser
+  commands and prevents duplicate execution within a turn.
+- `planner/` tracks deterministic demo phases from `START` through `RECOVERY`.
+- `persona/` updates bounded role/interests/pain/objection state using deterministic signals.
+- `memory/` scores, deduplicates, and persists evidenced lead insights without bloating hot-path
+  prompt context.
+
+Local verification:
+
+```bash
+make agent-brain-test
+make agent-test
+```
+
+Phase 8 implements the realtime agent decision layer. It does not implement autonomous crawling,
+full product learner intelligence, CRM export, or new provider SDKs. Browser runtime remains the
+final action execution authority.
+
+## Phase 9 Safety and Policy Layer
+
+Phase 9 adds a shared deterministic policy layer used by API, agent runtime, browser runtime, and
+future learner/export flows. The source of truth is `packages/policies`, with JSON rule files,
+schemas, and generated Python/TypeScript constants.
+
+Policy flow:
+
+```mermaid
+flowchart TD
+    A["Proposed action"] --> B["Normalize input"]
+    B --> C["RBAC check"]
+    C -- missing --> D["blocked: missing_required_permission"]
+    C --> E["Global hard blocks"]
+    E -- match --> F["blocked"]
+    E --> G["Recipe policy"]
+    G -- never_click/domain/field violation --> F
+    G --> H["Risk score"]
+    H -- high --> I["confirmation_required"]
+    H -- low/medium --> J["allowed"]
+```
+
+Policy package:
+
+- `packages/policies/rules/action_safety_rules.json` defines hard-blocked destructive/payment
+  actions, high-risk communication/admin actions, medium form actions, low-risk navigation, and
+  forbidden JavaScript/selector authority.
+- `packages/policies/rules/rbac_permissions.json` defines `owner`, `admin`, `demo_builder`,
+  `viewer`, and `agent_runtime` roles.
+- `packages/policies/rules/redaction_rules.json` defines deterministic text and JSON metadata
+  redaction patterns.
+- `packages/policies/scripts/*` validate rules and regenerate Python and TypeScript outputs.
+
+Action safety:
+
+- Delete/remove/destructive actions are blocked.
+- Billing/payment/upgrade actions are blocked by default.
+- Invite/send/publish/export/account settings require confirmation or are blocked by recipe/global
+  policy.
+- Raw JavaScript and raw selectors are always blocked.
+- External navigation is blocked unless the target domain matches allowed product/recipe domains.
+- Browser runtime remains final execution authority and validates before Playwright execution.
+
+Recipe permissions:
+
+- Recipes can narrow permissions with `allowed_actions`, `never_click`, `allowed_domains`,
+  `allowed_form_fields`, and `confirmation_required_actions`.
+- Recipe policy cannot override global hard blocks.
+- Sensitive fields such as passwords, tokens, API keys, card fields, and SSNs remain blocked.
+
+RBAC:
+
+- API route dependencies use the shared RBAC engine.
+- `agent_runtime` is service-scoped and can execute low/medium browser actions, create transcripts,
+  create lead insights, write artifacts, and write audit events.
+- `agent_runtime` cannot activate recipes, export CRM data, manage users, or self-confirm high-risk
+  actions.
+- Cross-tenant resource access remains an API-layer 404 concern; missing permission returns 403.
+
+Audit logging:
+
+- Browser commands, high-impact policy decisions, recipe changes, CRM export attempts, RBAC denials,
+  and policy denials are represented in the audit catalog.
+- `audit_logs` now include session, risk, policy decision, reason codes, request/trace IDs, and
+  deterministic event hash metadata.
+- The Phase 9 migration adds append-only PostgreSQL triggers that reject update/delete attempts.
+- Audit metadata is redacted before persistence.
+
+Redaction:
+
+- Text and metadata redaction covers emails, bearer tokens, JWT-like tokens, private keys, valid
+  credit-card numbers, sensitive JSON keys, and configured customer-name terms.
+- Context-specific redaction is available for logs, prompts, audit metadata, screen summaries,
+  screenshot metadata, lead summaries, CRM payloads, and knowledge chunks.
+- Screenshot metadata is text-redacted and marks `visual_redaction_applied=false`.
+
+Phase 9 implements deterministic text/metadata redaction. It does not guarantee pixel-level
+screenshot redaction unless visual redaction is explicitly enabled and tested.
+
+Local verification:
+
+```bash
+make policy-validate
+make policy-generate
+make policy-test
+make policy-fixtures-check
+```
+
+## Phase 10 Product Learner and Demo Graph
+
+Phase 10 adds the cold-path product learner. The learner worker consumes Redis Stream jobs from
+`live_demo:stream:learner:jobs`, reads safe browser screen state, summarizes the first screen,
+detects product category, explores only policy-allowed low-risk actions, builds a demo graph,
+generates a provisional route, redacts and chunks knowledge, and writes embeddings with fake
+providers by default.
+
+Cold path versus hot path:
+
+- The realtime voice agent reads learner outputs from Redis/Postgres when available.
+- The learner never blocks first audio or live user responses.
+- Learner LLM use is optional enrichment; deterministic summaries, category scoring, graph updates,
+  matching, route generation, and chunking work without paid APIs.
+
+Safety and redaction:
+
+- Candidate exploration skips destructive, billing/payment, invite/send/publish, account settings,
+  external navigation, form submit, and typing actions by default.
+- Learner prompts and knowledge chunks exclude raw screenshots, base64, cookies, localStorage,
+  sessionStorage, secrets, and full DOM.
+- Knowledge chunks are text-redacted before embedding and deduped by content hash.
+- Screenshot metadata may be text-redacted, but Phase 10 does not implement pixel-level screenshot
+  redaction.
+
+Graph and retrieval:
+
+- `product_learning_runs` tracks durable learner execution.
+- `generated_demo_routes` and `generated_demo_route_steps` store provisional zero-guidance routes.
+- `screen_match_history` records screen matching and self-healing evidence.
+- `knowledge_chunks` now includes chunk type, source confidence, redaction flags, and full-text
+  search metadata for lexical fallback.
+
+Local verification:
+
+```bash
+make learner-test
+make learner-test-integration
+```
+
+Phase 10 implements the learner foundation. It does not implement autonomous destructive workflows,
+full product intelligence, visual screenshot redaction, CRM export, or browser runtime internals.
 
 ## Troubleshooting
 
