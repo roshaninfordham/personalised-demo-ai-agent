@@ -1,0 +1,1 @@
+"""Pipecat-specific adapter boundary."""

@@ -1,21 +1,15 @@
-import asyncio
-import logging
+import uvicorn
 
+from live_demo_agent_runtime.app import create_app
 from live_demo_agent_runtime.config import get_settings
-from live_demo_agent_runtime.health import health_check
 
-LOGGER = logging.getLogger(__name__)
-
-
-async def run_worker() -> None:
-    settings = get_settings()
-    logging.basicConfig(level=settings.log_level.upper())
-    LOGGER.info("Agent runtime skeleton started. Live voice loop is not implemented in Phase 1.")
-    LOGGER.debug("Agent runtime health: %s", health_check())
-
-    stop_event = asyncio.Event()
-    await stop_event.wait()
+app = create_app()
 
 
 def main() -> None:
-    asyncio.run(run_worker())
+    settings = get_settings()
+    uvicorn.run(
+        "live_demo_agent_runtime.main:app",
+        host=settings.agent_runtime_host,
+        port=settings.agent_runtime_port,
+    )

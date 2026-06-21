@@ -1,0 +1,10 @@
+{
+  "spoken_response": "Let me open the dashboard so we can ground the overview in the product.",
+  "browser_action": {
+    "action_id": "act_click_el_dashboard",
+    "tool_name": "click_element",
+    "reason": "The safe action list contains a dashboard action."
+  },
+  "memory_updates": [],
+  "confidence": 0.88
+}

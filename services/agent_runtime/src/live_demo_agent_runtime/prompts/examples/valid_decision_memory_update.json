@@ -1,0 +1,18 @@
+{
+  "spoken_response": "I will focus on reporting and revenue metrics.",
+  "browser_action": null,
+  "memory_updates": [
+    {
+      "type": "feature_interest",
+      "content": "User is interested in weekly revenue reporting.",
+      "confidence": 0.78,
+      "importance": 0.7,
+      "evidence": {
+        "transcript_event_ids": ["transcript_1"],
+        "screen_ids": ["screen_dashboard"],
+        "action_ids": []
+      }
+    }
+  ],
+  "confidence": 0.82
+}

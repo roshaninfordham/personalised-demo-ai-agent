@@ -1,0 +1,13 @@
+"""Tool router error codes."""
+
+NO_ACTION = "no_action"
+INVALID_ACTION_ID = "invalid_action_id"
+TOOL_MISMATCH = "tool_mismatch"
+ACTION_EXPIRED = "action_expired"
+RISK_BLOCKED = "risk_blocked"
+CONFIRMATION_REQUIRED = "confirmation_required"
+BROWSER_RUNTIME_UNAVAILABLE = "browser_runtime_unavailable"
+BROWSER_ACTION_FAILED = "browser_action_failed"
+BROWSER_ACTION_TIMEOUT = "browser_action_timeout"
+INVALID_BROWSER_RESPONSE = "invalid_browser_response"
+DUPLICATE_ACTION_IGNORED = "duplicate_action_ignored"

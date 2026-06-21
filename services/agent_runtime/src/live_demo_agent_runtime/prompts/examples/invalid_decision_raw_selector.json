@@ -1,0 +1,8 @@
+{
+  "spoken_response": "I will click the dashboard.",
+  "browser_action": {
+    "selector": "#dashboard > button"
+  },
+  "memory_updates": [],
+  "confidence": 0.8
+}

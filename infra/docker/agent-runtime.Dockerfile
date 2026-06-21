@@ -16,6 +16,7 @@ COPY services/agent_runtime/pyproject.toml services/agent_runtime/pyproject.toml
 COPY services/learner_worker/pyproject.toml services/learner_worker/pyproject.toml
 COPY services/tts_service/pyproject.toml services/tts_service/pyproject.toml
 COPY services/agent_runtime services/agent_runtime
+COPY packages/backend_common packages/backend_common
 COPY packages/contracts/generated/python packages/contracts/generated/python
 
 RUN uv sync --frozen --package live-demo-agent-runtime --no-dev
@@ -23,5 +24,6 @@ RUN chown -R app:app /app
 
 USER app
 
-CMD ["/app/.venv/bin/live-demo-agent-runtime"]
+EXPOSE 8300
 
+CMD ["/app/.venv/bin/live-demo-agent-runtime"]
