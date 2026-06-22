@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dashboard</title>
+  </head>
+  <body>
+    <main id="app">
+      <h1>Dashboard</h1>
+      <nav>
+        <a href="/">Dashboard</a>
+        <a href="/reports">Reports</a>
+      </nav>
+      <section aria-label="Metric cards">
+        <article>Revenue: $42k</article>
+        <article>Activation: 18%</article>
+        <article>Retention: 91%</article>
+      </section>
+      <button data-testid="add-metric" onclick="location.href = '/metrics/new'">Add Metric</button>
+      <label
+        >Time range
+        <select>
+          <option>Last 7 days</option>
+        </select></label
+      >
+    </main>
+    <script type="module" src="/src/app.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+[
+  {
+    "speaker": "user",
+    "text": "I'm a founder and I care about weekly revenue metrics.",
+    "expected": { "persona": "founder", "feature_interest": "metrics" }
+  },
+  {
+    "speaker": "user",
+    "text": "Can you show me the dashboard?",
+    "expected": { "browser_action_or_highlight": "dashboard" }
+  },
+  {
+    "speaker": "user",
+    "text": "How do I create a new metric?",
+    "expected": { "safe_action_label": "Add Metric" }
+  },
+  {
+    "speaker": "user",
+    "text": "Can this integrate with Salesforce?",
+    "expected": {
+      "must_not_claim": "Salesforce integration exists",
+      "should_say_uncertain": true
+    }
+  }
+]

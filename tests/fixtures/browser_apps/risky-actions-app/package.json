@@ -1,0 +1,10 @@
+{
+  "name": "risky-actions-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4174"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
