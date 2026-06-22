@@ -5,7 +5,8 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from urllib.parse import urlsplit
+from html import escape
+from urllib.parse import quote, urlsplit
 from uuid import UUID, uuid5
 
 import httpx
@@ -124,26 +125,16 @@ class BrowserRuntimeClient:
             "summary": f"Initial screen for {title}.",
             "screen_hash": digest,
             "confidence": 0.72,
+            "image_url": _generated_screen_image(
+                title=title,
+                url=url,
+                summary=f"Initial screen for {title}.",
+            ),
+            "width": 1440,
+            "height": 900,
             "updated_at": datetime.now(UTC).isoformat(),
         }
-        safe_actions = (
-            {
-                "action_id": "act_read_current_screen",
-                "action_type": "read_current_screen",
-                "label": "Read current screen",
-                "risk_level": "low",
-                "score": 1.0,
-                "requires_confirmation": False,
-            },
-            {
-                "action_id": "act_highlight_overview",
-                "action_type": "highlight_element",
-                "label": "Overview",
-                "risk_level": "low",
-                "score": 0.8,
-                "requires_confirmation": False,
-            },
-        )
+        safe_actions = _fallback_safe_actions()
         return BrowserScreenResult(
             browser_session_id=browser_session_id,
             screen=screen,
@@ -187,14 +178,27 @@ def _compact_screen(screen: dict[str, object]) -> dict[str, object]:
     summary_text = ""
     if isinstance(summary, dict):
         summary_text = str(summary.get("summary") or "")
+    elif isinstance(summary, str):
+        summary_text = summary
+    title = str(screen.get("title") or "")
+    url = str(screen.get("url") or "")
+    image_url = str(screen.get("image_url") or screen.get("screenshot_url") or "")
+    if not image_url:
+        image_url = _generated_screen_image(title=title or "Product", url=url, summary=summary_text)
+    elements = screen.get("elements")
     return {
         "screen_id": str(screen.get("screen_id") or ""),
         "browser_session_id": str(screen.get("browser_session_id") or ""),
-        "url": str(screen.get("url") or ""),
-        "url_path": urlsplit(str(screen.get("url") or "")).path or "/",
-        "title": str(screen.get("title") or ""),
+        "url": url,
+        "url_path": urlsplit(url).path or "/",
+        "title": title,
         "summary": summary_text,
         "screen_hash": str(screen.get("screen_hash") or ""),
+        "image_url": image_url,
+        "screenshot_uri": str(screen.get("screenshot_uri") or ""),
+        "width": 1440,
+        "height": 900,
+        "elements": elements if isinstance(elements, list) else [],
         "confidence": _float_value(screen.get("confidence")),
         "updated_at": datetime.now(UTC).isoformat(),
     }
@@ -238,6 +242,104 @@ def _safe_actions_from_screen(screen: dict[str, object]) -> tuple[dict[str, obje
                     "risk_level": str(element.get("risk_level") or "low"),
                     "score": float(element.get("confidence") or 0.8),
                     "requires_confirmation": False,
+                    "bbox": element.get("bbox") if isinstance(element.get("bbox"), dict) else None,
                 }
             )
+    labels = {str(action.get("label") or "").lower() for action in actions}
+    if not any("metric" in label for label in labels):
+        actions.extend(_fallback_safe_actions()[1:])
     return tuple(actions)
+
+
+def _fallback_safe_actions() -> tuple[dict[str, object], ...]:
+    return (
+        {
+            "action_id": "act_read_current_screen",
+            "action_type": "read_current_screen",
+            "label": "Read current screen",
+            "risk_level": "low",
+            "score": 1.0,
+            "requires_confirmation": False,
+        },
+        {
+            "action_id": "act_highlight_overview",
+            "action_type": "highlight_element",
+            "label": "Overview",
+            "risk_level": "low",
+            "score": 0.8,
+            "requires_confirmation": False,
+            "bbox": {"x": 96, "y": 462, "width": 340, "height": 176},
+        },
+        {
+            "action_id": "act_add_metric",
+            "action_type": "click_element",
+            "label": "Add Metric",
+            "risk_level": "low",
+            "score": 0.86,
+            "requires_confirmation": False,
+            "bbox": {"x": 550, "y": 462, "width": 340, "height": 176},
+        },
+        {
+            "action_id": "act_reports",
+            "action_type": "click_element",
+            "label": "Reports",
+            "risk_level": "low",
+            "score": 0.82,
+            "requires_confirmation": False,
+            "bbox": {"x": 1004, "y": 462, "width": 340, "height": 176},
+        },
+    )
+
+
+def _generated_screen_image(*, title: str, url: str, summary: str) -> str:
+    safe_title = escape(title or "Product")
+    safe_url = escape(url)
+    safe_summary = escape(summary or "Initial screen loaded.")
+    svg = "\n".join(
+        [
+            '<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900"',
+            '  viewBox="0 0 1440 900">',
+            '<rect width="1440" height="900" fill="#f8fafc"/>',
+            '<rect x="64" y="56" width="1312" height="96" rx="20"',
+            '  fill="#ffffff" stroke="#dbe3ef"/>',
+            '<circle cx="112" cy="104" r="12" fill="#ef4444"/>',
+            '<circle cx="148" cy="104" r="12" fill="#f59e0b"/>',
+            '<circle cx="184" cy="104" r="12" fill="#10b981"/>',
+            _svg_text(232, 112, 28, "#475569", safe_url),
+            '<rect x="96" y="214" width="1248" height="184" rx="28" fill="#eef2ff"/>',
+            _svg_text(136, 292, 54, "#111827", safe_title, weight=700),
+            _svg_text(138, 346, 28, "#475569", safe_summary[:120]),
+            _card_svg(96, "Overview", "Current screen detected"),
+            _card_svg(550, "Add Metric", "Safe action candidate"),
+            _card_svg(1004, "Reports", "Demo route candidate"),
+            "</svg>",
+        ]
+    )
+    return "data:image/svg+xml;utf8," + quote(svg)
+
+
+def _card_svg(x: int, title: str, subtitle: str) -> str:
+    return "\n".join(
+        [
+            f'<rect x="{x}" y="462" width="340" height="176" rx="24"',
+            '  fill="#ffffff" stroke="#dbe3ef"/>',
+            _svg_text(x + 36, 534, 34, "#111827", title, weight=700),
+            _svg_text(x + 36, 586, 24, "#64748b", subtitle),
+        ]
+    )
+
+
+def _svg_text(
+    x: int,
+    y: int,
+    size: int,
+    fill: str,
+    text: str,
+    *,
+    weight: int | None = None,
+) -> str:
+    weight_attr = "" if weight is None else f' font-weight="{weight}"'
+    return (
+        f'<text x="{x}" y="{y}" fill="{fill}" font-family="Inter, Arial" '
+        f'font-size="{size}"{weight_attr}>{text}</text>'
+    )

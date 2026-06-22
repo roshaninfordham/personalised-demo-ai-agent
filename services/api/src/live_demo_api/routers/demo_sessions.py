@@ -2,12 +2,22 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
-from uuid import UUID
+import asyncio
+import json
+import time
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime
+from decimal import Decimal
+from typing import Annotated, Any, cast
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
+from pydantic import BaseModel, Field
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import StreamingResponse
 
+from live_demo_api.db.models import ActionEvent, TranscriptEvent
 from live_demo_api.db.types import SessionStatus
 from live_demo_api.dependencies import (
     get_current_principal,
@@ -18,7 +28,10 @@ from live_demo_api.dependencies import (
 )
 from live_demo_api.errors import ValidationAppError
 from live_demo_api.events.event_bus import EventBus
+from live_demo_api.live_state.live_state_store import LiveStateStore
+from live_demo_api.live_state.redis_keys import session_events_stream_key
 from live_demo_api.security import Principal, RequestContext
+from live_demo_api.services.audit_service import publish_event
 from live_demo_api.services.demo_session_service import DemoSessionService
 from live_demo_api.services.recipe_service import RecipeService
 from live_demo_api.services.session_orchestration_service import SessionOrchestrationService
@@ -43,6 +56,17 @@ router = APIRouter(prefix="/api/v1/demo-sessions", tags=["demo-sessions"])
 product_router = APIRouter(
     prefix="/api/v1/products/{product_id}/demo-sessions", tags=["demo-sessions"]
 )
+
+
+class TextTurnRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class TextTurnResponse(BaseModel):
+    turn_id: str
+    assistant_response: str
+    action_taken: str | None = None
+    policy_blocked: bool = False
 
 
 def _parse_status(status: str | None) -> SessionStatus | None:
@@ -109,6 +133,230 @@ async def start_session(
     _ = request
     return await SessionOrchestrationService().start(
         db, redis, event_bus, principal, session_id, request_context
+    )
+
+
+@router.get("/{session_id}/events")
+async def stream_session_events(
+    session_id: UUID,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+) -> StreamingResponse:
+    await DemoSessionService().get_session(db, principal, session_id)
+    stream_key = session_events_stream_key(session_id)
+    redis_client = cast(Any, redis)
+
+    async def body() -> AsyncIterator[str]:
+        last_id, replay_chunks = await _replay_recent_events(redis_client, stream_key)
+        async for chunk in _stream_events(
+            request=request,
+            redis=redis_client,
+            stream_key=stream_key,
+            last_id=last_id,
+            replay_chunks=replay_chunks,
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        body(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/{session_id}/turns/text", response_model=TextTurnResponse)
+async def run_text_turn(
+    session_id: UUID,
+    request_body: TextTurnRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    redis: Annotated[Any, Depends(get_redis_client)],
+    event_bus: Annotated[EventBus, Depends(get_event_bus)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    request_context: Annotated[RequestContext, Depends(get_request_context)],
+) -> TextTurnResponse:
+    await DemoSessionService().get_session(db, principal, session_id)
+    store = LiveStateStore(cast(Any, redis))
+    screen = await store.get_current_screen(session_id) or {}
+    safe_actions = await store.get_safe_actions(session_id)
+    turn_id = uuid4()
+    now = datetime.now(UTC)
+    user_text = request_body.text.strip()
+
+    user_event = TranscriptEvent(
+        organization_id=principal.organization_id,
+        session_id=session_id,
+        speaker="user",
+        chunk_type="final",
+        text=user_text,
+        is_final=True,
+        confidence=Decimal("1.000"),
+        turn_id=turn_id,
+    )
+    db.add(user_event)
+    await db.flush()
+    await publish_event(
+        event_bus,
+        organization_id=principal.organization_id,
+        session_id=session_id,
+        event_type="transcript.final",
+        request_context=request_context,
+        payload={
+            "transcript_event_id": str(user_event.transcript_event_id),
+            "speaker": "user",
+            "chunk_type": "final",
+            "text": user_text,
+            "turn_id": str(turn_id),
+        },
+    )
+
+    decision = _deterministic_turn_decision(user_text, screen, safe_actions)
+    assistant_event = TranscriptEvent(
+        organization_id=principal.organization_id,
+        session_id=session_id,
+        speaker="assistant",
+        chunk_type="final",
+        text=decision["response"],
+        is_final=True,
+        confidence=Decimal("0.880"),
+        turn_id=turn_id,
+    )
+    db.add(assistant_event)
+    await db.flush()
+    await publish_event(
+        event_bus,
+        organization_id=principal.organization_id,
+        session_id=session_id,
+        event_type="transcript.final",
+        request_context=request_context,
+        payload={
+            "transcript_event_id": str(assistant_event.transcript_event_id),
+            "speaker": "assistant",
+            "chunk_type": "final",
+            "text": decision["response"],
+            "turn_id": str(turn_id),
+        },
+    )
+
+    if decision["blocked"]:
+        db.add(
+            ActionEvent(
+                organization_id=principal.organization_id,
+                session_id=session_id,
+                turn_id=turn_id,
+                action_type=str(decision["action_type"] or "blocked_action"),
+                action_payload={"label": decision["label"], "source": "text_turn"},
+                risk_level="blocked",
+                policy_decision="blocked",
+                success=False,
+                error_code="policy_blocked",
+                error_message="Dangerous action blocked by demo policy.",
+                latency_ms=0,
+            )
+        )
+        await publish_event(
+            event_bus,
+            organization_id=principal.organization_id,
+            session_id=session_id,
+            event_type="browser.action.failed",
+            request_context=request_context,
+            payload={
+                "policy_decision": "blocked",
+                "reason_code": "dangerous_action",
+                "label": decision["label"],
+                "success": False,
+            },
+        )
+    elif decision["action"] is not None:
+        bbox = _action_bbox(cast(dict[str, object], decision["action"]))
+        center = _bbox_center(bbox)
+        await publish_event(
+            event_bus,
+            organization_id=principal.organization_id,
+            session_id=session_id,
+            event_type="browser.cursor.move",
+            request_context=request_context,
+            payload={"x": center[0], "y": center[1], "duration_ms": 320},
+        )
+        await publish_event(
+            event_bus,
+            organization_id=principal.organization_id,
+            session_id=session_id,
+            event_type="browser.element.highlight",
+            request_context=request_context,
+            payload={
+                "element_id": str(decision["action"].get("action_id") or "suggested_action"),
+                "label": str(decision["action"].get("label") or "Suggested action"),
+                "bbox": bbox,
+                "risk_level": str(decision["action"].get("risk_level") or "low"),
+                "duration_ms": 2200,
+            },
+        )
+        await publish_event(
+            event_bus,
+            organization_id=principal.organization_id,
+            session_id=session_id,
+            event_type="browser.cursor.click",
+            request_context=request_context,
+            payload={"x": center[0], "y": center[1]},
+        )
+        db.add(
+            ActionEvent(
+                organization_id=principal.organization_id,
+                session_id=session_id,
+                turn_id=turn_id,
+                action_type=str(decision["action"].get("action_type") or "highlight_element"),
+                action_payload={"label": decision["action"].get("label"), "source": "text_turn"},
+                risk_level=str(decision["action"].get("risk_level") or "low"),
+                policy_decision="allowed",
+                success=True,
+                latency_ms=240,
+            )
+        )
+        await publish_event(
+            event_bus,
+            organization_id=principal.organization_id,
+            session_id=session_id,
+            event_type="browser.action.completed",
+            request_context=request_context,
+            payload={
+                "action_id": str(decision["action"].get("action_id") or ""),
+                "label": str(decision["action"].get("label") or ""),
+                "success": True,
+                "latency_ms": 240,
+            },
+        )
+    await store.append_transcript_window(
+        session_id,
+        {
+            "speaker": "user",
+            "chunk_type": "final",
+            "text": user_text,
+            "turn_id": str(turn_id),
+            "created_at": now.isoformat(),
+        },
+    )
+    await store.append_transcript_window(
+        session_id,
+        {
+            "speaker": "assistant",
+            "chunk_type": "final",
+            "text": decision["response"],
+            "turn_id": str(turn_id),
+            "created_at": datetime.now(UTC).isoformat(),
+        },
+    )
+    await db.commit()
+    return TextTurnResponse(
+        turn_id=str(turn_id),
+        assistant_response=str(decision["response"]),
+        action_taken=str(decision["label"]) if decision["action"] is not None else None,
+        policy_blocked=bool(decision["blocked"]),
     )
 
 
@@ -289,3 +537,180 @@ async def list_sessions_for_product(
         limit=limit,
         cursor=cursor,
     )
+
+
+async def _replay_recent_events(redis: Redis[bytes], stream_key: str) -> tuple[str, list[str]]:
+    recent = await redis.xrevrange(stream_key, count=50)  # type: ignore[no-untyped-call]
+    if not recent:
+        return "$", []
+    chunks = [
+        _sse_chunk(_decode(message_id), _event_type(fields), _event_json(fields))
+        for message_id, fields in reversed(recent)
+    ]
+    return _decode(recent[0][0]), chunks
+
+
+async def _stream_events(
+    *,
+    request: Request,
+    redis: Redis[bytes],
+    stream_key: str,
+    last_id: str,
+    replay_chunks: list[str],
+) -> AsyncIterator[str]:
+    for chunk in replay_chunks:
+        yield chunk
+    next_heartbeat = time.monotonic() + 10
+    while not await request.is_disconnected():
+        response = await redis.xread({stream_key: last_id}, count=20, block=1000)  # type: ignore[no-untyped-call]
+        for _stream_name, messages in response:
+            for message_id, fields in messages:
+                last_id = _decode(message_id)
+                yield _sse_chunk(last_id, _event_type(fields), _event_json(fields))
+        if time.monotonic() >= next_heartbeat:
+            yield "event: heartbeat\ndata: {\"ok\":true}\n\n"
+            next_heartbeat = time.monotonic() + 10
+        await asyncio.sleep(0)
+
+
+def _sse_chunk(message_id: str, event_type: str, event_json: str) -> str:
+    lines = [f"id: {message_id}", f"event: {event_type}"]
+    for line in event_json.splitlines() or [""]:
+        lines.append(f"data: {line}")
+    return "\n".join(lines) + "\n\n"
+
+
+def _field(fields: dict[Any, Any], key: str) -> str:
+    raw = fields.get(key) or fields.get(key.encode())
+    return _decode(raw)
+
+
+def _event_json(fields: dict[Any, Any]) -> str:
+    return _field(fields, "event_json")
+
+
+def _event_type(fields: dict[Any, Any]) -> str:
+    event_type = _field(fields, "event_type")
+    if event_type:
+        return event_type
+    try:
+        parsed = json.loads(_event_json(fields))
+    except json.JSONDecodeError:
+        return "message"
+    value = parsed.get("event_type") if isinstance(parsed, dict) else None
+    return str(value or "message")
+
+
+def _decode(value: Any) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    return str(value or "")
+
+
+def _deterministic_turn_decision(
+    user_text: str,
+    screen: dict[str, object],
+    safe_actions: list[dict[str, object]],
+) -> dict[str, object]:
+    lowered = user_text.lower()
+    title = str(screen.get("title") or "the current screen")
+    summary = str(screen.get("summary") or f"I can see {title}.")
+    destructive_terms = ("delete", "remove", "billing", "payment", "purchase", "upgrade")
+    if any(term in lowered for term in destructive_terms):
+        return {
+            "response": (
+                "I cannot perform destructive, billing, or payment actions in a live demo. "
+                "I can keep showing safe product workflows instead."
+            ),
+            "blocked": True,
+            "action": None,
+            "action_type": "blocked_action",
+            "label": "Dangerous action",
+        }
+    if any(term in lowered for term in ("salesforce", "soc2", "soc 2", "hipaa", "pricing", "sso")):
+        return {
+            "response": (
+                "I cannot verify that from the current screen. "
+                f"What I can verify is: {summary}"
+            ),
+            "blocked": False,
+            "action": None,
+            "action_type": None,
+            "label": None,
+        }
+    if any(term in lowered for term in ("metric", "create", "add")):
+        action = _find_action(safe_actions, ("add metric", "create metric", "new metric", "metric"))
+        return {
+            "response": (
+                "I will focus on the metric creation workflow and highlight the safest "
+                "matching control."
+            ),
+            "blocked": False,
+            "action": action,
+            "action_type": action.get("action_type") if action else None,
+            "label": action.get("label") if action else None,
+        }
+    if "report" in lowered:
+        action = _find_action(safe_actions, ("reports", "reporting", "analytics"))
+        return {
+            "response": "I will show the reporting area if it is available on this screen.",
+            "blocked": False,
+            "action": action,
+            "action_type": action.get("action_type") if action else None,
+            "label": action.get("label") if action else None,
+        }
+    action = _find_action(safe_actions, ("dashboard", "overview", "read current screen")) or (
+        safe_actions[0] if safe_actions else None
+    )
+    return {
+        "response": (
+            f"From the visible screen, {summary} "
+            "I will start by orienting you around this view."
+        ),
+        "blocked": False,
+        "action": action,
+        "action_type": action.get("action_type") if action else None,
+        "label": action.get("label") if action else None,
+    }
+
+
+def _find_action(
+    safe_actions: list[dict[str, object]],
+    labels: tuple[str, ...],
+) -> dict[str, object] | None:
+    for action in safe_actions:
+        label = str(action.get("label") or "").lower()
+        if any(candidate in label for candidate in labels):
+            return action
+    return None
+
+
+def _action_bbox(action: dict[str, object]) -> dict[str, float]:
+    bbox = action.get("bbox")
+    if isinstance(bbox, dict):
+        x = _float(bbox.get("x"), 720)
+        y = _float(bbox.get("y"), 420)
+        width = _float(bbox.get("width"), 180)
+        height = _float(bbox.get("height"), 80)
+        return {"x": x, "y": y, "width": width, "height": height}
+    label = str(action.get("label") or "").lower()
+    if "metric" in label:
+        return {"x": 550, "y": 462, "width": 340, "height": 176}
+    if "report" in label:
+        return {"x": 1004, "y": 462, "width": 340, "height": 176}
+    return {"x": 96, "y": 462, "width": 340, "height": 176}
+
+
+def _bbox_center(bbox: dict[str, float]) -> tuple[float, float]:
+    return (bbox["x"] + bbox["width"] / 2, bbox["y"] + bbox["height"] / 2)
+
+
+def _float(value: object, fallback: float) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return fallback
+    return fallback

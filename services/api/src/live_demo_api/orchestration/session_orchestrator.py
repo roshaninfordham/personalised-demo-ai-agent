@@ -374,6 +374,25 @@ class SessionOrchestrator:
                 request.trace_id,
                 {"status": "waiting_for_user"},
             )
+            greeting_turn_id = uuid4()
+            await self._publish(
+                "agent.greeting.started",
+                request.session_id,
+                request.trace_id,
+                {"mode": "text_fallback"},
+            )
+            await self._publish(
+                "transcript.final",
+                request.session_id,
+                request.trace_id,
+                {
+                    "transcript_event_id": str(uuid4()),
+                    "speaker": "assistant",
+                    "chunk_type": "final",
+                    "text": get_settings().live_start_greeting_text,
+                    "turn_id": str(greeting_turn_id),
+                },
+            )
         await self._db.commit()
         return LiveSessionStartResult(
             session_id=request.session_id,
@@ -656,6 +675,12 @@ class SessionOrchestrator:
             trace_id=trace_id,
         )
         await self._write_screen_state(session.session_id, screen)
+        await self._publish(
+            "browser.screen.updated",
+            session.session_id,
+            trace_id,
+            _screen_event_payload(screen),
+        )
         return screen
 
     async def _prewarm_voice(
@@ -968,3 +993,25 @@ def _resource_id(resources: tuple[SessionResource, ...], resource_type: str) -> 
         if resource.resource_type == resource_type and resource.status in {"allocated", "ready"}:
             return resource.resource_id
     return None
+
+
+def _screen_event_payload(result: BrowserScreenResult) -> dict[str, object]:
+    screen = result.screen
+    payload: dict[str, object] = {
+        "screen_id": str(screen.get("screen_id") or ""),
+        "screen_hash": str(screen.get("screen_hash") or ""),
+        "browser_session_id": str(result.browser_session_id),
+        "url": str(screen.get("url") or ""),
+        "title": str(screen.get("title") or ""),
+        "summary": str(screen.get("summary") or ""),
+        "safe_action_count": len(result.safe_actions),
+        "width": int(screen.get("width") or 1440),
+        "height": int(screen.get("height") or 900),
+    }
+    image_url = screen.get("image_url")
+    if isinstance(image_url, str) and image_url:
+        payload["image_url"] = image_url
+    screenshot_uri = screen.get("screenshot_uri")
+    if isinstance(screenshot_uri, str) and screenshot_uri:
+        payload["screenshot_uri"] = screenshot_uri
+    return payload
