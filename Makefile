@@ -1,7 +1,7 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python:packages/policies/generated/python:packages/backend_common/src
 LEARNER_PYTHONPATH := services/learner_worker/src:packages/backend_common/src:packages/policies/generated/python:packages/contracts/generated/python
 
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production docs-validate docs-links docs-secrets docs-mermaid docs-index docs-all py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -27,6 +27,7 @@ help:
 	@echo "  make ci-local         Run Phase 16 local CI gate"
 	@echo "  make docker-build-all Build hardened service images"
 	@echo "  make k8s-validate     Render and validate Kubernetes manifests"
+	@echo "  make docs-all         Generate and validate documentation"
 	@echo "  make docker-config    Validate Docker Compose config"
 	@echo "  make docker-up        Start local stack"
 	@echo "  make docker-down      Stop local stack"
@@ -321,6 +322,28 @@ rollback-staging:
 
 rollback-production:
 	scripts/deploy/rollback.sh production
+
+docs-index:
+	uv run python scripts/docs/generate_docs_index.py
+
+docs-secrets:
+	uv run python scripts/docs/check_no_secrets_in_docs.py
+
+docs-validate:
+	scripts/docs/validate_docs.sh
+
+docs-links:
+	scripts/docs/check_links.sh
+
+docs-mermaid:
+	scripts/docs/check_mermaid.sh
+
+docs-all:
+	make docs-index
+	make docs-secrets
+	make docs-validate
+	make docs-links
+	make docs-mermaid
 
 policy-validate:
 	pnpm --filter @live-demo-agent/policies validate
