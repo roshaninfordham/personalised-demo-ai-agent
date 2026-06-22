@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useMicrophone } from "../../hooks/useMicrophone";
-import type { TranscriptItem } from "../../lib/events/eventTypes";
+import type { TextTurnResponse } from "../../lib/api/demoSessionsApi";
+import type { EventConnectionStatus, TranscriptItem } from "../../lib/events/eventTypes";
 import type { CallConnectionStatus } from "../../lib/media/mediaTypes";
 import { createPlaceholderRealtimeCallClient } from "../../lib/media/webrtcClient";
 import { Badge } from "../ui/Badge";
@@ -11,9 +12,20 @@ import { Button } from "../ui/Button";
 import { AgentAudioPanel } from "./AgentAudioPanel";
 import { ErrorBanner } from "./ErrorBanner";
 import { MicLevelMeter } from "./MicLevelMeter";
+import { QuestionInput } from "./QuestionInput";
 import { TranscriptPreview } from "./TranscriptPreview";
 
-export function CallPanel({ sessionId, transcript }: { sessionId: string; transcript: TranscriptItem[] }) {
+export function CallPanel({
+  sessionId,
+  transcript,
+  eventStatus,
+  onFallbackTextTurn,
+}: {
+  sessionId: string;
+  transcript: TranscriptItem[];
+  eventStatus: EventConnectionStatus;
+  onFallbackTextTurn?: (text: string, response: TextTurnResponse) => void;
+}) {
   const mic = useMicrophone();
   const callClient = useMemo(() => createPlaceholderRealtimeCallClient(), []);
   const [callStatus, setCallStatus] = useState<CallConnectionStatus>(callClient.getStatus());
@@ -37,11 +49,19 @@ export function CallPanel({ sessionId, transcript }: { sessionId: string; transc
     <section className="card">
       <div className="card-body stack">
         <div className="panel-title">
-          <h2>Call panel</h2>
+          <div>
+            <h2>Assistant</h2>
+            <span className="muted">Voice is optional locally. Text mode is always available.</span>
+          </div>
           <Badge tone={callStatus === "connected" ? "success" : callStatus === "failed" ? "danger" : "warning"}>
-            {callStatus}
+            {callStatus === "connected" ? "voice connected" : "text mode active"}
           </Badge>
         </div>
+        <QuestionInput
+          sessionId={sessionId}
+          fallbackEventsEnabled={eventStatus !== "connected"}
+          {...(onFallbackTextTurn === undefined ? {} : { onFallbackTurn: onFallbackTextTurn })}
+        />
         <div className="call-grid">
           <div className="stack">
             <div className="row">

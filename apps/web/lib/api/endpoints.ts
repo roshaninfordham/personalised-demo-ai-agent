@@ -54,6 +54,10 @@ export function demoSessionEventsEndpoint(sessionId: string): string {
   return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/events`;
 }
 
+export function demoSessionTextTurnEndpoint(sessionId: string): string {
+  return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/turns/text`;
+}
+
 export function transcriptEndpoint(sessionId: string): string {
   return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/transcript`;
 }

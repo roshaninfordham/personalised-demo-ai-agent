@@ -97,6 +97,9 @@ export function reduceEvent(
       break;
     case "browser.action.failed":
       state.errors.push({ code: "browser_action_failed", message: "Browser action failed.", receivedAt: nowIso() });
+      if (event.payload.policy_decision === "blocked" || event.payload.reason_code === "dangerous_action") {
+        markMilestone(state, "blocked_risky_actions", "Blocked risky action", event.created_at);
+      }
       break;
     case "browser.policy.blocked":
       markMilestone(state, "blocked_risky_actions", "Blocked risky action", event.created_at);
@@ -128,7 +131,12 @@ function reduceScreenUpdated(state: LiveDemoClientState, event: LiveDemoEvent): 
   const payload = event.payload;
   const screenId = stringPayload(payload.screen_id) ?? "screen_unknown";
   const screenHash = stringPayload(payload.screen_hash) ?? screenId;
-  const imageUrl = stringPayload(payload.image_url) ?? stringPayload(payload.screenshot_url) ?? stringPayload(payload.screenshot_uri) ?? null;
+  const imageUrl =
+    stringPayload(payload.image_url) ??
+    stringPayload(payload.screenshot_url) ??
+    stringPayload(payload.screenshot_uri) ??
+    screenshotPayload(payload.screenshot) ??
+    null;
   const frame: BrowserFrameState = {
     screenId,
     screenHash,
@@ -261,6 +269,12 @@ function appendLatency(state: LiveDemoClientState, name: "browser_action", value
 
 function stringPayload(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function screenshotPayload(value: unknown): string | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const record = value as Record<string, unknown>;
+  return stringPayload(record.presigned_url) ?? stringPayload(record.content_url);
 }
 
 function numberPayload(value: unknown): number | undefined {

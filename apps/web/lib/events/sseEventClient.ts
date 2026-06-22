@@ -3,6 +3,36 @@ import { demoSessionEventsEndpoint } from "../api/endpoints";
 import type { EventConnectionStatus, LiveDemoEvent } from "./eventTypes";
 import type { LiveEventClient } from "./eventClient";
 
+const NAMED_EVENT_TYPES = [
+  "session.created",
+  "session.prewarming.started",
+  "session.prewarming.completed",
+  "session.prewarming.degraded",
+  "session.prewarming.failed",
+  "session.waiting_for_user",
+  "session.started",
+  "session.live.started",
+  "session.ending",
+  "session.ended",
+  "session.failed",
+  "browser.navigation.started",
+  "browser.navigation.completed",
+  "browser.screen.updated",
+  "browser.cursor.move",
+  "browser.cursor.click",
+  "browser.cursor.ripple",
+  "browser.element.highlight",
+  "browser.action.completed",
+  "browser.action.failed",
+  "browser.policy.blocked",
+  "transcript.partial",
+  "transcript.final",
+  "agent.interrupted",
+  "learner.demo_graph.updated",
+  "learner.screen_summary.ready",
+  "lead_summary.ready",
+] as const;
+
 export class SseEventClient implements LiveEventClient {
   private source: EventSource | null = null;
   private status: EventConnectionStatus = "idle";
@@ -54,11 +84,19 @@ export class SseEventClient implements LiveEventClient {
       this.reconnectAttempts = 0;
       this.setStatus("connected");
     };
-    this.source.onmessage = (message: MessageEvent<string>) => {
+    const handleMessage = (message: MessageEvent<string>) => {
       const event = parseLiveEvent(message.data);
       if (event === null) return;
       for (const listener of this.listeners) listener(event);
     };
+    this.source.onmessage = handleMessage;
+    for (const eventType of NAMED_EVENT_TYPES) {
+      this.source.addEventListener(eventType, handleMessage as EventListener);
+    }
+    this.source.addEventListener("heartbeat", () => {
+      this.reconnectAttempts = 0;
+      this.setStatus("connected");
+    });
     this.source.onerror = () => {
       this.source?.close();
       this.source = null;

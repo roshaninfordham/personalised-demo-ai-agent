@@ -3,6 +3,7 @@ import type { DemoSessionStateResponse } from "@live-demo-agent/contracts";
 import type { EventConnectionStatus } from "../../lib/events/eventTypes";
 import { Badge } from "../ui/Badge";
 import { ConnectionStatus } from "./ConnectionStatus";
+import { EndDemoButton } from "./EndDemoButton";
 
 export function SessionStatusBar({
   sessionId,
@@ -27,6 +28,7 @@ export function SessionStatusBar({
             {status}
           </Badge>
           <ConnectionStatus status={eventStatus} />
+          <EndDemoButton sessionId={sessionId} />
         </div>
       </div>
     </section>

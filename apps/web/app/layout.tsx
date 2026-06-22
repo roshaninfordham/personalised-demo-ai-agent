@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import "./design-tokens.css";
 import "./globals.css";
+import "./theme.css";
 import { AppShell } from "../components/layout/AppShell";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="light">
       <head>
         <Script src="/runtime-config.js" strategy="beforeInteractive" />
       </head>

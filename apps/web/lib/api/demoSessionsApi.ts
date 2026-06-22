@@ -18,6 +18,7 @@ import {
   demoSessionsEndpoint,
   demoSessionStartEndpoint,
   demoSessionStateEndpoint,
+  demoSessionTextTurnEndpoint,
 } from "./endpoints";
 
 export function createDemoSession(request: CreateDemoSessionRequest): Promise<CreateDemoSessionResponse> {
@@ -57,4 +58,19 @@ export function getDemoSessionState(sessionId: string): Promise<DemoSessionState
 
 export function getJoinConfig(sessionId: string): Promise<JoinConfigResponse> {
   return apiRequest<JoinConfigResponse>(demoSessionJoinConfigEndpoint(sessionId));
+}
+
+export type TextTurnResponse = {
+  turn_id: string;
+  assistant_response: string;
+  action_taken: string | null;
+  policy_blocked: boolean;
+};
+
+export function sendTextTurn(sessionId: string, text: string): Promise<TextTurnResponse> {
+  return apiRequest<TextTurnResponse>(demoSessionTextTurnEndpoint(sessionId), {
+    method: "POST",
+    body: { text },
+    timeoutMs: 30_000,
+  });
 }
