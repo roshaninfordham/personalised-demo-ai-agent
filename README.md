@@ -31,24 +31,33 @@ The default documented local path uses deterministic fake providers and does not
 
 ```bash
 cp .env.example .env
-pnpm install
-uv sync --all-packages
-docker compose up --build
+make up
 ```
 
-Open:
+Open the assigned local URL:
 
-```text
-http://localhost:3000
+```bash
+make open
 ```
 
 Health checks:
 
 ```bash
-curl -s http://localhost:8000/healthz
-curl -s http://localhost:8000/readyz
-curl -s http://localhost:8200/healthz
-curl -s http://localhost:8300/healthz
+make health
+```
+
+`make up` detects free host ports, writes them to `.local/runtime/ports.env`,
+builds the frontend with those URLs, and starts the default local stack. If
+`3000`, `8000`, or another familiar port is already taken, the app moves to a
+free port automatically.
+
+For any docs command that uses `$API_URL`, `$WEB_URL`, or another generated URL,
+source the runtime file first:
+
+```bash
+set -a
+. .local/runtime/ports.env
+set +a
 ```
 
 For full setup details, provider modes, and clean reset commands, see [docs/setup/local-setup.md](docs/setup/local-setup.md).

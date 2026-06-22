@@ -10,9 +10,5 @@ set -a
 . .local/runtime/ports.env
 set +a
 
-url="${1:-${WEB_URL}}"
-if command -v open >/dev/null 2>&1; then
-  open "$url"
-else
-  echo "$url"
-fi
+curl -s "${NEXT_PUBLIC_PROMETHEUS_URL}/-/healthy"
+curl -s "${NEXT_PUBLIC_GRAFANA_URL}/api/health"

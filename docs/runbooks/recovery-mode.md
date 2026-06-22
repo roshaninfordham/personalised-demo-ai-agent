@@ -29,7 +29,7 @@ policy_blocked
 ## Commands
 
 ```bash
-curl -s http://localhost:8000/api/v1/demo-sessions/<session_id>/orchestration-state
+curl -s $API_URL/api/v1/demo-sessions/<session_id>/orchestration-state
 ```
 
 ## Mitigation

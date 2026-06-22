@@ -18,8 +18,8 @@ The browser viewport does not update, prewarm fails, screen extraction is empty,
 ## Quick Checks
 
 ```bash
-curl -s http://localhost:8200/healthz
-curl -s http://localhost:8200/readyz
+curl -s $BROWSER_RUNTIME_URL/healthz
+curl -s $BROWSER_RUNTIME_URL/readyz
 docker compose logs browser-runtime --tail=200
 docker compose exec redis redis-cli keys 'live_demo:session:*:browser_status'
 ```
@@ -32,7 +32,7 @@ Check:
 - `browser.network.request_blocked`;
 - `screen_read_timeout`;
 - browser action latency in Grafana;
-- MinIO health at `http://localhost:9000/minio/health/live`.
+- MinIO health at `$MINIO_URL/minio/health/live`.
 
 ## Fix
 

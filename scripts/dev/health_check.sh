@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$root"
+
+python3 scripts/dev/ensure_ports.py
+set -a
+# shellcheck disable=SC1091
+. .local/runtime/ports.env
+set +a
+
 check() {
   local name="$1"
   local url="$2"
@@ -15,12 +24,12 @@ check() {
 }
 
 failed=0
-check "web" "http://localhost:3000" || failed=1
-check "api" "http://localhost:8000/healthz" || failed=1
-check "api-ready" "http://localhost:8000/readyz" || failed=1
-check "browser-runtime" "http://localhost:8200/healthz" || failed=1
-check "agent-runtime" "http://localhost:8300/healthz" || failed=1
-check "minio" "http://localhost:9000/minio/health/live" || failed=1
+check "web" "${WEB_URL}" || failed=1
+check "api" "${API_URL}/healthz" || failed=1
+check "api-ready" "${API_URL}/readyz" || failed=1
+check "browser-runtime" "${BROWSER_RUNTIME_URL}/healthz" || failed=1
+check "agent-runtime" "${AGENT_RUNTIME_URL}/healthz" || failed=1
+check "minio" "${MINIO_URL}/minio/health/live" || failed=1
 
 if docker compose ps postgres redis >/dev/null 2>&1; then
   docker compose ps postgres redis

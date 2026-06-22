@@ -29,8 +29,8 @@ recovery_failed
 ## Commands
 
 ```bash
-curl -s http://localhost:8200/healthz
-curl -s http://localhost:8200/readyz
+curl -s $BROWSER_RUNTIME_URL/healthz
+curl -s $BROWSER_RUNTIME_URL/readyz
 ```
 
 ## Mitigation

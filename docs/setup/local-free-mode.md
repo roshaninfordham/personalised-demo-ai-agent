@@ -16,7 +16,7 @@ Run:
 
 ```bash
 cp .env.example .env
-docker compose up --build
+make up
 ```
 
 What works in this mode:

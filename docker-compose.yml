@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: demo_agent
       POSTGRES_PASSWORD: demo_agent
     ports:
-      - "5432:5432"
+      - "${HOST_POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +23,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${HOST_REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     command: ["redis-server", "--appendonly", "yes"]
@@ -43,8 +43,8 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${HOST_MINIO_API_PORT:-9000}:9000"
+      - "${HOST_MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -66,8 +66,9 @@ services:
       DATABASE_SYNC_URL: postgresql+psycopg://demo_agent:demo_agent@postgres:5432/demo_agent
       REDIS_URL: redis://redis:6379/0
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_BASE_URL:-http://localhost:3000}
     ports:
-      - "8000:8000"
+      - "${HOST_API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,12 +92,33 @@ services:
     build:
       context: .
       dockerfile: infra/docker/web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_EVENTS_BASE_URL: ${NEXT_PUBLIC_EVENTS_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_BROWSER_RUNTIME_URL: ${NEXT_PUBLIC_BROWSER_RUNTIME_URL:-http://localhost:8200}
+        NEXT_PUBLIC_AGENT_RUNTIME_URL: ${NEXT_PUBLIC_AGENT_RUNTIME_URL:-http://localhost:8300}
+        NEXT_PUBLIC_MINIO_URL: ${NEXT_PUBLIC_MINIO_URL:-http://localhost:9000}
+        NEXT_PUBLIC_GRAFANA_URL: ${NEXT_PUBLIC_GRAFANA_URL:-http://localhost:3001}
+        NEXT_PUBLIC_PROMETHEUS_URL: ${NEXT_PUBLIC_PROMETHEUS_URL:-http://localhost:9090}
+        NEXT_PUBLIC_JAEGER_URL: ${NEXT_PUBLIC_JAEGER_URL:-http://localhost:16686}
+        NEXT_PUBLIC_LOKI_URL: ${NEXT_PUBLIC_LOKI_URL:-http://localhost:3100}
+        NEXT_PUBLIC_PROVIDER_MODE_LABEL: ${NEXT_PUBLIC_PROVIDER_MODE_LABEL:-Fake Providers}
     environment:
       APP_ENV: local
-      PUBLIC_BASE_URL: http://localhost:3000
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
       API_BASE_URL: http://api:8000
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+      NEXT_PUBLIC_EVENTS_BASE_URL: ${NEXT_PUBLIC_EVENTS_BASE_URL:-http://localhost:8000}
+      NEXT_PUBLIC_BROWSER_RUNTIME_URL: ${NEXT_PUBLIC_BROWSER_RUNTIME_URL:-http://localhost:8200}
+      NEXT_PUBLIC_AGENT_RUNTIME_URL: ${NEXT_PUBLIC_AGENT_RUNTIME_URL:-http://localhost:8300}
+      NEXT_PUBLIC_MINIO_URL: ${NEXT_PUBLIC_MINIO_URL:-http://localhost:9000}
+      NEXT_PUBLIC_GRAFANA_URL: ${NEXT_PUBLIC_GRAFANA_URL:-http://localhost:3001}
+      NEXT_PUBLIC_PROMETHEUS_URL: ${NEXT_PUBLIC_PROMETHEUS_URL:-http://localhost:9090}
+      NEXT_PUBLIC_JAEGER_URL: ${NEXT_PUBLIC_JAEGER_URL:-http://localhost:16686}
+      NEXT_PUBLIC_LOKI_URL: ${NEXT_PUBLIC_LOKI_URL:-http://localhost:3100}
+      NEXT_PUBLIC_PROVIDER_MODE_LABEL: ${NEXT_PUBLIC_PROVIDER_MODE_LABEL:-Fake Providers}
     ports:
-      - "3000:3000"
+      - "${HOST_WEB_PORT:-3000}:3000"
     depends_on:
       api:
         condition: service_healthy
@@ -123,7 +145,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://demo_agent:demo_agent@postgres:5432/demo_agent
       REDIS_URL: redis://redis:6379/0
     ports:
-      - "8300:8300"
+      - "${HOST_AGENT_RUNTIME_PORT:-8300}:8300"
     depends_on:
       postgres:
         condition: service_healthy
@@ -154,7 +176,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
     ports:
-      - "8200:8200"
+      - "${HOST_BROWSER_RUNTIME_PORT:-8200}:8200"
     shm_size: "2gb"
     depends_on:
       redis:
@@ -281,7 +303,7 @@ services:
       dockerfile: infra/docker/tts-service.Dockerfile
     env_file: .env
     ports:
-      - "8100:8100"
+      - "${HOST_TTS_PORT:-8100}:8100"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8100/healthz"]
       interval: 10s
@@ -294,7 +316,7 @@ services:
     profiles: ["ai-local"]
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "${HOST_OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
@@ -308,8 +330,8 @@ services:
     volumes:
       - ./infra/observability/otel-collector.yaml:/etc/otel-collector.yaml:ro
     ports:
-      - "4317:4317"
-      - "4318:4318"
+      - "${HOST_OTEL_GRPC_PORT:-4317}:4317"
+      - "${HOST_OTEL_HTTP_PORT:-4318}:4318"
     restart: unless-stopped
     networks:
       - live-demo-agent
@@ -320,7 +342,7 @@ services:
     volumes:
       - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - "9090:9090"
+      - "${HOST_PROMETHEUS_PORT:-9090}:9090"
     restart: unless-stopped
     networks:
       - live-demo-agent
@@ -329,7 +351,7 @@ services:
     profiles: ["observability"]
     image: grafana/grafana:latest
     ports:
-      - "3001:3000"
+      - "${HOST_GRAFANA_PORT:-3001}:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
@@ -345,7 +367,7 @@ services:
     profiles: ["observability"]
     image: grafana/loki:latest
     ports:
-      - "3100:3100"
+      - "${HOST_LOKI_PORT:-3100}:3100"
     volumes:
       - ./infra/observability/loki-config.yaml:/etc/loki/local-config.yaml:ro
     restart: unless-stopped
@@ -358,8 +380,8 @@ services:
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
-      - "16686:16686"
-      - "14268:14268"
+      - "${HOST_JAEGER_UI_PORT:-16686}:16686"
+      - "${HOST_JAEGER_COLLECTOR_PORT:-14268}:14268"
     restart: unless-stopped
     networks:
       - live-demo-agent

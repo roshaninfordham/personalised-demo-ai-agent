@@ -130,8 +130,11 @@ Generated manifests are written to `.local/rendered-staging.yaml` and
 Start the local stack:
 
 ```bash
-docker compose up --build -d api browser-runtime agent-runtime learner-worker web
+make up
 make orchestration-smoke
+set -a
+. .local/runtime/ports.env
+set +a
 ```
 
 Minimal session lifecycle:
@@ -139,7 +142,7 @@ Minimal session lifecycle:
 ```bash
 ORG_ID=00000000-0000-0000-0000-000000000001
 
-curl -X POST http://localhost:8000/api/v1/products \
+curl -X POST $API_URL/api/v1/products \
   -H "Content-Type: application/json" \
   -H "X-Organization-ID: ${ORG_ID}" \
   -d '{
@@ -148,16 +151,16 @@ curl -X POST http://localhost:8000/api/v1/products \
     "default_persona": "founder"
   }'
 
-curl -X POST http://localhost:8000/api/v1/demo-sessions/<session_id>/prewarm \
+curl -X POST $API_URL/api/v1/demo-sessions/<session_id>/prewarm \
   -H "X-Organization-ID: ${ORG_ID}"
 
-curl -X POST http://localhost:8000/api/v1/demo-sessions/<session_id>/start \
+curl -X POST $API_URL/api/v1/demo-sessions/<session_id>/start \
   -H "X-Organization-ID: ${ORG_ID}"
 
-curl http://localhost:8000/api/v1/demo-sessions/<session_id>/orchestration-state \
+curl $API_URL/api/v1/demo-sessions/<session_id>/orchestration-state \
   -H "X-Organization-ID: ${ORG_ID}"
 
-curl -X POST http://localhost:8000/api/v1/demo-sessions/<session_id>/end \
+curl -X POST $API_URL/api/v1/demo-sessions/<session_id>/end \
   -H "X-Organization-ID: ${ORG_ID}"
 ```
 
@@ -170,7 +173,7 @@ flowchart TD
     Logs --> DB{"DB migration issue?"}
     Logs --> Runtime{"Runtime health issue?"}
     DB -->|yes| Upgrade["make db-upgrade"]
-    Runtime -->|yes| Rebuild["docker compose up --build -d <service>"]
+    Runtime -->|yes| Rebuild["make up -d <service>"]
     Upgrade --> Retry["retry smoke"]
     Rebuild --> Retry
 ```

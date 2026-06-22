@@ -18,7 +18,7 @@ API readiness fails, events do not arrive, screenshots are missing, or migration
 docker compose ps postgres redis minio
 docker compose exec postgres pg_isready -U demo_agent -d demo_agent
 docker compose exec redis redis-cli ping
-curl -s http://localhost:9000/minio/health/live
+curl -s $MINIO_URL/minio/health/live
 make db-current
 ```
 

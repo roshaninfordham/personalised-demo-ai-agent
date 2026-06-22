@@ -17,7 +17,7 @@ CRM_EXPORT_DRY_RUN=true
 ```
 
 ```bash
-docker compose up --build
+make up
 ```
 
 More realistic NVIDIA NIM mode:
@@ -32,7 +32,7 @@ AI_TTS_PROVIDER=fake
 ```
 
 ```bash
-docker compose up --build
+make up
 ```
 
 Use fake STT/TTS if microphone or voice is unstable. Use scripted text turns if needed.
@@ -51,10 +51,13 @@ Use fake STT/TTS if microphone or voice is unstable. Use scripted text turns if 
 - [ ] Backup fake mode ready.
 
 ```bash
-curl -s http://localhost:8000/healthz
-curl -s http://localhost:8000/readyz
-curl -s http://localhost:8200/healthz
-curl -s http://localhost:8300/healthz
+set -a
+. .local/runtime/ports.env
+set +a
+curl -s $API_URL/healthz
+curl -s $API_URL/readyz
+curl -s $BROWSER_RUNTIME_URL/healthz
+curl -s $AGENT_RUNTIME_URL/healthz
 ```
 
 ## Demo Flow
@@ -70,13 +73,13 @@ I will start the full local stack. The key services are the frontend, API orches
 Command:
 
 ```bash
-docker compose up --build
+make up
 ```
 
 Open:
 
-```text
-http://localhost:3000
+```bash
+make open
 ```
 
 Expected: landing page loads and the demo start form is visible.

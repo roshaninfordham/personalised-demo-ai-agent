@@ -6,17 +6,16 @@ import { MetricsDashboardLink } from "../components/metrics/MetricsDashboardLink
 import { Card, CardBody } from "../components/ui/Card";
 import { getPublicConfig } from "../lib/config/publicConfig";
 
-const statusCards = [
-  ["API", "http://localhost:8000/healthz", "session orchestration"],
-  ["Browser runtime", "http://localhost:8200/healthz", "Playwright control"],
-  ["Agent runtime", "http://localhost:8300/healthz", "voice and agent loop"],
-  ["Redis/Postgres/MinIO", "make health", "state and artifacts"],
-  ["LLM provider", "env-configured", "fake/NIM/Ollama/custom"],
-  ["STT/TTS", "env-configured", "fake/local/cloud"],
-] as const;
-
 export default function HomePage() {
   const config = getPublicConfig();
+  const statusCards = [
+    ["API", `${config.apiBaseUrl}/healthz`, "session orchestration"],
+    ["Browser runtime", `${config.browserRuntimeUrl}/healthz`, "Playwright control"],
+    ["Agent runtime", `${config.agentRuntimeUrl}/healthz`, "voice and agent loop"],
+    ["Storage", `${config.minioUrl}/minio/health/live`, "Redis/Postgres/MinIO state"],
+    ["LLM provider", "env-configured", "fake/NIM/Ollama/custom"],
+    ["STT/TTS", "env-configured", "fake/local/cloud"],
+  ] as const;
   return (
     <main className="page landing landing-demo">
       <section className="hero-panel">

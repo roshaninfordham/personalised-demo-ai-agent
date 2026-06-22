@@ -4,7 +4,7 @@
 
 The local stack runs the same service boundaries used by the production architecture, but with local infrastructure and fake providers by default.
 
-| Service | Port | Purpose | Required for minimal demo? | Optional profile | Health endpoint |
+| Service | Preferred host port | Purpose | Required for minimal demo? | Optional profile | Health endpoint |
 | --- | ---: | --- | --- | --- | --- |
 | web | 3000 | Frontend UI | yes | default | `/` |
 | api | 8000 | Backend API and session orchestrator | yes | default | `/healthz` |
@@ -17,6 +17,10 @@ The local stack runs the same service boundaries used by the production architec
 | ollama | 11434 | Local LLM/embedding runtime | optional | `ai-local` | `/api/version` |
 | tts-service | 8100 | Optional local TTS service boundary | optional | `tts-local` | `/healthz` |
 | otel/prometheus/loki/jaeger/grafana | 4317/9090/3100/16686/3001 | Local observability | optional | `observability` | service-specific |
+
+These are preferred ports only. `make up` writes the actual assigned values to
+`.local/runtime/ports.env` and automatically uses free alternatives when a
+preferred port is already in use.
 
 Docker Compose profiles selectively activate optional services. Docker documents profiles as a way to enable services for specific environments or use cases while keeping unprofiled services enabled by default: [Docker Compose profiles](https://docs.docker.com/compose/how-tos/profiles/).
 
@@ -52,9 +56,7 @@ This is the default path for local smoke tests and CI. It does not require paid 
 git clone <repo-url>
 cd personalised-demo-ai-agent
 cp .env.example .env
-pnpm install
-uv sync --all-packages
-docker compose up --build
+make up
 ```
 
 Confirm the fake provider settings:
@@ -74,10 +76,26 @@ CRM_EXPORT_PROVIDER=mock
 CRM_EXPORT_DRY_RUN=true
 ```
 
-Open:
+Open the assigned local URL:
 
-```text
-http://localhost:3000
+```bash
+make open
+```
+
+`make up` detects free ports and writes the generated URLs to
+`.local/runtime/ports.env`. To print them:
+
+```bash
+cat .local/runtime/ports.env
+```
+
+For any command in these docs that uses `$API_URL`, `$WEB_URL`,
+`$BROWSER_RUNTIME_URL`, or similar generated variables, source the file first:
+
+```bash
+set -a
+. .local/runtime/ports.env
+set +a
 ```
 
 ## Run with Docker Compose
@@ -85,13 +103,16 @@ http://localhost:3000
 Default lightweight stack:
 
 ```bash
-docker compose up --build
+make up
 ```
 
 Start in the background:
 
 ```bash
-docker compose up -d --build
+set -a
+. .local/runtime/ports.env
+set +a
+make up
 ```
 
 Follow logs:
@@ -112,19 +133,19 @@ Services without profiles start by default. Profiled services start only when th
 
 ```bash
 # Include local Ollama.
-docker compose --profile ai-local up --build
+make up-ai-local
 
 # Include local TTS service.
-docker compose --profile tts-local up --build
+make up-full
 
 # Include observability stack.
-docker compose --profile observability up --build
+make up-observability
 
 # Include optional ScrapeGraphAI learner adapter.
 make up-scrapegraph
 
 # Include local AI, local TTS, and observability.
-docker compose --profile ai-local --profile tts-local --profile observability up --build
+make up-full
 ```
 
 ## Run with NVIDIA NIM
@@ -147,8 +168,8 @@ NVIDIA documents NIM LLM as exposing an OpenAI-compatible API with chat completi
 Verification:
 
 ```bash
-docker compose up --build api agent-runtime
-curl -s http://localhost:8000/readyz
+make up-nim
+make health
 ```
 
 More detail: [nvidia-nim-mode.md](nvidia-nim-mode.md).
@@ -170,7 +191,7 @@ AI_EMBEDDING_MODEL=nomic-embed-text
 Start the profile:
 
 ```bash
-docker compose --profile ai-local up --build
+make up-ai-local
 ```
 
 Pull models manually:
@@ -211,7 +232,7 @@ KOKORO_BASE_URL=http://tts:8100
 Start local TTS:
 
 ```bash
-docker compose --profile tts-local up --build
+make up-full
 ```
 
 Local STT/TTS latency depends on CPU/GPU, model size, and Docker resource limits. Use fake providers for deterministic CI and hosted providers for smoother demos if local hardware is weak.
@@ -221,11 +242,7 @@ More detail: [local-stt-tts.md](local-stt-tts.md).
 ## Verify Services
 
 ```bash
-curl -s http://localhost:8000/healthz
-curl -s http://localhost:8000/readyz
-curl -s http://localhost:8200/healthz
-curl -s http://localhost:8300/healthz
-curl -s http://localhost:9000/minio/health/live
+make health
 ```
 
 Expected successful health responses are JSON health payloads with `status` equal to `ok` or HTTP 200 for service health endpoints.
@@ -238,7 +255,7 @@ docker compose ps
 
 ## Start a Demo Session
 
-1. Open `http://localhost:3000`.
+1. Run `make open`.
 2. Enter a safe product URL.
 3. Optional: paste text guidance from [demo-recipe-guide.md](../recipes/demo-recipe-guide.md).
 4. Start the session.
@@ -247,7 +264,10 @@ docker compose ps
 For API-only smoke:
 
 ```bash
-curl -s http://localhost:8000/api/v1/healthz
+set -a
+. .local/runtime/ports.env
+set +a
+curl -s "$API_URL/healthz"
 ```
 
 ## Shut Down
@@ -263,7 +283,8 @@ This deletes local Postgres, Redis, MinIO, Ollama, and Grafana volumes.
 ```bash
 docker compose down -v
 rm -rf .local/test-artifacts .local/mock-crm-exports
-docker compose up --build
+rm -f .local/runtime/ports.env
+make up
 ```
 
 Docker cleanup:

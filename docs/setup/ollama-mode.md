@@ -20,7 +20,7 @@ AI_EMBEDDING_DIMENSIONS=768
 ## Run
 
 ```bash
-docker compose --profile ai-local up --build
+make up-ai-local
 ```
 
 The project does not auto-pull models by default. Pull models manually so disk and network usage are explicit:
@@ -34,7 +34,8 @@ docker compose exec ollama ollama list
 Verify:
 
 ```bash
-curl -s http://localhost:11434/api/version
+. .local/runtime/ports.env
+curl -s "$OLLAMA_URL/api/version"
 ```
 
 ## Caveats

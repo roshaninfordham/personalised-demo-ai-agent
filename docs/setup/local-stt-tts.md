@@ -63,7 +63,7 @@ KOKORO_VOICE=af_heart
 Run:
 
 ```bash
-docker compose --profile tts-local up --build
+make up-full
 ```
 
 Piper example:

@@ -4,8 +4,8 @@ Use this for a short local run.
 
 ```bash
 cp .env.example .env
-docker compose up --build
-open http://localhost:3000
+make up
+make open
 ```
 
 Use fake providers unless you are intentionally testing real provider latency.

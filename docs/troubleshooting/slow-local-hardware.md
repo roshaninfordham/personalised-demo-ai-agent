@@ -42,7 +42,7 @@ AI_TTS_PROVIDER=fake
 Run only core services:
 
 ```bash
-docker compose up --build web api browser-runtime agent-runtime postgres redis minio
+make up web api browser-runtime agent-runtime postgres redis minio
 ```
 
 Other options:

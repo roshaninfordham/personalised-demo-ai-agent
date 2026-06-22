@@ -9,7 +9,7 @@ OLLAMA_TEXT_MODEL=<model-name>
 ```
 
 ```bash
-docker compose --profile ai-local up --build
+make up-ai-local
 docker compose exec ollama ollama pull <model-name>
 ```
 

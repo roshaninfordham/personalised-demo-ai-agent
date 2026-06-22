@@ -29,7 +29,7 @@ flowchart LR
 After changing provider variables, restart affected services:
 
 ```bash
-docker compose up -d --build api agent-runtime learner-worker
+make up api agent-runtime learner-worker
 ```
 
 ## Text LLM Providers
@@ -73,7 +73,7 @@ OLLAMA_TEXT_MODEL=<model-name>
 Run:
 
 ```bash
-docker compose --profile ai-local up --build
+make up-ai-local
 docker compose exec ollama ollama pull <model-name>
 ```
 
@@ -188,7 +188,7 @@ KOKORO_VOICE=af_heart
 Run:
 
 ```bash
-docker compose --profile tts-local up --build
+make up-full
 ```
 
 Piper:

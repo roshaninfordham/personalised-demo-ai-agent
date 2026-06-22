@@ -29,7 +29,7 @@ Use service logs first. Observability is optional and may not be running.
 ```bash
 cp .env.example .env
 docker compose down
-docker compose up --build
+make up
 ```
 
 For a full local reset:
@@ -37,7 +37,7 @@ For a full local reset:
 ```bash
 docker compose down -v
 rm -rf .local/test-artifacts .local/mock-crm-exports
-docker compose up --build
+make up
 ```
 
 ## Prevention

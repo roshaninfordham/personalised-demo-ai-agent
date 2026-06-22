@@ -16,8 +16,8 @@ Grafana dashboards are empty, Prometheus is down, traces are missing, or logs ar
 
 ```bash
 docker compose --profile observability ps
-curl -s http://localhost:9090/-/healthy
-curl -s http://localhost:3001/api/health
+curl -s $NEXT_PUBLIC_PROMETHEUS_URL/-/healthy
+curl -s $NEXT_PUBLIC_GRAFANA_URL/api/health
 docker compose logs otel-collector --tail=200
 ```
 
@@ -33,7 +33,7 @@ Check:
 ## Fix
 
 ```bash
-docker compose --profile observability up --build
+make up-observability
 make obs-dashboards-validate
 ```
 

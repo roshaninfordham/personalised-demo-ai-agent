@@ -43,11 +43,14 @@ How to reduce recurrence.
 ## First Commands
 
 ```bash
+set -a
+. .local/runtime/ports.env
+set +a
 docker compose ps
-curl -s http://localhost:8000/healthz
-curl -s http://localhost:8000/readyz
-curl -s http://localhost:8200/healthz
-curl -s http://localhost:8300/healthz
+curl -s $API_URL/healthz
+curl -s $API_URL/readyz
+curl -s $BROWSER_RUNTIME_URL/healthz
+curl -s $AGENT_RUNTIME_URL/healthz
 docker compose logs api --tail=100
 docker compose logs browser-runtime --tail=100
 docker compose logs agent-runtime --tail=100

@@ -20,8 +20,13 @@ export type PublicConfig = {
   prometheusUrl: string;
   jaegerUrl: string;
   lokiUrl: string;
+  browserRuntimeUrl: string;
+  agentRuntimeUrl: string;
+  minioUrl: string;
   providerModeLabel: string;
 };
+
+type RuntimePublicConfig = Partial<Record<string, string>>;
 
 export function getPublicConfig(): PublicConfig {
   return {
@@ -43,12 +48,16 @@ export function getPublicConfig(): PublicConfig {
     prometheusUrl: readString("NEXT_PUBLIC_PROMETHEUS_URL", "http://localhost:9090"),
     jaegerUrl: readString("NEXT_PUBLIC_JAEGER_URL", "http://localhost:16686"),
     lokiUrl: readString("NEXT_PUBLIC_LOKI_URL", "http://localhost:3100"),
+    browserRuntimeUrl: readString("NEXT_PUBLIC_BROWSER_RUNTIME_URL", "http://localhost:8200"),
+    agentRuntimeUrl: readString("NEXT_PUBLIC_AGENT_RUNTIME_URL", "http://localhost:8300"),
+    minioUrl: readString("NEXT_PUBLIC_MINIO_URL", "http://localhost:9000"),
     providerModeLabel: readString("NEXT_PUBLIC_PROVIDER_MODE_LABEL", "Fake Providers"),
   };
 }
 
 function readString(key: string, fallback: string): string {
-  const value = process.env[key];
+  const runtimeConfig = readRuntimePublicConfig();
+  const value = runtimeConfig[key] ?? process.env[key];
   return value === undefined || value.trim() === "" ? fallback : value;
 }
 
@@ -72,4 +81,12 @@ function readEventTransport(value: string | undefined): EventTransport {
 function readBrowserFrameMode(value: string | undefined): BrowserFrameMode {
   if (value === "video" || value === "webrtc") return value;
   return "screenshot";
+}
+
+function readRuntimePublicConfig(): RuntimePublicConfig {
+  if (typeof window === "undefined") return {};
+  const globalScope = window as Window & {
+    __LIVE_DEMO_PUBLIC_CONFIG__?: RuntimePublicConfig;
+  };
+  return globalScope.__LIVE_DEMO_PUBLIC_CONFIG__ ?? {};
 }

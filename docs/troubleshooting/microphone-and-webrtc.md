@@ -17,15 +17,15 @@ The browser cannot access the microphone, no user audio reaches the agent, or th
 ## Quick Checks
 
 ```bash
-curl -s http://localhost:8300/healthz
-curl -s http://localhost:8300/readyz
+curl -s $AGENT_RUNTIME_URL/healthz
+curl -s $AGENT_RUNTIME_URL/readyz
 docker compose logs agent-runtime --tail=200
 ```
 
 For a session:
 
 ```bash
-curl -s http://localhost:8000/api/v1/demo-sessions/<session_id>/join-config
+curl -s $API_URL/api/v1/demo-sessions/<session_id>/join-config
 ```
 
 ## Logs and Metrics

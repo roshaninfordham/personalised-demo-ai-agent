@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { apiBaseUrl } from "./runtimeEnv";
+
 const sessionId = "00000000-0000-0000-0000-000000000010";
 const productId = "00000000-0000-0000-0000-000000000020";
 const now = "2026-06-22T12:00:00.000Z";
@@ -63,7 +65,7 @@ test("human-like local demo journey with safe browser action and grounded answer
 });
 
 async function installMockBackend(page: Page): Promise<void> {
-  await page.route("http://localhost:8000/**", async (route) => {
+  await page.route(`${apiBaseUrl}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;
@@ -248,5 +250,9 @@ function jsonHeaders(): Record<string, string> {
 }
 
 function corsHeaders(): Record<string, string> {
-  return { "access-control-allow-origin": "*", "access-control-allow-headers": "*" };
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers": "*",
+    "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+  };
 }

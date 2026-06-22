@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { apiBaseUrl, webBaseUrl } from "./runtimeEnv";
+
+const webPort = new URL(webBaseUrl).port || "3000";
+
 export default defineConfig({
   testDir: ".",
   testMatch: ["*.spec.ts"],
@@ -8,19 +12,21 @@ export default defineConfig({
   outputDir: "../../.local/test-artifacts/e2e",
   reporter: [["list"], ["junit", { outputFile: "../../.local/test-results/e2e-results.xml" }]],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
+    baseURL: webBaseUrl,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm --filter @live-demo-agent/web dev",
-    url: "http://localhost:3000",
+    command: `pnpm --filter @live-demo-agent/web dev -- --port ${webPort}`,
+    url: webBaseUrl,
     reuseExistingServer: true,
     timeout: 120_000,
     env: {
       NEXT_PUBLIC_ENABLE_DEBUG_PANEL: "true",
       NEXT_PUBLIC_ENABLE_WEBRTC_PLACEHOLDER: "true",
+      NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
+      NEXT_PUBLIC_EVENTS_BASE_URL: apiBaseUrl,
     },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

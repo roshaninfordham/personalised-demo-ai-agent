@@ -38,25 +38,25 @@ help:
 	@echo "  make clean            Remove caches"
 
 up:
-	docker compose up --build web api browser-runtime agent-runtime learner-worker post-demo-worker postgres redis minio
+	scripts/dev/up.sh default
 
 up-lite:
-	AI_TEXT_PROVIDER=fake AI_STT_PROVIDER=fake AI_TTS_PROVIDER=fake docker compose up --build web api browser-runtime agent-runtime postgres redis minio
+	scripts/dev/up.sh lite
 
 up-full:
-	docker compose --profile ai-local --profile tts-local --profile observability up --build
+	scripts/dev/up.sh full
 
 up-observability:
-	docker compose --profile observability up --build
+	scripts/dev/up.sh observability
 
 up-ai-local:
-	docker compose --profile ai-local up --build
+	scripts/dev/up.sh ai-local
 
 up-nim:
-	AI_TEXT_PROVIDER=nvidia_nim docker compose up --build web api browser-runtime agent-runtime learner-worker post-demo-worker postgres redis minio
+	scripts/dev/up.sh nim
 
 up-scrapegraph:
-	SCRAPEGRAPH_ENABLED=true docker compose --profile scrapegraph up --build learner-worker-scrapegraph
+	scripts/dev/up.sh scrapegraph
 
 down:
 	docker compose down
@@ -189,7 +189,7 @@ docker-config:
 	docker compose config
 
 docker-up:
-	docker compose up --build
+	make up
 
 docker-down:
 	docker compose down
@@ -311,7 +311,7 @@ orchestration-test-integration:
 	uv run pytest services/api/tests -m orchestration_integration
 
 orchestration-smoke:
-	curl -s http://localhost:8000/healthz
+	make health
 
 post-demo-test:
 	uv run pytest services/api/tests \
@@ -322,10 +322,10 @@ post-demo-test-integration:
 	uv run pytest services/api/tests -m post_demo_integration
 
 post-demo-smoke:
-	curl -s http://localhost:8000/healthz
+	make health
 
 obs-up:
-	docker compose --profile observability up --build
+	scripts/dev/up.sh observability
 
 obs-down:
 	docker compose --profile observability down
@@ -337,8 +337,7 @@ obs-dashboards-validate:
 	uv run python scripts/validate_grafana_dashboards.py infra/observability/grafana/dashboards
 
 obs-smoke:
-	curl -s http://localhost:9090/-/healthy
-	curl -s http://localhost:3001/api/health
+	scripts/dev/obs_smoke.sh
 
 test-fixture-secrets:
 	uv run python scripts/test/check_no_secrets_in_fixtures.py

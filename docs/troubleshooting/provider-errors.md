@@ -26,7 +26,8 @@ docker compose logs agent-runtime --tail=200
 Ollama:
 
 ```bash
-curl -s http://localhost:11434/api/version
+. .local/runtime/ports.env
+curl -s "$OLLAMA_URL/api/version"
 docker compose exec ollama ollama list
 ```
 

@@ -12,18 +12,14 @@ Observability is optional for the first run. Use service health first.
 
 ```bash
 cp .env.example .env
-pnpm install
-uv sync --all-packages
-docker compose up --build
-curl -s http://localhost:8000/healthz
-curl -s http://localhost:8200/healthz
-curl -s http://localhost:8300/healthz
+make up
+make health
 ```
 
 Open:
 
-```text
-http://localhost:3000
+```bash
+make open
 ```
 
 ## Mitigation

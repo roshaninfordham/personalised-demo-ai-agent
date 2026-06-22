@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { apiBaseUrl } from "./runtimeEnv";
+
 const sessionId = "00000000-0000-0000-0000-000000000010";
 const productId = "00000000-0000-0000-0000-000000000020";
 const now = "2026-06-21T12:00:00.000Z";
@@ -28,7 +30,7 @@ test("full local demo UI flow with scripted grounded events", async ({ page }) =
 });
 
 async function installMockBackend(page: Page): Promise<void> {
-  await page.route("http://localhost:8000/**", async (route) => {
+  await page.route(`${apiBaseUrl}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;

@@ -165,16 +165,16 @@ Dashboards:
 
 ```bash
 cp .env.example .env
-docker compose --profile observability up --build
+make up-observability
 make obs-dashboards-validate
 ```
 
 Local endpoints:
 
-- Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3001`
-- Jaeger: `http://localhost:16686`
-- Loki: `http://localhost:3100`
+- Prometheus: `$NEXT_PUBLIC_PROMETHEUS_URL`
+- Grafana: `$NEXT_PUBLIC_GRAFANA_URL`
+- Jaeger: `$NEXT_PUBLIC_JAEGER_URL`
+- Loki: `$NEXT_PUBLIC_LOKI_URL`
 
 ## Debug A Slow Session
 

@@ -32,14 +32,14 @@ Embedding dimensions must match the pgvector schema. Changing dimensions require
 ## Run
 
 ```bash
-docker compose up --build api agent-runtime learner-worker
-curl -s http://localhost:8000/readyz
+make up api agent-runtime learner-worker
+curl -s $API_URL/readyz
 ```
 
 If a provider health endpoint is enabled:
 
 ```bash
-curl -s http://localhost:8000/api/v1/provider-health
+curl -s $API_URL/api/v1/provider-health
 ```
 
 ## Common Failures

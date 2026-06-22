@@ -38,7 +38,7 @@ Frontend-safe examples:
 
 ```env
 NEXT_PUBLIC_APP_NAME=Live Demo Agent
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_API_BASE_URL=$API_URL
 NEXT_PUBLIC_ENABLE_DEBUG_PANEL=true
 ```
 
@@ -47,13 +47,13 @@ NEXT_PUBLIC_ENABLE_DEBUG_PANEL=true
 After changing provider, database, Redis, object storage, auth, or browser sandbox variables, restart affected services:
 
 ```bash
-docker compose up -d --build api agent-runtime browser-runtime learner-worker
+make up api agent-runtime browser-runtime learner-worker
 ```
 
 After changing `NEXT_PUBLIC_*` variables, rebuild the frontend:
 
 ```bash
-docker compose up -d --build web
+make up web
 ```
 
 ## Production Safety

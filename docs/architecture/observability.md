@@ -31,7 +31,7 @@ flowchart TB
 Run:
 
 ```bash
-docker compose --profile observability up --build
+make up-observability
 ```
 
 Dashboards:
