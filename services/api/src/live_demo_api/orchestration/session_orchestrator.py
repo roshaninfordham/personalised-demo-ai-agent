@@ -1024,4 +1024,7 @@ def _screen_event_payload(result: BrowserScreenResult) -> dict[str, object]:
     diagnostics = screen.get("diagnostics")
     if isinstance(diagnostics, dict) and diagnostics:
         payload["diagnostics"] = diagnostics
+    auth_state = screen.get("auth_state")
+    if isinstance(auth_state, dict):
+        payload["auth_state"] = auth_state
     return payload

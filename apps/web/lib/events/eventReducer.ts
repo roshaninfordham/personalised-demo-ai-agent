@@ -6,6 +6,7 @@ import { eventLagMs, nowIso } from "../utils/time";
 import type {
   ClickRippleState,
   ElementHighlightState,
+  AuthScreenState,
   LearningMilestone,
   LiveDemoClientState,
   LiveDemoEvent,
@@ -85,7 +86,6 @@ export function reduceEvent(
     case "browser.cursor.move":
       reduceCursorMove(state, event);
       break;
-    case "browser.cursor.click":
     case "browser.cursor.ripple":
       reduceRipple(state, event);
       break;
@@ -132,10 +132,12 @@ function reduceScreenUpdated(state: LiveDemoClientState, event: LiveDemoEvent): 
   const screenId = stringPayload(payload.screen_id) ?? "screen_unknown";
   const screenHash = stringPayload(payload.screen_hash) ?? screenId;
   const imageUrl =
-    stringPayload(payload.image_url) ??
-    stringPayload(payload.screenshot_url) ??
-    stringPayload(payload.screenshot_uri) ??
-    screenshotPayload(payload.screenshot) ??
+    normalizeFrameImageUrl(
+      stringPayload(payload.image_url) ??
+        stringPayload(payload.screenshot_url) ??
+        stringPayload(payload.screenshot_uri) ??
+        screenshotPayload(payload.screenshot),
+    ) ??
     null;
   const frame: BrowserFrameState = {
     screenId,
@@ -151,6 +153,7 @@ function reduceScreenUpdated(state: LiveDemoClientState, event: LiveDemoEvent): 
   const url = stringPayload(payload.url);
   if (url !== undefined) frame.url = url;
   state.currentFrame = frame;
+  state.authState = authStatePayload(payload.auth_state);
   const safeActions = numberPayload(payload.safe_action_count);
   if (safeActions !== undefined) {
     state.learning.safeActionCount = safeActions;
@@ -274,7 +277,33 @@ function stringPayload(value: unknown): string | undefined {
 function screenshotPayload(value: unknown): string | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   const record = value as Record<string, unknown>;
-  return stringPayload(record.presigned_url) ?? stringPayload(record.content_url);
+  return stringPayload(record.url) ?? stringPayload(record.presigned_url) ?? stringPayload(record.content_url);
+}
+
+function normalizeFrameImageUrl(value: string | undefined): string | undefined {
+  if (value === undefined || value.trim() === "") return undefined;
+  if (value.startsWith("org/") && value.includes("/screenshots/")) {
+    return `/api/v1/artifacts/browser-screenshot?object_key=${encodeURIComponent(value)}`;
+  }
+  return value;
+}
+
+function authStatePayload(value: unknown): AuthScreenState | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  const loginRequired = record.login_required === true;
+  return {
+    loginRequired,
+    confidence: numberPayload(record.confidence) ?? 0,
+    detectedFields: stringArrayPayload(record.detected_fields),
+    detectedActions: stringArrayPayload(record.detected_actions),
+    safeOptions: stringArrayPayload(record.safe_options),
+    reasonCodes: stringArrayPayload(record.reason_codes),
+  };
+}
+
+function stringArrayPayload(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
 function numberPayload(value: unknown): number | undefined {

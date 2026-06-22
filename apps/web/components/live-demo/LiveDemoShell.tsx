@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DemoSessionStateResponse } from "@live-demo-agent/contracts";
 
-import { getDemoSessionState, type TextTurnResponse } from "../../lib/api/demoSessionsApi";
+import { getDemoSessionState, sendTextTurn, type TextTurnResponse } from "../../lib/api/demoSessionsApi";
 import { useBrowserFrame } from "../../hooks/useBrowserFrame";
 import { useCursorOverlay } from "../../hooks/useCursorOverlay";
 import { useDemoSession } from "../../hooks/useDemoSession";
@@ -18,6 +18,7 @@ import { CallPanel } from "./CallPanel";
 import { ErrorBanner } from "./ErrorBanner";
 import { LatencyDebugPanel } from "./LatencyDebugPanel";
 import { LearningSidebar } from "./LearningSidebar";
+import { LoginRequiredBanner } from "./LoginRequiredBanner";
 import { SessionStatusBar } from "./SessionStatusBar";
 import { TranscriptPanel } from "./TranscriptPanel";
 
@@ -32,6 +33,7 @@ export function LiveDemoShell({ sessionId }: { sessionId: string }) {
   const sessionState = sessionLoadState.status === "loaded" ? sessionLoadState.data : null;
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [fallbackPolling, setFallbackPolling] = useState(false);
+  const [suggestedTurnPending, setSuggestedTurnPending] = useState(false);
   const dispatch = useCallback(
     (event: LiveDemoEvent, receivedAtMs?: number) => {
       store.dispatch(event, receivedAtMs);
@@ -78,6 +80,25 @@ export function LiveDemoShell({ sessionId }: { sessionId: string }) {
           </div>
         ) : null}
         {sessionLoadState.status === "failed" ? <ErrorBanner message={sessionLoadState.message} /> : null}
+        <LoginRequiredBanner
+          authState={state.authState}
+          onAskAgent={(text) => {
+            if (suggestedTurnPending) return;
+            setSuggestedTurnPending(true);
+            sendTextTurn(sessionId, text)
+              .then((response) => {
+                if (state.connectionStatus !== "connected") {
+                  dispatchTextTurnFallback(dispatch, sessionId, text, response);
+                }
+              })
+              .catch(() => {
+                // The text input remains available for retry; keep the banner non-blocking.
+              })
+              .finally(() => {
+                setSuggestedTurnPending(false);
+              });
+          }}
+        />
         <BrowserViewport
           frame={frame}
           cursor={cursor}

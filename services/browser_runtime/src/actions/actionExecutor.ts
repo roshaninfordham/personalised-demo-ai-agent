@@ -63,13 +63,13 @@ export class ActionExecutor {
         }
         case "highlight_element": {
           const element = requireElement(validated.resolvedElement);
-          await this.cursor.emitHighlight(session, element.element.element_id);
+          await this.cursor.emitHighlight(session, element.element);
           return await observeActionResult(session, command, this.screenReader, this.events, started, true);
         }
         case "click_element": {
           const element = requireElement(validated.resolvedElement);
           await this.cursor.emitMoveToElement(session, command.command_id, element.element.bbox);
-          await this.cursor.emitHighlight(session, element.element.element_id);
+          await this.cursor.emitHighlight(session, element.element);
           await this.cursor.emitClick(session, element.element.bbox);
           await element.locator.click({ timeout: this.config.browserActionTimeoutMs });
           await waitForPageIdle(session.page, this.config);
@@ -78,7 +78,7 @@ export class ActionExecutor {
         case "type_into_element": {
           const element = requireElement(validated.resolvedElement);
           await this.cursor.emitMoveToElement(session, command.command_id, element.element.bbox);
-          await this.cursor.emitHighlight(session, element.element.element_id);
+          await this.cursor.emitHighlight(session, element.element);
           await element.locator.fill(command.text ?? "", { timeout: this.config.browserActionTimeoutMs });
           await waitForPageIdle(session.page, this.config);
           return await observeActionResult(session, command, this.screenReader, this.events, started, false);

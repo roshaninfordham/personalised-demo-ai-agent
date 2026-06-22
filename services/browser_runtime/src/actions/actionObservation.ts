@@ -36,7 +36,15 @@ export async function observeActionResult(
   await events.publish(session, "browser.screen.updated", {
     screen_id: after.screen_id,
     screen_hash: after.screen_hash,
+    browser_session_id: after.browser_session_id,
+    url: after.url,
+    title: after.title,
+    summary: after.summary.summary,
+    screenshot_uri: after.screenshot_uri,
+    width: 1440,
+    height: 900,
+    safe_action_count: session.currentSafeActions.length,
+    auth_state: (after as typeof after & { auth_state?: unknown }).auth_state ?? null,
   });
   return result;
 }
-

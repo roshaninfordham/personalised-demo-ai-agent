@@ -70,6 +70,15 @@ export type TranscriptItem = {
   turnId?: string;
 };
 
+export type AuthScreenState = {
+  loginRequired: boolean;
+  confidence: number;
+  detectedFields: string[];
+  detectedActions: string[];
+  safeOptions: string[];
+  reasonCodes: string[];
+};
+
 export type TranscriptState = {
   items: RingBuffer<TranscriptItem>;
   itemsById: Map<string, TranscriptItem>;
@@ -108,6 +117,7 @@ export type LiveDemoClientState = {
   connectionStatus: EventConnectionStatus;
   sessionStatus: string | null;
   currentFrame: BrowserFrameState | null;
+  authState: AuthScreenState | null;
   cursor: CursorState;
   highlights: Map<string, ElementHighlightState>;
   ripples: RingBuffer<ClickRippleState>;

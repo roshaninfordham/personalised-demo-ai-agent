@@ -9,6 +9,7 @@ import type { DomSummary } from "./domExtractor.js";
 import type { InternalElement } from "./elementExtractor.js";
 import { elementFingerprint, elementId, hashScreen, screenIdFromHash } from "./screenHasher.js";
 import { toPublicElement } from "./elementExtractor.js";
+import { detectLoginScreen, type LoginScreenDetection } from "./loginScreenDetector.js";
 
 export function normalizeScreen(input: {
   session: BrowserSessionRecord;
@@ -22,7 +23,7 @@ export function normalizeScreen(input: {
   screenshotArtifactId?: string;
   globalNeverClick: string[];
   actionScoreThreshold: number;
-}): { screenState: ScreenState; elements: InternalElement[] } {
+}): { screenState: ScreenState & { auth_state: LoginScreenDetection }; elements: InternalElement[] } {
   const idSet = new Set<string>();
   const elements = input.rawElements.map((raw) => {
     const fingerprint = elementFingerprint(raw);
@@ -59,7 +60,13 @@ export function normalizeScreen(input: {
     elements,
   });
   const createdAt = new Date().toISOString();
-  const screenState: ScreenState = {
+  const authState = detectLoginScreen({
+    url: input.url,
+    title: input.title,
+    visibleText: input.visibleText,
+    elements,
+  });
+  const screenState: ScreenState & { auth_state: LoginScreenDetection } = {
     screen_id: screenId,
     session_id: input.session.demoSessionId,
     browser_session_id: input.session.browserSessionId,
@@ -77,6 +84,7 @@ export function normalizeScreen(input: {
     screenshot_uri: input.screenshotUri,
     confidence: 0.86,
     created_at: createdAt,
+    auth_state: authState,
   };
   input.session.currentSafeActions = generateSafeActions(
     elements,
@@ -85,4 +93,3 @@ export function normalizeScreen(input: {
   );
   return { screenState, elements };
 }
-

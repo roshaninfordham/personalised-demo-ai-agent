@@ -18,6 +18,8 @@ export const lowRiskKeywords = categories
   .filter((category) => category.risk_level === "low")
   .flatMap((category) => [...category.phrases]);
 
+export const sensitiveFieldPhrases = [...actionSafetyRules.sensitive_field_phrases];
+
 export function containsPhrase(text: string, phrases: string[]): boolean {
   const normalized = normalizeRiskText(text);
   return phrases.some((phrase) => {

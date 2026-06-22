@@ -17,6 +17,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
+from live_demo_api.clients.browser_runtime_client import BrowserRuntimeClient
 from live_demo_api.db.models import ActionEvent, TranscriptEvent
 from live_demo_api.db.types import SessionStatus
 from live_demo_api.dependencies import (
@@ -273,64 +274,91 @@ async def run_text_turn(
             },
         )
     elif decision["action"] is not None:
-        bbox = _action_bbox(cast(dict[str, object], decision["action"]))
-        center = _bbox_center(bbox)
-        await publish_event(
-            event_bus,
-            organization_id=principal.organization_id,
+        browser_executed = await _execute_browser_action_if_possible(
+            store=store,
             session_id=session_id,
-            event_type="browser.cursor.move",
+            action=cast(dict[str, object], decision["action"]),
             request_context=request_context,
-            payload={"x": center[0], "y": center[1], "duration_ms": 320},
         )
-        await publish_event(
-            event_bus,
-            organization_id=principal.organization_id,
-            session_id=session_id,
-            event_type="browser.element.highlight",
-            request_context=request_context,
-            payload={
-                "element_id": str(decision["action"].get("action_id") or "suggested_action"),
-                "label": str(decision["action"].get("label") or "Suggested action"),
-                "bbox": bbox,
-                "risk_level": str(decision["action"].get("risk_level") or "low"),
-                "duration_ms": 2200,
-            },
-        )
-        await publish_event(
-            event_bus,
-            organization_id=principal.organization_id,
-            session_id=session_id,
-            event_type="browser.cursor.click",
-            request_context=request_context,
-            payload={"x": center[0], "y": center[1]},
-        )
-        db.add(
-            ActionEvent(
+        if browser_executed:
+            db.add(
+                ActionEvent(
+                    organization_id=principal.organization_id,
+                    session_id=session_id,
+                    turn_id=turn_id,
+                    action_type=str(decision["action"].get("action_type") or "browser_action"),
+                    action_payload={
+                        "label": decision["action"].get("label"),
+                        "source": "text_turn_browser_runtime",
+                    },
+                    risk_level=str(decision["action"].get("risk_level") or "low"),
+                    policy_decision="allowed",
+                    success=True,
+                    latency_ms=0,
+                )
+            )
+        else:
+            bbox = _action_bbox(cast(dict[str, object], decision["action"]))
+            center = _bbox_center(bbox)
+            await publish_event(
+                event_bus,
                 organization_id=principal.organization_id,
                 session_id=session_id,
-                turn_id=turn_id,
-                action_type=str(decision["action"].get("action_type") or "highlight_element"),
-                action_payload={"label": decision["action"].get("label"), "source": "text_turn"},
-                risk_level=str(decision["action"].get("risk_level") or "low"),
-                policy_decision="allowed",
-                success=True,
-                latency_ms=240,
+                event_type="browser.cursor.move",
+                request_context=request_context,
+                payload={"x": center[0], "y": center[1], "duration_ms": 320},
             )
-        )
-        await publish_event(
-            event_bus,
-            organization_id=principal.organization_id,
-            session_id=session_id,
-            event_type="browser.action.completed",
-            request_context=request_context,
-            payload={
-                "action_id": str(decision["action"].get("action_id") or ""),
-                "label": str(decision["action"].get("label") or ""),
-                "success": True,
-                "latency_ms": 240,
-            },
-        )
+            await publish_event(
+                event_bus,
+                organization_id=principal.organization_id,
+                session_id=session_id,
+                event_type="browser.element.highlight",
+                request_context=request_context,
+                payload={
+                    "element_id": str(decision["action"].get("action_id") or "suggested_action"),
+                    "label": str(decision["action"].get("label") or "Suggested action"),
+                    "bbox": bbox,
+                    "risk_level": str(decision["action"].get("risk_level") or "low"),
+                    "duration_ms": 2200,
+                },
+            )
+            await publish_event(
+                event_bus,
+                organization_id=principal.organization_id,
+                session_id=session_id,
+                event_type="browser.cursor.click",
+                request_context=request_context,
+                payload={"x": center[0], "y": center[1]},
+            )
+            db.add(
+                ActionEvent(
+                    organization_id=principal.organization_id,
+                    session_id=session_id,
+                    turn_id=turn_id,
+                    action_type=str(decision["action"].get("action_type") or "highlight_element"),
+                    action_payload={
+                        "label": decision["action"].get("label"),
+                        "source": "text_turn",
+                    },
+                    risk_level=str(decision["action"].get("risk_level") or "low"),
+                    policy_decision="allowed",
+                    success=True,
+                    latency_ms=240,
+                )
+            )
+            await publish_event(
+                event_bus,
+                organization_id=principal.organization_id,
+                session_id=session_id,
+                event_type="browser.action.completed",
+                request_context=request_context,
+                payload={
+                    "action_id": str(decision["action"].get("action_id") or ""),
+                    "label": str(decision["action"].get("label") or ""),
+                    "success": True,
+                    "latency_ms": 240,
+                },
+            )
     await store.append_transcript_window(
         session_id,
         {
@@ -615,6 +643,10 @@ def _deterministic_turn_decision(
     lowered = user_text.lower()
     title = str(screen.get("title") or "the current screen")
     summary = str(screen.get("summary") or f"I can see {title}.")
+    auth_state = screen.get("auth_state") if isinstance(screen.get("auth_state"), dict) else {}
+    login_required = (
+        bool(auth_state.get("login_required")) if isinstance(auth_state, dict) else False
+    )
     destructive_terms = ("delete", "remove", "billing", "payment", "purchase", "upgrade")
     if any(term in lowered for term in destructive_terms):
         return {
@@ -626,6 +658,34 @@ def _deterministic_turn_decision(
             "action": None,
             "action_type": "blocked_action",
             "label": "Dangerous action",
+        }
+    if login_required:
+        if any(term in lowered for term in ("sign up", "signup", "create account", "register")):
+            action = _find_action(
+                safe_actions,
+                ("sign up", "sign-up", "create account", "register"),
+            )
+            return {
+                "response": (
+                    "I am at the sign-in screen, so I cannot verify the in-app workflow yet. "
+                    "I can show the sign-up path without submitting anything; I will open "
+                    "the visible sign-up link if it is available."
+                ),
+                "blocked": False,
+                "action": _safe_auth_navigation_action(action),
+                "action_type": action.get("action_type") if action else None,
+                "label": action.get("label") if action else None,
+            }
+        return {
+            "response": (
+                "This product is currently showing a sign-in screen, so I cannot verify the "
+                "authenticated app yet. You can sign in securely, or I can explain the visible "
+                "login and sign-up flow without entering or storing credentials."
+            ),
+            "blocked": False,
+            "action": None,
+            "action_type": None,
+            "label": None,
         }
     if any(term in lowered for term in ("salesforce", "soc2", "soc 2", "hipaa", "pricing", "sso")):
         return {
@@ -683,6 +743,44 @@ def _find_action(
         if any(candidate in label for candidate in labels):
             return action
     return None
+
+
+def _safe_auth_navigation_action(action: dict[str, object] | None) -> dict[str, object] | None:
+    if action is None:
+        return None
+    label = str(action.get("label") or "").lower()
+    action_type = str(action.get("action_type") or "")
+    if "sign in" in label or "log in" in label or action_type == "type_into_element":
+        return None
+    return action
+
+
+async def _execute_browser_action_if_possible(
+    *,
+    store: LiveStateStore,
+    session_id: UUID,
+    action: dict[str, object],
+    request_context: RequestContext,
+) -> bool:
+    action_type = str(action.get("action_type") or "")
+    if action_type not in {"click_element", "highlight_element", "read_current_screen"}:
+        return False
+    if action_type in {"click_element", "highlight_element"} and not str(
+        action.get("element_id") or ""
+    ):
+        return False
+    browser_status = await store.get_browser_status(session_id)
+    if browser_status is None:
+        return False
+    browser_session_id = browser_status.get("browser_session_id")
+    if not isinstance(browser_session_id, str) or not browser_session_id:
+        return False
+    result = await BrowserRuntimeClient().execute_action(
+        browser_session_id=UUID(browser_session_id),
+        action=action,
+        trace_id=request_context.trace_id,
+    )
+    return result.get("success") is True
 
 
 def _action_bbox(action: dict[str, object]) -> dict[str, float]:

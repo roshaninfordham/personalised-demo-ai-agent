@@ -8,7 +8,10 @@ export function registerScreenRoutes(server: FastifyInstance, deps: BrowserRunti
   server.get(`${basePath}/sessions/:browser_session_id/screen`, async (request) => {
     const { browser_session_id: browserSessionId } = request.params as { browser_session_id: string };
     const session = deps.sessionManager.getSession(browserSessionId);
-    return deps.screenReader.readCurrentScreen(session, { captureScreenshot: deps.config.browserEnableScreenshots });
+    const screen = await deps.screenReader.readCurrentScreen(session, {
+      captureScreenshot: deps.config.browserEnableScreenshots,
+    });
+    return { ...screen, safe_actions: session.currentSafeActions };
   });
 
   server.post(`${basePath}/sessions/:browser_session_id/screenshot`, async (request) => {
@@ -21,4 +24,3 @@ export function registerScreenRoutes(server: FastifyInstance, deps: BrowserRunti
     };
   });
 }
-

@@ -64,9 +64,30 @@ export async function extractRawElements(page: Page, maxElements: number): Promi
               .join(" ")
           : "";
         const ariaReferenceText = labelledText.length > 0 ? labelledText : null;
+        const inputLabels =
+          "labels" in element
+            ? Array.from((element as HTMLInputElement).labels ?? [])
+                .map((label) => label.textContent ?? "")
+                .join(" ")
+            : "";
+        const wrappedLabel =
+          element.closest("label") !== null ? element.closest("label")?.textContent ?? "" : "";
         const placeholder = element.getAttribute("placeholder");
         const value = element.getAttribute("value");
-        return normalize(aria ?? ariaReferenceText ?? placeholder ?? value ?? element.textContent);
+        const candidates = [
+          aria,
+          ariaReferenceText,
+          inputLabels,
+          wrappedLabel,
+          placeholder,
+          value,
+          element.textContent,
+        ];
+        for (const candidate of candidates) {
+          const normalized = normalize(candidate);
+          if (normalized.length > 0) return normalized;
+        }
+        return "";
       };
       return Array.from(document.querySelectorAll(candidateSelector))
         .slice(0, max)

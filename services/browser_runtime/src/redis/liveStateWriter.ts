@@ -21,6 +21,7 @@ export class LiveStateWriter {
     screen: ScreenState,
     screenshotArtifactId: string | null,
   ): Promise<void> {
+    const extendedScreen = screen as ScreenState & { auth_state?: unknown };
     await this.redis.set(
       sessionCurrentScreenKey(this.config.redisKeyPrefix, session.demoSessionId),
       JSON.stringify({
@@ -31,7 +32,9 @@ export class LiveStateWriter {
         summary: screen.summary.summary,
         screen_hash: screen.screen_hash,
         confidence: screen.confidence,
+        screenshot_uri: screen.screenshot_uri,
         screenshot_artifact_id: screenshotArtifactId,
+        auth_state: extendedScreen.auth_state ?? null,
         updated_at: new Date().toISOString(),
       }),
       "EX",
@@ -64,4 +67,3 @@ export class LiveStateWriter {
     );
   }
 }
-

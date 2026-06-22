@@ -76,7 +76,14 @@ export class DeterministicActionSafetyPolicy {
     if (matches.some((match) => match.category === "payment_billing")) {
       return decision(request, "blocked", "blocked", 1, ["payment_billing_blocked"], matches);
     }
-    if (request.target_url && !domainAllowed(request.target_url, request.allowed_domains ?? [])) {
+    if (
+      request.target_url &&
+      !domainAllowed(
+        request.target_url,
+        request.allowed_domains ?? [],
+        request.current_url ?? undefined,
+      )
+    ) {
       return decision(request, "blocked", "blocked", 1, ["domain_not_allowed"], matches);
     }
     if (isSensitiveField(request)) {
@@ -129,10 +136,16 @@ function isSensitiveField(request: ActionPolicyRequest): boolean {
   return request.input_type === "password" || actionSafetyRules.sensitive_field_phrases.some((phrase) => text.includes(normalizePolicyText(phrase)));
 }
 
-function domainAllowed(url: string, allowedDomains: string[]): boolean {
+function domainAllowed(
+  url: string,
+  allowedDomains: string[],
+  currentUrl: string | undefined,
+): boolean {
   if (allowedDomains.length === 0) return false;
   try {
-    const host = new URL(url).hostname.toLowerCase().replace(/\.$/u, "");
+    const parsed = currentUrl === undefined ? new URL(url) : new URL(url, currentUrl);
+    if (!["http:", "https:"].includes(parsed.protocol)) return false;
+    const host = parsed.hostname.toLowerCase().replace(/\.$/u, "");
     return allowedDomains.some((domain) => {
       const normalized = domain.toLowerCase();
       if (normalized.startsWith("*.")) {

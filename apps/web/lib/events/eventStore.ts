@@ -29,6 +29,7 @@ export function createInitialLiveDemoState(sessionId: string): LiveDemoClientSta
     connectionStatus: "idle",
     sessionStatus: null,
     currentFrame: null,
+    authState: null,
     cursor: {
       visible: false,
       source: null,

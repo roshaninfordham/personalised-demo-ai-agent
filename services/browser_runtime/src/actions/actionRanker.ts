@@ -1,4 +1,4 @@
-import type { BrowserActionType, RiskLevel } from "@live-demo-agent/contracts";
+import type { BoundingBox, BrowserActionType, RiskLevel } from "@live-demo-agent/contracts";
 
 import type { InternalElement } from "../screen/elementExtractor.js";
 import { actionId } from "../screen/screenHasher.js";
@@ -14,6 +14,7 @@ export type SafeActionInternal = {
   reason: string;
   expires_at: string;
   screen_hash: string;
+  bbox?: BoundingBox;
 };
 
 export type RecipeStepRankingContext = {
@@ -76,6 +77,7 @@ export function generateSafeActions(
         reason: `${element.role} '${element.label}' classified as ${element.risk_level}.`,
         expires_at: expiresAt,
         screen_hash: screenHash,
+        bbox: element.bbox,
       };
     })
     .filter((action) => action.score >= threshold || action.risk_level === "low")

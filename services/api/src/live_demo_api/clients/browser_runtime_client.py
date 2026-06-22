@@ -6,7 +6,7 @@ import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from urllib.parse import quote, urlsplit
-from uuid import UUID, uuid5
+from uuid import UUID, uuid4, uuid5
 
 import httpx
 
@@ -55,6 +55,7 @@ class BrowserRuntimeClient:
                         "demo_session_id": str(session_id),
                         "product_id": str(product_id),
                         "start_url": start_url,
+                        "allowed_domains": _allowed_domains_for_start_url(start_url),
                     },
                     headers={"X-Trace-ID": trace_id},
                 )
@@ -183,6 +184,39 @@ class BrowserRuntimeClient:
         _ = browser_session_id, trace_id
         return True
 
+    async def execute_action(
+        self,
+        *,
+        browser_session_id: UUID,
+        action: dict[str, object],
+        trace_id: str,
+    ) -> dict[str, object]:
+        settings = get_settings()
+        body = {
+            "command_id": str(uuid4()),
+            "action_type": str(action.get("action_type") or "read_current_screen"),
+            "element_id": str(action.get("element_id") or "") or None,
+            "requires_cursor_animation": True,
+            "user_confirmed": bool(action.get("user_confirmed") or False),
+        }
+        body = {key: value for key, value in body.items() if value is not None}
+        try:
+            async with httpx.AsyncClient(timeout=_timeout_seconds()) as client:
+                response = await client.post(
+                    f"{settings.browser_runtime_base_url}/internal/browser/v1/sessions/"
+                    f"{browser_session_id}/actions/execute",
+                    json=body,
+                    headers={"X-Trace-ID": trace_id},
+                )
+                response.raise_for_status()
+                return dict(response.json())
+        except (httpx.HTTPError, ValueError) as exc:
+            return {
+                "success": False,
+                "error_code": "browser_action_execution_failed",
+                "error_message": str(exc),
+            }
+
 
 def _compact_screen(screen: dict[str, object]) -> dict[str, object]:
     summary = screen.get("summary")
@@ -201,6 +235,7 @@ def _compact_screen(screen: dict[str, object]) -> dict[str, object]:
     width = _int_value(screen.get("width"), 1440)
     height = _int_value(screen.get("height"), 900)
     diagnostics = screen.get("diagnostics")
+    auth_state = screen.get("auth_state")
     return {
         "screen_id": str(screen.get("screen_id") or ""),
         "browser_session_id": str(screen.get("browser_session_id") or ""),
@@ -216,12 +251,19 @@ def _compact_screen(screen: dict[str, object]) -> dict[str, object]:
         "elements": elements if isinstance(elements, list) else [],
         "confidence": _float_value(screen.get("confidence")),
         "diagnostics": diagnostics if isinstance(diagnostics, dict) else {},
+        "auth_state": auth_state if isinstance(auth_state, dict) else None,
         "updated_at": datetime.now(UTC).isoformat(),
     }
 
 
 def _timeout_seconds() -> float:
     return get_settings().internal_service_timeout_ms / 1000
+
+
+def _allowed_domains_for_start_url(start_url: str) -> list[str]:
+    parsed = urlsplit(start_url)
+    hostname = parsed.hostname.lower() if parsed.hostname else ""
+    return [hostname] if hostname else []
 
 
 def _float_value(value: object) -> float:
@@ -249,6 +291,17 @@ def _artifact_content_url(object_key: str) -> str:
 
 
 def _safe_actions_from_screen(screen: dict[str, object]) -> tuple[dict[str, object], ...]:
+    runtime_actions = screen.get("safe_actions")
+    elements = screen.get("elements")
+    element_by_id = {
+        str(element.get("element_id")): element
+        for element in elements
+        if isinstance(element, dict) and element.get("element_id")
+    } if isinstance(elements, list) else {}
+    if isinstance(runtime_actions, list) and runtime_actions:
+        actions = [_normalize_runtime_action(action, element_by_id) for action in runtime_actions]
+        return tuple(action for action in actions if action is not None)[:20]
+
     actions: list[dict[str, object]] = [
         {
             "action_id": "act_read_current_screen",
@@ -259,24 +312,53 @@ def _safe_actions_from_screen(screen: dict[str, object]) -> tuple[dict[str, obje
             "requires_confirmation": False,
         }
     ]
-    elements = screen.get("elements")
     if isinstance(elements, list):
-        for element in elements[:2]:
+        for element in elements[:8]:
             if not isinstance(element, dict):
                 continue
             label = str(element.get("label") or element.get("text") or "Element")
+            role = str(element.get("role") or "")
+            risk_level = str(element.get("risk_level") or "low")
+            if risk_level == "blocked":
+                continue
+            action_type = (
+                "click_element" if role in {"button", "link", "tab"} else "highlight_element"
+            )
             actions.append(
                 {
                     "action_id": f"act_highlight_{element.get('element_id', len(actions))}",
-                    "action_type": "highlight_element",
+                    "action_type": action_type,
+                    "element_id": str(element.get("element_id") or ""),
                     "label": label[:120],
-                    "risk_level": str(element.get("risk_level") or "low"),
+                    "risk_level": risk_level,
                     "score": float(element.get("confidence") or 0.8),
-                    "requires_confirmation": False,
+                    "requires_confirmation": risk_level == "high",
                     "bbox": element.get("bbox") if isinstance(element.get("bbox"), dict) else None,
                 }
             )
     return tuple(actions)
+
+
+def _normalize_runtime_action(
+    action: object,
+    element_by_id: dict[str, dict[str, object]],
+) -> dict[str, object] | None:
+    if not isinstance(action, dict):
+        return None
+    element_id = str(action.get("element_id") or "")
+    element = element_by_id.get(element_id, {})
+    label = str(action.get("label") or element.get("label") or "Action")
+    risk_level = str(action.get("risk_level") or element.get("risk_level") or "low")
+    return {
+        "action_id": str(action.get("action_id") or ""),
+        "action_type": str(action.get("action_type") or "highlight_element"),
+        "element_id": element_id,
+        "label": label[:120],
+        "risk_level": risk_level,
+        "score": _float_value(action.get("score") or element.get("confidence") or 0.8),
+        "requires_confirmation": bool(action.get("requires_confirmation") or risk_level == "high"),
+        "bbox": action.get("bbox") if isinstance(action.get("bbox"), dict) else element.get("bbox"),
+    }
 
 
 def _fallback_safe_actions() -> tuple[dict[str, object], ...]:

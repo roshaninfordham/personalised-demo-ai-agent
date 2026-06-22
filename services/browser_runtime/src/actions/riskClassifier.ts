@@ -6,6 +6,7 @@ import {
   highRiskKeywords,
   lowRiskKeywords,
   mediumRiskKeywords,
+  sensitiveFieldPhrases,
 } from "./safetyPolicy.js";
 
 export type RiskClassificationInput = {
@@ -30,6 +31,13 @@ export type RiskClassification = {
 
 export function classifyElementRisk(input: RiskClassificationInput): RiskClassification {
   const combined = [input.label, input.surroundingText, input.formContext ?? ""].join(" ");
+  if (isSensitiveField(input, combined)) {
+    return {
+      riskLevel: "blocked",
+      riskScore: 1,
+      reason: "Sensitive credential or payment field blocked.",
+    };
+  }
   if (
     containsPhrase(input.label, input.globalNeverClick) ||
     containsPhrase(input.label, input.recipeNeverClick) ||
@@ -62,6 +70,13 @@ export function classifyElementRisk(input: RiskClassificationInput): RiskClassif
     return { riskLevel: "medium", riskScore: score, reason: "Medium-risk UI action." };
   }
   return { riskLevel: "low", riskScore: score, reason: "Low-risk UI action." };
+}
+
+function isSensitiveField(input: RiskClassificationInput, combined: string): boolean {
+  if (input.inputType?.toLowerCase() === "password") return true;
+  if (containsPhrase(input.label, sensitiveFieldPhrases)) return true;
+  const fieldLike = input.tagName === "input" || input.role === "input" || input.role === "textarea";
+  return fieldLike && containsPhrase(combined, sensitiveFieldPhrases);
 }
 
 function scoreText(text: string): number {

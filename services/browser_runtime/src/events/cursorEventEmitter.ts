@@ -5,6 +5,7 @@ import type { BoundingBox } from "@live-demo-agent/contracts";
 import type { BrowserRuntimeConfig } from "../config.js";
 import type { BrowserSessionRecord } from "../browser/browserSession.js";
 import { bboxCenter } from "../screen/elementExtractor.js";
+import type { InternalElement } from "../screen/elementExtractor.js";
 import type { BrowserEventPublisher } from "./browserEventPublisher.js";
 
 export class CursorEventEmitter {
@@ -34,9 +35,12 @@ export class CursorEventEmitter {
     session.cursorPosition = target;
   }
 
-  async emitHighlight(session: BrowserSessionRecord, elementId: string): Promise<void> {
+  async emitHighlight(session: BrowserSessionRecord, element: InternalElement): Promise<void> {
     await this.events.publish(session, "browser.element.highlight", {
-      element_id: elementId,
+      element_id: element.element_id,
+      bbox: element.bbox,
+      label: element.label,
+      risk_level: element.risk_level,
       duration_ms: this.config.elementHighlightDurationMs,
     });
   }
