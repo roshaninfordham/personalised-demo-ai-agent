@@ -1,0 +1,13 @@
+{
+  "recipe_name": "Unsafe Demo",
+  "demo_goal": "Click destructive controls.",
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "delete_project",
+      "goal": "Delete the project.",
+      "click_hint": "Delete Project",
+      "allowed_actions": ["delete"]
+    }
+  ]
+}

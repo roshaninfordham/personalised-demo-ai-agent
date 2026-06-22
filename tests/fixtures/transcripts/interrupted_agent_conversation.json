@@ -1,0 +1,11 @@
+{
+  "events": [
+    { "speaker": "user", "text": "Show reports.", "is_final": true },
+    {
+      "speaker": "assistant",
+      "text": "I will open reports.",
+      "is_final": false,
+      "interrupted": true
+    }
+  ]
+}

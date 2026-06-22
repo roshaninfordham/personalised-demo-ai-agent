@@ -23,7 +23,9 @@ def test_email_label_value_rejected() -> None:
 
 def test_url_label_value_rejected() -> None:
     with pytest.raises(MetricCardinalityError):
-        validate_metric_labels({"service": "api", "environment": "local", "route": "https://example.com/a"})
+        validate_metric_labels(
+            {"service": "api", "environment": "local", "route": "https://example.com/a"}
+        )
 
 
 def test_allowed_metric_observes_histogram() -> None:

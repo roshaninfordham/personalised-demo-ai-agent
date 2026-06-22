@@ -1,0 +1,31 @@
+{
+  "screen_id": "screen_dashboard",
+  "screen_hash": "hash_dashboard",
+  "url_path": "/",
+  "title": "Dashboard",
+  "summary": "Dashboard with revenue, activation, and retention metric cards.",
+  "visible_text": ["Dashboard", "Revenue", "Activation", "Retention", "Add Metric", "Reports"],
+  "safe_actions": [
+    {
+      "action_id": "act_dashboard",
+      "label": "Dashboard",
+      "action_type": "highlight_element",
+      "risk_level": "low",
+      "score": 0.95
+    },
+    {
+      "action_id": "act_add_metric",
+      "label": "Add Metric",
+      "action_type": "click_element",
+      "risk_level": "low",
+      "score": 0.92
+    },
+    {
+      "action_id": "act_reports",
+      "label": "Reports",
+      "action_type": "click_element",
+      "risk_level": "low",
+      "score": 0.9
+    }
+  ]
+}

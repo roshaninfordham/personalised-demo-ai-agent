@@ -1,0 +1,7 @@
+{
+  "product_name": "MetricFlow Analytics",
+  "product_url": "http://127.0.0.1:4173",
+  "default_persona": "founder",
+  "category": "analytics_dashboard",
+  "evidence": ["dashboard", "metrics", "reports"]
+}

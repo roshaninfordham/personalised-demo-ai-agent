@@ -1,0 +1,8 @@
+{
+  "screen_id": "screen_metric_form",
+  "screen_hash": "hash_metric_form",
+  "url_path": "/metrics/new",
+  "title": "New Metric",
+  "summary": "Metric creation form with Metric Name and Definition fields.",
+  "visible_text": ["New Metric", "Metric Name", "Definition", "Cancel"]
+}

@@ -1,0 +1,10 @@
+{
+  "events": [
+    { "speaker": "user", "text": "I am concerned about security for exports.", "is_final": true },
+    {
+      "speaker": "assistant",
+      "text": "I cannot verify security certifications from this screen.",
+      "is_final": true
+    }
+  ]
+}

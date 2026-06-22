@@ -1,0 +1,42 @@
+{
+  "recipe_name": "Founder Analytics Demo",
+  "target_persona": "founder",
+  "demo_goal": "Show dashboard metrics, metric creation, and reporting without unsafe actions.",
+  "never_click": ["Delete", "Billing", "Payment"],
+  "allowed_domains": ["example.com", "*.example.com"],
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "overview",
+      "phase": "OVERVIEW",
+      "goal": "Show dashboard overview.",
+      "screen_hint": "dashboard metrics overview",
+      "click_hint": "Dashboard",
+      "allowed_actions": ["read_current_screen", "highlight_element", "scroll"],
+      "success_criteria": ["dashboard visible"],
+      "required": true
+    },
+    {
+      "step_order": 1,
+      "step_key": "metric_creation",
+      "phase": "CORE_WORKFLOW",
+      "goal": "Show how to create a metric.",
+      "screen_hint": "metric builder",
+      "click_hint": "Add Metric",
+      "allowed_actions": ["click_element", "highlight_element"],
+      "success_criteria": ["metric form visible"],
+      "required": true
+    },
+    {
+      "step_order": 2,
+      "step_key": "reports",
+      "phase": "DEEP_DIVE",
+      "goal": "Show reports.",
+      "screen_hint": "reports",
+      "click_hint": "Reports",
+      "allowed_actions": ["click_element", "highlight_element"],
+      "success_criteria": ["reports visible"],
+      "required": false
+    }
+  ]
+}

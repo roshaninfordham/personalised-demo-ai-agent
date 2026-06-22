@@ -1,0 +1,25 @@
+{
+  "recipe_name": "Fallback Demo",
+  "demo_goal": "Recover safely when a step cannot be found.",
+  "never_click": ["Delete", "Billing", "Payment"],
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "overview",
+      "goal": "Show overview.",
+      "screen_hint": "dashboard",
+      "fallback_strategy": "Read the current screen and explain what can be verified.",
+      "max_attempts": 2
+    },
+    {
+      "step_order": 1,
+      "step_key": "reports",
+      "goal": "Show reports if available.",
+      "screen_hint": "reports",
+      "click_hint": "Reports",
+      "fallback_strategy": "Ask whether to continue with the closest safe workflow.",
+      "required": false,
+      "max_attempts": 1
+    }
+  ]
+}

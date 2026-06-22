@@ -1,0 +1,15 @@
+{
+  "events": [
+    {
+      "speaker": "user",
+      "text": "I'm a founder and I care about weekly revenue metrics.",
+      "is_final": true
+    },
+    {
+      "speaker": "assistant",
+      "text": "I can verify the dashboard shows revenue metrics.",
+      "is_final": true
+    },
+    { "speaker": "user", "text": "It takes too long to build weekly reports.", "is_final": true }
+  ]
+}

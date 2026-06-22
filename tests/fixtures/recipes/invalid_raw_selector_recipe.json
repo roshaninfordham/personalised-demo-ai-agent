@@ -1,0 +1,13 @@
+{
+  "recipe_name": "Selector Demo",
+  "demo_goal": "Use raw selector authority.",
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "selector",
+      "goal": "Click raw selector.",
+      "click_hint": "click #settings-button",
+      "allowed_actions": ["click_element"]
+    }
+  ]
+}

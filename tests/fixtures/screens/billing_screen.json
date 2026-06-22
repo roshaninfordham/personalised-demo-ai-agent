@@ -1,0 +1,8 @@
+{
+  "screen_id": "screen_billing",
+  "screen_hash": "hash_billing",
+  "url_path": "/billing",
+  "title": "Billing",
+  "summary": "Billing page with payment controls.",
+  "visible_text": ["Billing", "Payment", "Checkout", "Upgrade"]
+}

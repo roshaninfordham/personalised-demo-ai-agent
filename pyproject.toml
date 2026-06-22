@@ -120,6 +120,7 @@ testpaths = [
   "tests",
 ]
 pythonpath = [
+  ".",
   "services/api/src",
   "services/agent_runtime/src",
   "services/learner_worker/src",

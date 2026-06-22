@@ -1,0 +1,8 @@
+{
+  "screen_id": "screen_settings",
+  "screen_hash": "hash_settings",
+  "url_path": "/settings",
+  "title": "Settings",
+  "summary": "Settings page with account and admin controls.",
+  "visible_text": ["Settings", "Account Settings", "Invite User", "Publish"]
+}

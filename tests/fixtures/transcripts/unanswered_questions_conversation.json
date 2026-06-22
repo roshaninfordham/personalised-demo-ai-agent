@@ -1,0 +1,10 @@
+{
+  "events": [
+    { "speaker": "user", "text": "Does this support Salesforce integration?", "is_final": true },
+    {
+      "speaker": "assistant",
+      "text": "I cannot verify that from the current evidence.",
+      "is_final": true
+    }
+  ]
+}

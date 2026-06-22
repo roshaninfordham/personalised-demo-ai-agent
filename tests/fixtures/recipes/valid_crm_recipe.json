@@ -1,0 +1,18 @@
+{
+  "recipe_name": "Sales CRM Demo",
+  "target_persona": "sales",
+  "demo_goal": "Show pipeline visibility and safe lead workflow.",
+  "never_click": ["Delete", "Billing", "Payment", "Send"],
+  "steps": [
+    {
+      "step_order": 0,
+      "step_key": "pipeline",
+      "phase": "OVERVIEW",
+      "goal": "Show pipeline overview.",
+      "screen_hint": "pipeline leads deals",
+      "click_hint": "Pipeline",
+      "allowed_actions": ["read_current_screen", "highlight_element"],
+      "success_criteria": ["pipeline visible"]
+    }
+  ]
+}

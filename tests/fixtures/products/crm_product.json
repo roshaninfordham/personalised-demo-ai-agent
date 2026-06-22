@@ -1,0 +1,7 @@
+{
+  "product_name": "Pipeline Desk",
+  "product_url": "http://127.0.0.1:4174",
+  "default_persona": "sales",
+  "category": "crm",
+  "evidence": ["pipeline", "leads", "deals"]
+}

@@ -4,7 +4,11 @@ from dataclasses import replace
 from typing import Any, Protocol
 
 from live_demo_agent_runtime.config import AgentRuntimeSettings
-from live_demo_agent_runtime.context.context_budget import ContextSection, pack_sections
+from live_demo_agent_runtime.context.context_budget import (
+    ContextSection,
+    estimate_tokens,
+    pack_sections,
+)
 from live_demo_agent_runtime.context.context_packager import render_context_json
 from live_demo_agent_runtime.context.context_types import (
     BuildRealtimeContextRequest,
@@ -34,6 +38,7 @@ from live_demo_agent_runtime.context.source_attribution import (
     source_for_screen,
 )
 from live_demo_agent_runtime.context.transcript_context import recent_turn_window
+from live_demo_backend_common.policy.redaction import RedactionContext, RedactionEngine
 
 
 class RealtimeContextDataSource(Protocol):
@@ -158,6 +163,7 @@ class RealtimeContextBuilder:
     ) -> None:
         self._settings = settings
         self._data_source = data_source
+        self._redaction = RedactionEngine()
 
     async def build_context(
         self,
@@ -176,28 +182,43 @@ class RealtimeContextBuilder:
                 updated_at=screen.updated_at,
             )
         screen = _truncate_screen(screen, self._settings.agent_context_max_screen_summary_chars)
+        screen = _redact_screen(self._redaction, screen)
         safe_actions = tuple(
             sorted(
-                await self._data_source.get_safe_actions(request),
+                (
+                    _redact_safe_action(self._redaction, action)
+                    for action in await self._data_source.get_safe_actions(request)
+                ),
                 key=lambda item: (-item.score, item.action_id),
             )[: self._settings.agent_context_max_safe_actions]
         )
-        recipe_step = clamp_recipe_step(
-            await self._data_source.get_active_recipe_step(request),
-            self._settings.agent_context_max_recipe_step_chars,
-        )
-        recent_turns = recent_turn_window(
-            await self._data_source.get_recent_turns(
-                request,
-                self._settings.agent_context_max_recent_turns,
+        recipe_step = _redact_recipe_step(
+            self._redaction,
+            clamp_recipe_step(
+                await self._data_source.get_active_recipe_step(request),
+                self._settings.agent_context_max_recipe_step_chars,
             ),
-            max_turns=self._settings.agent_context_max_recent_turns,
         )
-        persona = await self._data_source.get_persona(request)
-        product_summary = _truncate_product_summary(
-            await self._data_source.get_product_summary(request),
-            self._settings.agent_context_max_product_summary_chars,
+        recent_turns = tuple(
+            _redact_recent_turn(self._redaction, turn)
+            for turn in recent_turn_window(
+                await self._data_source.get_recent_turns(
+                    request,
+                    self._settings.agent_context_max_recent_turns,
+                ),
+                max_turns=self._settings.agent_context_max_recent_turns,
+            )
         )
+        persona = _redact_persona(self._redaction, await self._data_source.get_persona(request))
+        product_summary = _redact_product_summary(
+            self._redaction,
+            _truncate_product_summary(
+                await self._data_source.get_product_summary(request),
+                self._settings.agent_context_max_product_summary_chars,
+            ),
+        )
+        redacted_user_utterance = _redact_prompt_text(self._redaction, request.user_utterance) or ""
+        retrieval_failure: str | None = None
         retrieval_needed = (
             request.include_retrieval
             and self._settings.agent_knowledge_retrieval_enabled
@@ -208,14 +229,21 @@ class RealtimeContextBuilder:
         )
         retrieved_knowledge: tuple[KnowledgeFactContext, ...] = ()
         if retrieval_needed:
-            facts = await self._data_source.search_knowledge(
-                request,
-                self._settings.agent_knowledge_retrieval_top_k,
-            )
-            retrieved_knowledge = rank_knowledge_facts(
-                facts,
-                top_k=self._settings.agent_context_max_retrieved_facts,
-                min_score=self._settings.agent_knowledge_retrieval_min_score,
+            try:
+                facts = await self._data_source.search_knowledge(
+                    request,
+                    self._settings.agent_knowledge_retrieval_top_k,
+                )
+            except TimeoutError:
+                retrieval_failure = "retrieval_unavailable"
+                facts = []
+            retrieved_knowledge = tuple(
+                _redact_knowledge_fact(self._redaction, fact)
+                for fact in rank_knowledge_facts(
+                    facts,
+                    top_k=self._settings.agent_context_max_retrieved_facts,
+                    min_score=self._settings.agent_knowledge_retrieval_min_score,
+                )
             )
         sources = self._build_source_map(
             screen=screen,
@@ -231,7 +259,7 @@ class RealtimeContextBuilder:
             product_id=request.product_id,
             active_turn_id=request.active_turn_id,
             demo_phase=await self._data_source.get_demo_phase(request),
-            user_utterance=request.user_utterance,
+            user_utterance=redacted_user_utterance,
             current_screen=screen,
             safe_actions=safe_actions,
             active_recipe_step=recipe_step,
@@ -247,7 +275,14 @@ class RealtimeContextBuilder:
             source_map=tuple(sources),
         )
         context = self._fit_token_budget(context)
-        report = self._budget_report(context)
+        report = context.token_budget_report
+        if retrieval_failure is not None:
+            report = ContextBudgetReport(
+                max_tokens=report.max_tokens,
+                estimated_tokens=report.estimated_tokens,
+                truncated_sections=report.truncated_sections,
+                dropped_sections=tuple(sorted({*report.dropped_sections, retrieval_failure})),
+            )
         return RealtimeAgentContext(
             organization_id=context.organization_id,
             demo_session_id=context.demo_session_id,
@@ -274,7 +309,7 @@ class RealtimeContextBuilder:
         fitted = context
 
         def over_budget(candidate: RealtimeAgentContext) -> bool:
-            return self._budget_report(candidate).estimated_tokens > max_tokens
+            return estimate_tokens(render_context_json(candidate)) > max_tokens
 
         if over_budget(fitted) and fitted.retrieved_knowledge:
             dropped.append("retrieved_knowledge")
@@ -375,6 +410,128 @@ def _truncate_product_summary(
         summary=product_summary.summary[:max_chars].rstrip() + "[truncated]",
         confidence=product_summary.confidence,
         source=product_summary.source,
+    )
+
+
+def _redact_prompt_text(redaction: RedactionEngine, text: str | None) -> str | None:
+    if text is None:
+        return None
+    result = redaction.redact_text(text, RedactionContext.PROMPT)
+    return str(result.redacted_value).replace("[REDACTED_SECRET]", "[REDACTED_SENSITIVE]")
+
+
+def _redact_screen(
+    redaction: RedactionEngine, screen: ScreenContext | None
+) -> ScreenContext | None:
+    if screen is None:
+        return None
+    return ScreenContext(
+        screen_id=screen.screen_id,
+        screen_hash=screen.screen_hash,
+        url_path=screen.url_path,
+        title=_redact_prompt_text(redaction, screen.title),
+        summary=_redact_prompt_text(redaction, screen.summary) or "",
+        confidence=screen.confidence,
+        screenshot_artifact_id=screen.screenshot_artifact_id,
+        updated_at=screen.updated_at,
+    )
+
+
+def _redact_safe_action(redaction: RedactionEngine, action: SafeActionContext) -> SafeActionContext:
+    return SafeActionContext(
+        action_id=action.action_id,
+        action_type=action.action_type,
+        label=_redact_prompt_text(redaction, action.label) or "",
+        element_id=action.element_id,
+        risk_level=action.risk_level,
+        score=action.score,
+        requires_confirmation=action.requires_confirmation,
+        reason=_redact_prompt_text(redaction, action.reason) or "",
+        expires_at=action.expires_at,
+    )
+
+
+def _redact_recipe_step(
+    redaction: RedactionEngine,
+    step: RecipeStepContext | None,
+) -> RecipeStepContext | None:
+    if step is None:
+        return None
+    return RecipeStepContext(
+        step_key=step.step_key,
+        goal=_redact_prompt_text(redaction, step.goal) or "",
+        screen_hint=_redact_prompt_text(redaction, step.screen_hint),
+        click_hint=_redact_prompt_text(redaction, step.click_hint),
+        talk_track=_redact_prompt_text(redaction, step.talk_track),
+        allowed_actions=step.allowed_actions,
+        success_criteria=_redact_prompt_text(redaction, step.success_criteria),
+        fallback_strategy=_redact_prompt_text(redaction, step.fallback_strategy),
+    )
+
+
+def _redact_recent_turn(redaction: RedactionEngine, turn: RecentTurnContext) -> RecentTurnContext:
+    return RecentTurnContext(
+        speaker=turn.speaker,
+        text=_redact_prompt_text(redaction, turn.text) or "",
+        chunk_type=turn.chunk_type,
+        created_at=turn.created_at,
+        turn_id=turn.turn_id,
+        transcript_event_id=turn.transcript_event_id,
+    )
+
+
+def _redact_persona(redaction: RedactionEngine, persona: PersonaContext) -> PersonaContext:
+    return PersonaContext(
+        likely_role=_redact_prompt_text(redaction, persona.likely_role),
+        role_confidence=persona.role_confidence,
+        interests=tuple(
+            item
+            for item in (_redact_prompt_text(redaction, value) for value in persona.interests)
+            if item
+        ),
+        pain_points=tuple(
+            item
+            for item in (_redact_prompt_text(redaction, value) for value in persona.pain_points)
+            if item
+        ),
+        objections=tuple(
+            item
+            for item in (_redact_prompt_text(redaction, value) for value in persona.objections)
+            if item
+        ),
+        preferred_demo_direction=_redact_prompt_text(redaction, persona.preferred_demo_direction),
+        evidence=tuple(
+            item
+            for item in (_redact_prompt_text(redaction, value) for value in persona.evidence)
+            if item
+        ),
+    )
+
+
+def _redact_product_summary(
+    redaction: RedactionEngine,
+    product_summary: ProductSummaryContext | None,
+) -> ProductSummaryContext | None:
+    if product_summary is None:
+        return None
+    return ProductSummaryContext(
+        product_name=_redact_prompt_text(redaction, product_summary.product_name) or "",
+        product_url_domain=product_summary.product_url_domain,
+        summary=_redact_prompt_text(redaction, product_summary.summary) or "",
+        confidence=product_summary.confidence,
+        source=product_summary.source,
+    )
+
+
+def _redact_knowledge_fact(
+    redaction: RedactionEngine,
+    fact: KnowledgeFactContext,
+) -> KnowledgeFactContext:
+    return KnowledgeFactContext(
+        fact_id=fact.fact_id,
+        text=_redact_prompt_text(redaction, fact.text) or "",
+        score=fact.score,
+        source=fact.source,
     )
 
 

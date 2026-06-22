@@ -100,6 +100,17 @@ class ActionSafetyPolicy:
                 ["payment_billing_blocked"],
                 matched_rules,
             )
+        if "account_settings" in categories and (
+            "security" in normalized or "billing" in normalized
+        ):
+            return _decision(
+                request,
+                "blocked",
+                "blocked",
+                0.95,
+                ["account_settings_sensitive_context_blocked"],
+                matched_rules,
+            )
 
         recipe = request.recipe_policy
         if recipe is not None:
@@ -228,9 +239,10 @@ def _risk_level(score: float) -> str:
 
 def _sensitive_field(request: ActionPolicyRequest) -> bool:
     text = normalize_text(" ".join([request.element_label or "", request.input_type or ""]))
-    return any(
-        phrase in text for phrase in _SENSITIVE_FIELD_PHRASES
-    ) or request.input_type == "password"
+    return (
+        any(phrase in text for phrase in _SENSITIVE_FIELD_PHRASES)
+        or request.input_type == "password"
+    )
 
 
 def _decision(

@@ -1,0 +1,8 @@
+{
+  "screen_id": "screen_dashboard_changed",
+  "screen_hash": "hash_dashboard_changed",
+  "url_path": "/",
+  "title": "Dashboard",
+  "summary": "Dashboard with revenue, activation, retention, and Create Metric button.",
+  "visible_text": ["Dashboard", "Revenue", "Activation", "Retention", "Create Metric", "Reports"]
+}
