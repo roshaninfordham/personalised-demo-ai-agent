@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/post-demo-job.schema.json",
+  "title": "PostDemoJobContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "PostDemoJobType": {
+      "type": "string",
+      "enum": [
+        "extract_lead_insights",
+        "track_features_shown",
+        "generate_lead_summary",
+        "export_crm_payload",
+        "run_full_post_demo_intelligence"
+      ]
+    },
+    "PostDemoRunRequest": {
+      "type": "object",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "run_mode": {
+          "type": "string",
+          "default": "full"
+        },
+        "export_crm": {
+          "type": "boolean",
+          "default": false
+        },
+        "crm_provider": {
+          "type": "string",
+          "default": "mock"
+        }
+      }
+    },
+    "PostDemoRunResponse": {
+      "type": "object",
+      "required": ["session_id", "status", "lead_summary_id", "crm_export_id"],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "status": {
+          "type": "string"
+        },
+        "lead_summary_id": {
+          "oneOf": [
+            {
+              "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "crm_export_id": {
+          "oneOf": [
+            {
+              "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+

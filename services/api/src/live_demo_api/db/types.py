@@ -100,14 +100,20 @@ class InsightType(StrEnum):
     QUESTION = "question"
     FEATURE_INTEREST = "feature_interest"
     PERSONA = "persona"
+    ROLE = "role"
     URGENCY = "urgency"
+    UNANSWERED_QUESTION = "unanswered_question"
+    DECISION_CRITERIA = "decision_criteria"
+    NEXT_STEP = "next_step"
 
 
 class CrmExportStatus(StrEnum):
     PENDING = "pending"
+    VALIDATED = "validated"
     SENT = "sent"
     FAILED = "failed"
     SKIPPED = "skipped"
+    DRY_RUN_COMPLETED = "dry_run_completed"
 
 
 class ModelInvocationPurpose(StrEnum):

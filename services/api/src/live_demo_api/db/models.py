@@ -667,9 +667,7 @@ class SessionResourceAllocation(Base):
             "resource_type",
             "provider",
             unique=True,
-            postgresql_where=sa.text(
-                "status IN ('allocating','allocated','ready','releasing')"
-            ),
+            postgresql_where=sa.text("status IN ('allocating','allocated','ready','releasing')"),
         ),
     )
 
@@ -1145,10 +1143,19 @@ class LeadInsight(Base):
             "cardinality(evidence_transcript_event_ids) > 0 "
             "OR cardinality(evidence_browser_action_ids) > 0 "
             "OR cardinality(evidence_screen_ids) > 0 "
+            "OR cardinality(evidence_recipe_step_ids) > 0 "
             "OR (insight_type = 'persona' AND confidence < 0.5)",
             name="lead_insights_evidence_required",
         ),
         sa.Index("ix_lead_insights_session_id_insight_type", "session_id", "insight_type"),
+        sa.Index(
+            "uq_lead_insights_session_type_hash",
+            "session_id",
+            "insight_type",
+            "normalized_content_hash",
+            unique=True,
+            postgresql_where=sa.text("normalized_content_hash <> ''"),
+        ),
         sa.Index(
             "ix_lead_insights_organization_id_created_at",
             "organization_id",
@@ -1165,7 +1172,11 @@ class LeadInsight(Base):
     )
     insight_type: Mapped[str] = mapped_column(sa.Text, nullable=False)
     content: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    normalized_content_hash: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="")
     confidence: Mapped[Decimal] = mapped_column(
+        sa.Numeric(4, 3), nullable=False, server_default="0.000"
+    )
+    importance: Mapped[Decimal] = mapped_column(
         sa.Numeric(4, 3), nullable=False, server_default="0.000"
     )
     evidence_transcript_event_ids: Mapped[list[PyUUID]] = mapped_column(
@@ -1177,7 +1188,12 @@ class LeadInsight(Base):
     evidence_screen_ids: Mapped[list[PyUUID]] = mapped_column(
         ARRAY(UUID(as_uuid=True)), nullable=False, server_default=sa.text("'{}'::uuid[]")
     )
+    evidence_recipe_step_ids: Mapped[list[PyUUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, server_default=sa.text("'{}'::uuid[]")
+    )
+    source: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="post_demo")
     created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
 
 
 class LeadSummary(Base):
@@ -1205,12 +1221,23 @@ class LeadSummary(Base):
         UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id"), nullable=False
     )
     summary: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    summary_version: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="v1")
+    generation_mode: Mapped[str] = mapped_column(
+        sa.Text, nullable=False, server_default="deterministic"
+    )
+    evidence_summary: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    redaction_applied: Mapped[bool] = mapped_column(
+        sa.Boolean, nullable=False, server_default=sa.false()
+    )
     generated_by_provider: Mapped[str | None] = mapped_column(sa.Text)
     generated_by_model: Mapped[str | None] = mapped_column(sa.Text)
     confidence: Mapped[Decimal] = mapped_column(
         sa.Numeric(4, 3), nullable=False, server_default="0.000"
     )
     created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
 
 
 class CrmExport(Base):
@@ -1236,13 +1263,138 @@ class CrmExport(Base):
     session_id: Mapped[PyUUID] = mapped_column(
         UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id"), nullable=False
     )
+    lead_summary_id: Mapped[PyUUID | None] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("lead_summaries.lead_summary_id")
+    )
     provider: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    adapter_version: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="v1")
     payload: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    redacted_payload: Mapped[dict[str, object] | None] = mapped_column(JSONB)
     status: Mapped[str] = mapped_column(
         sa.Text, nullable=False, server_default=CrmExportStatus.PENDING.value
     )
+    dry_run: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default=sa.true())
+    external_object_ids: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    idempotency_key: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="")
     external_object_id: Mapped[str | None] = mapped_column(sa.Text)
+    error_code: Mapped[str | None] = mapped_column(sa.Text)
     error_message: Mapped[str | None] = mapped_column(sa.Text)
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+    sent_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+
+class PostDemoJob(Base):
+    __tablename__ = "post_demo_jobs"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "job_type IN ("
+            "'extract_lead_insights',"
+            "'track_features_shown',"
+            "'generate_lead_summary',"
+            "'export_crm_payload',"
+            "'run_full_post_demo_intelligence'"
+            ")",
+            name="post_demo_jobs_type",
+        ),
+        sa.CheckConstraint(
+            "status IN ("
+            "'pending','running','completed','completed_with_warnings',"
+            "'failed','dead_letter','cancelled'"
+            ")",
+            name="post_demo_jobs_status",
+        ),
+        sa.CheckConstraint("attempt_count >= 0", name="post_demo_jobs_attempt_non_negative"),
+        sa.CheckConstraint("max_attempts > 0", name="post_demo_jobs_max_attempts_positive"),
+        sa.CheckConstraint(
+            "jsonb_typeof(metrics) = 'object'",
+            name="post_demo_jobs_metrics_object",
+        ),
+        sa.UniqueConstraint(
+            "organization_id",
+            "session_id",
+            "job_type",
+            "idempotency_key",
+            name="uq_post_demo_jobs_idempotency",
+        ),
+        sa.Index("ix_post_demo_jobs_status_created", "status", "created_at"),
+        sa.Index("ix_post_demo_jobs_session_created", "session_id", sa.text("created_at DESC")),
+    )
+
+    post_demo_job_id: Mapped[PyUUID] = uuid_pk("post_demo_job_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    session_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id"), nullable=False
+    )
+    job_type: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    status: Mapped[str] = mapped_column(sa.Text, nullable=False, server_default="pending")
+    attempt_count: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default="3")
+    idempotency_key: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(sa.Text)
+    error_message: Mapped[str | None] = mapped_column(sa.Text)
+    metrics: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+    )
+    trace_id: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+
+
+class FeatureShown(Base):
+    __tablename__ = "features_shown"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "confidence >= 0 AND confidence <= 1", name="features_shown_confidence_range"
+        ),
+        sa.CheckConstraint("length(feature_key) > 0", name="features_shown_key_non_empty"),
+        sa.CheckConstraint("length(feature_label) > 0", name="features_shown_label_non_empty"),
+        sa.UniqueConstraint("session_id", "feature_key", name="uq_features_shown_session_key"),
+        sa.Index(
+            "ix_features_shown_session_confidence",
+            "session_id",
+            sa.text("confidence DESC"),
+        ),
+        sa.Index("ix_features_shown_product_feature", "product_id", "feature_key"),
+    )
+
+    feature_shown_id: Mapped[PyUUID] = uuid_pk("feature_shown_id")
+    organization_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("organizations.organization_id"), nullable=False
+    )
+    session_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("demo_sessions.session_id"), nullable=False
+    )
+    product_id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("products.product_id"), nullable=False
+    )
+    feature_key: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    feature_label: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    feature_category: Mapped[str | None] = mapped_column(sa.Text)
+    source_type: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    confidence: Mapped[Decimal] = mapped_column(
+        sa.Numeric(4, 3), nullable=False, server_default="0.000"
+    )
+    evidence_transcript_event_ids: Mapped[list[PyUUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, server_default=sa.text("'{}'::uuid[]")
+    )
+    evidence_browser_action_ids: Mapped[list[PyUUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, server_default=sa.text("'{}'::uuid[]")
+    )
+    evidence_screen_ids: Mapped[list[PyUUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, server_default=sa.text("'{}'::uuid[]")
+    )
+    evidence_recipe_step_ids: Mapped[list[PyUUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, server_default=sa.text("'{}'::uuid[]")
+    )
+    first_seen_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    last_seen_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     created_at: Mapped[datetime] = created_at_column()
     updated_at: Mapped[datetime] = updated_at_column()
 

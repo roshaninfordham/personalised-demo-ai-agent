@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/crm-export.schema.json",
+  "title": "CrmExportContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "CrmExportStatus": {
+      "type": "string",
+      "enum": ["pending", "validated", "sent", "failed", "skipped", "dry_run_completed"]
+    },
+    "CrmExportRecord": {
+      "type": "object",
+      "required": [
+        "crm_export_id",
+        "provider",
+        "status",
+        "dry_run",
+        "external_object_ids",
+        "created_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "crm_export_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "https://schemas.live-demo-agent.local/crm-export.schema.json#/$defs/CrmExportStatus"
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "external_object_ids": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "created_at": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/IsoDateTimeString"
+        }
+      }
+    },
+    "CrmExportsResponse": {
+      "type": "object",
+      "required": ["items"],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/crm-export.schema.json#/$defs/CrmExportRecord"
+          },
+          "default": []
+        }
+      }
+    }
+  }
+}
+

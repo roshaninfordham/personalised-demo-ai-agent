@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/crm-payload.schema.json",
+  "title": "CrmPayloadContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "GenericCrmPayload": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "session_id",
+        "product_id",
+        "lead",
+        "demo",
+        "qualification",
+        "recommended_follow_up",
+        "evidence",
+        "metadata"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "default": "v1"
+        },
+        "session_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "product_id": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+        },
+        "lead": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "demo": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "qualification": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "recommended_follow_up": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "evidence": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        },
+        "metadata": {
+          "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/Metadata"
+        }
+      }
+    }
+  }
+}
+

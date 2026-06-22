@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.live-demo-agent.local/lead-insight.schema.json",
+  "title": "LeadInsightContracts",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "PostDemoInsightType": {
+      "type": "string",
+      "enum": [
+        "pain_point",
+        "objection",
+        "buying_signal",
+        "role",
+        "urgency",
+        "feature_interest",
+        "unanswered_question",
+        "question",
+        "use_case",
+        "decision_criteria",
+        "next_step"
+      ]
+    },
+    "EvidenceRefs": {
+      "type": "object",
+      "required": [
+        "transcript_event_ids",
+        "browser_action_ids",
+        "screen_ids",
+        "recipe_step_ids"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "transcript_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          },
+          "default": []
+        },
+        "browser_action_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          },
+          "default": []
+        },
+        "screen_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          },
+          "default": []
+        },
+        "recipe_step_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.live-demo-agent.local/common.schema.json#/$defs/UuidString"
+          },
+          "default": []
+        }
+      }
+    },
+    "ExtractedLeadInsight": {
+      "type": "object",
+      "required": [
+        "insight_type",
+        "content",
+        "confidence",
+        "importance",
+        "evidence",
+        "source"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "insight_type": {
+          "$ref": "https://schemas.live-demo-agent.local/lead-insight.schema.json#/$defs/PostDemoInsightType"
+        },
+        "content": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "importance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence": {
+          "$ref": "https://schemas.live-demo-agent.local/lead-insight.schema.json#/$defs/EvidenceRefs"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+

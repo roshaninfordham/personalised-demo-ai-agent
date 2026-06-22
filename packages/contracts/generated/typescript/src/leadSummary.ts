@@ -2,7 +2,7 @@
 
 import type { BoundingBox, DemoPhase, IsoDateTimeString, JsonValue, Metadata, PolicyDecision, ProviderName, RiskLevel, SessionStatus, TraceId, UuidString } from "./common";
 
-export type InsightType = "pain_point" | "use_case" | "objection" | "buying_signal" | "question" | "feature_interest" | "persona" | "urgency";
+export type InsightType = "pain_point" | "use_case" | "objection" | "buying_signal" | "question" | "feature_interest" | "persona" | "role" | "urgency" | "unanswered_question" | "decision_criteria" | "next_step";
 
 export interface LeadInsight {
   insight_id: UuidString;

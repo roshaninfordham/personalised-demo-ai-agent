@@ -31,7 +31,11 @@ class InsightType(StrEnum):
     QUESTION = "question"
     FEATURE_INTEREST = "feature_interest"
     PERSONA = "persona"
+    ROLE = "role"
     URGENCY = "urgency"
+    UNANSWERED_QUESTION = "unanswered_question"
+    DECISION_CRITERIA = "decision_criteria"
+    NEXT_STEP = "next_step"
 
 
 class LeadInsight(BaseModel):

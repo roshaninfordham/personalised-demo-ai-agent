@@ -17,7 +17,11 @@
         "question",
         "feature_interest",
         "persona",
-        "urgency"
+        "role",
+        "urgency",
+        "unanswered_question",
+        "decision_criteria",
+        "next_step"
       ]
     },
     "LeadInsight": {
