@@ -2,7 +2,7 @@
 
 Monorepo foundation for a production-grade, low-latency, secure, deterministic, provider-agnostic AI product-demo agent platform.
 
-Through Phase 12, this repo now contains the monorepo foundation, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, deterministic Playwright browser runtime, frontend live demo UI, Pipecat voice runtime foundation, realtime grounded agent brain, shared safety/policy layer, product learner and demo graph, recipe engine, and end-to-end session orchestration.
+Through Phase 13, this repo now contains the monorepo foundation, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, deterministic Playwright browser runtime, frontend live demo UI, Pipecat voice runtime foundation, realtime grounded agent brain, shared safety/policy layer, product learner and demo graph, recipe engine, end-to-end session orchestration, and post-demo intelligence.
 
 ## What This Repo Is
 
@@ -23,6 +23,7 @@ This repository currently contains:
 - Phase 10 product learner, demo graph, screen matching, routes, and knowledge retrieval.
 - Phase 11 demo recipe engine.
 - Phase 12 end-to-end session orchestration.
+- Phase 13 post-demo intelligence, feature tracking, lead summaries, and mock CRM export.
 - Python and TypeScript workspace tooling.
 - Shared JSON Schema contracts with generated Python and TypeScript outputs.
 - Shared policy rules with generated Python and TypeScript outputs.
@@ -35,6 +36,7 @@ This repository currently contains:
 | --- | --- |
 | [docs/README.md](docs/README.md) | Current documentation hub and component map |
 | [docs/architecture/system-design.md](docs/architecture/system-design.md) | Phase 12 system design with architecture diagrams |
+| [docs/architecture/post-demo-intelligence.md](docs/architecture/post-demo-intelligence.md) | Phase 13 evidence-backed summaries and CRM handoff |
 | [docs/flows/user-agent-flow.md](docs/flows/user-agent-flow.md) | User journey, agent turn, browser sync, recovery, shutdown |
 | [docs/operations/local-development.md](docs/operations/local-development.md) | Local setup, verification, smoke testing, debugging |
 | [architecture/README.md](architecture/README.md) | Phase 0 foundation documents and early architecture |

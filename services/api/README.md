@@ -1,6 +1,6 @@
 # API Service
 
-`services/api` is the backend control plane. It owns product/session APIs, session orchestration, recipe APIs, persistence-facing repositories, event publishing, audit integration, and frontend-safe join/readiness state.
+`services/api` is the backend control plane. It owns product/session APIs, session orchestration, recipe APIs, post-demo intelligence, persistence-facing repositories, event publishing, audit integration, and frontend-safe join/readiness state.
 
 It does not run Playwright directly, run the Pipecat pipeline directly, or execute LLM decisions directly.
 
@@ -14,6 +14,7 @@ flowchart TB
     Orchestrator["Session orchestrator"]
     Recipes["Recipe validation/compile/progress"]
     Audit["Audit logging"]
+    PostDemo["Post-demo intelligence"]
     Events["Frontend event gateway"]
     Repos["Postgres repositories"]
     Redis["Redis live state"]
@@ -23,6 +24,7 @@ flowchart TB
     API --> Orchestrator
     API --> Recipes
     API --> Audit
+    API --> PostDemo
     API --> Events
     API --> Repos
     API --> Redis
@@ -123,6 +125,26 @@ erDiagram
 | `orchestration/browser_agent_sync.py` | Speech/action/screen sync state |
 | `clients/*_client.py` | Bounded internal service clients |
 | `repositories/session_*` | Phase 12 durable state repositories |
+| `post_demo/*` | Phase 13 evidence-backed insight, summary, and CRM export modules |
+
+## Post-Demo Intelligence Boundary
+
+```mermaid
+flowchart TB
+    End["Session ended"] --> Run["POST /post-demo/run"]
+    Run --> Evidence["Load bounded evidence"]
+    Evidence --> Insights["Extract lead insights"]
+    Evidence --> Features["Track features shown"]
+    Insights --> Summary["Generate lead summary"]
+    Features --> Summary
+    Summary --> CRM["Optional mock CRM export"]
+    Summary --> DB["lead_summaries"]
+    Insights --> InsightDB["lead_insights"]
+    Features --> FeatureDB["features_shown"]
+    CRM --> ExportDB["crm_exports"]
+```
+
+The post-demo path is cold-path only. It validates evidence IDs, redacts text before summaries and CRM payloads, and defaults CRM export to the mock dry-run adapter.
 
 ## State And Event Safety
 
@@ -142,4 +164,6 @@ Events must not include provider secrets, raw prompts, raw audio, screenshots/ba
 make orchestration-test
 make orchestration-test-integration
 make orchestration-smoke
+make post-demo-test
+make post-demo-test-integration
 ```

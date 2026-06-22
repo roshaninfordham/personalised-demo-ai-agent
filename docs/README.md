@@ -12,6 +12,7 @@ The platform has two execution paths:
 | Area | Document |
 | --- | --- |
 | System architecture | [architecture/system-design.md](architecture/system-design.md) |
+| Post-demo intelligence | [architecture/post-demo-intelligence.md](architecture/post-demo-intelligence.md) |
 | User and agent flows | [flows/user-agent-flow.md](flows/user-agent-flow.md) |
 | Local development and verification | [operations/local-development.md](operations/local-development.md) |
 | Phase 0 foundation | [../architecture/README.md](../architecture/README.md) |
@@ -46,6 +47,11 @@ mindmap
       Recovery
       Shutdown
       Resource registry
+    Post-Demo Intelligence
+      Evidence loader
+      Lead insights
+      Features shown
+      CRM payloads
     Authoring
       Demo recipes
       Text guidance conversion
