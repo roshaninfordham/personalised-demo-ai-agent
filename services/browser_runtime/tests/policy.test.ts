@@ -89,4 +89,27 @@ describe("browser policy helpers", () => {
     expect(result.text_metadata_redacted).toBe(true);
     expect(result.visual_redaction_applied).toBe(false);
   });
+
+  it("allows relative same-origin navigation targets after resolving against current URL", () => {
+    const decision = new DeterministicActionSafetyPolicy().evaluate({
+      organization_id: organizationId,
+      session_id: sessionId,
+      actor: { actor_type: "agent", actor_id: "agent-runtime", role: "agent_runtime" },
+      action_type: "click_element",
+      action_label: "Sign up",
+      element_role: "link",
+      element_label: "Sign up",
+      element_text: "Sign up",
+      surrounding_text: "New here? Sign up",
+      input_type: null,
+      current_url: "http://web:3000/fixtures/login-product",
+      target_url: "/fixtures/login-product/signup",
+      allowed_domains: ["web"],
+      recipe_never_click: [],
+      confirmation: { confirmed: true },
+      trace_id: "trace-test",
+    });
+
+    expect(decision.decision).toBe("allowed");
+  });
 });

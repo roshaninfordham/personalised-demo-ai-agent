@@ -41,5 +41,35 @@ describe("risk classifier", () => {
     });
     expect(result.riskLevel).toBe("blocked");
   });
-});
 
+  it("blocks sensitive auth and secret fields before scoring", () => {
+    const password = classifyElementRisk({
+      role: "input",
+      label: "Password",
+      tagName: "input",
+      inputType: "password",
+      currentUrl: "https://example.com/signup",
+      surroundingText: "Create an account Password",
+      recipeNeverClick: [],
+      globalNeverClick: [],
+      allowedDomains: ["example.com"],
+    });
+    expect(password).toMatchObject({
+      riskLevel: "blocked",
+      riskScore: 1,
+    });
+
+    const apiKey = classifyElementRisk({
+      role: "input",
+      label: "API key",
+      tagName: "input",
+      inputType: "text",
+      currentUrl: "https://example.com/settings",
+      surroundingText: "API key",
+      recipeNeverClick: [],
+      globalNeverClick: [],
+      allowedDomains: ["example.com"],
+    });
+    expect(apiKey.riskLevel).toBe("blocked");
+  });
+});
