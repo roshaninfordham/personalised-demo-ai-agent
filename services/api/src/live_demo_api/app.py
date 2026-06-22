@@ -19,6 +19,7 @@ from live_demo_api.middleware import setup_middleware
 from live_demo_api.observability.setup import setup_observability
 from live_demo_api.observability.tracing import configure_tracing
 from live_demo_api.routers import (
+    artifacts,
     audit_logs,
     demo,
     demo_sessions,
@@ -81,6 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(health.api_router)
     app.include_router(demo.router)
+    app.include_router(artifacts.router)
     app.include_router(products.router)
     app.include_router(guidance.router)
     app.include_router(recipes.router)

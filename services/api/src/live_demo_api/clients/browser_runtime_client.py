@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from html import escape
 from urllib.parse import quote, urlsplit
 from uuid import UUID, uuid5
 
@@ -26,8 +25,16 @@ class BrowserScreenResult:
     safe_actions: tuple[dict[str, object], ...]
 
 
+class BrowserRuntimeUnavailable(RuntimeError):
+    """Raised when the real browser runtime cannot provide a live browser result."""
+
+
 class BrowserRuntimeClient:
-    """Browser-runtime facade with deterministic fallback for local tests."""
+    """Browser-runtime facade.
+
+    Real demo mode must never synthesize product screens. A deterministic fallback exists only
+    behind BROWSER_RUNTIME_ENABLE_MOCK_FALLBACK for explicitly labelled fixture/demo tests.
+    """
 
     async def create_session(
         self,
@@ -56,8 +63,9 @@ class BrowserRuntimeClient:
                 return BrowserSessionResult(
                     browser_session_id=UUID(str(payload["browser_session_id"]))
                 )
-        except (httpx.HTTPError, KeyError, ValueError):
-            pass
+        except (httpx.HTTPError, KeyError, ValueError) as exc:
+            if not settings.browser_runtime_enable_mock_fallback:
+                raise BrowserRuntimeUnavailable("browser_runtime_session_create_failed") from exc
         _ = organization_id, product_id, start_url, trace_id
         return BrowserSessionResult(browser_session_id=uuid5(session_id, "browser-session"))
 
@@ -75,8 +83,9 @@ class BrowserRuntimeClient:
                 )
                 response.raise_for_status()
                 return dict(response.json())
-        except httpx.HTTPError:
-            pass
+        except httpx.HTTPError as exc:
+            if not settings.browser_runtime_enable_mock_fallback:
+                raise BrowserRuntimeUnavailable("browser_runtime_navigation_failed") from exc
         _ = trace_id
         return {
             "browser_session_id": str(browser_session_id),
@@ -110,8 +119,9 @@ class BrowserRuntimeClient:
                     screen=_compact_screen(screen),
                     safe_actions=_safe_actions_from_screen(screen),
                 )
-        except (httpx.HTTPError, ValueError):
-            pass
+        except (httpx.HTTPError, ValueError) as exc:
+            if not settings.browser_runtime_enable_mock_fallback:
+                raise BrowserRuntimeUnavailable("browser_runtime_screen_read_failed") from exc
         _ = organization_id, product_id, trace_id
         parsed = urlsplit(url)
         title = parsed.hostname or "Product"
@@ -122,16 +132,17 @@ class BrowserRuntimeClient:
             "url": url,
             "url_path": parsed.path or "/",
             "title": title,
-            "summary": f"Initial screen for {title}.",
+            "summary": f"Fixture demo screen for {title}.",
             "screen_hash": digest,
             "confidence": 0.72,
-            "image_url": _generated_screen_image(
-                title=title,
-                url=url,
-                summary=f"Initial screen for {title}.",
-            ),
+            "image_url": "",
             "width": 1440,
             "height": 900,
+            "diagnostics": {
+                "mock_fallback": True,
+                "navigation_status": "fixture_mode",
+                "warnings": ["This is a fixture fallback, not a real browser screenshot."],
+            },
             "updated_at": datetime.now(UTC).isoformat(),
         }
         safe_actions = _fallback_safe_actions()
@@ -183,9 +194,13 @@ def _compact_screen(screen: dict[str, object]) -> dict[str, object]:
     title = str(screen.get("title") or "")
     url = str(screen.get("url") or "")
     image_url = str(screen.get("image_url") or screen.get("screenshot_url") or "")
-    if not image_url:
-        image_url = _generated_screen_image(title=title or "Product", url=url, summary=summary_text)
+    screenshot_uri = str(screen.get("screenshot_uri") or "")
+    if not image_url and screenshot_uri:
+        image_url = _artifact_content_url(screenshot_uri)
     elements = screen.get("elements")
+    width = _int_value(screen.get("width"), 1440)
+    height = _int_value(screen.get("height"), 900)
+    diagnostics = screen.get("diagnostics")
     return {
         "screen_id": str(screen.get("screen_id") or ""),
         "browser_session_id": str(screen.get("browser_session_id") or ""),
@@ -195,11 +210,12 @@ def _compact_screen(screen: dict[str, object]) -> dict[str, object]:
         "summary": summary_text,
         "screen_hash": str(screen.get("screen_hash") or ""),
         "image_url": image_url,
-        "screenshot_uri": str(screen.get("screenshot_uri") or ""),
-        "width": 1440,
-        "height": 900,
+        "screenshot_uri": screenshot_uri,
+        "width": width,
+        "height": height,
         "elements": elements if isinstance(elements, list) else [],
         "confidence": _float_value(screen.get("confidence")),
+        "diagnostics": diagnostics if isinstance(diagnostics, dict) else {},
         "updated_at": datetime.now(UTC).isoformat(),
     }
 
@@ -215,6 +231,21 @@ def _float_value(value: object) -> float:
         except ValueError:
             return 0.0
     return 0.0
+
+
+def _int_value(value: object, fallback: int) -> int:
+    if isinstance(value, int | float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(float(value))
+        except ValueError:
+            return fallback
+    return fallback
+
+
+def _artifact_content_url(object_key: str) -> str:
+    return f"/api/v1/artifacts/browser-screenshot?object_key={quote(object_key, safe='')}"
 
 
 def _safe_actions_from_screen(screen: dict[str, object]) -> tuple[dict[str, object], ...]:
@@ -245,9 +276,6 @@ def _safe_actions_from_screen(screen: dict[str, object]) -> tuple[dict[str, obje
                     "bbox": element.get("bbox") if isinstance(element.get("bbox"), dict) else None,
                 }
             )
-    labels = {str(action.get("label") or "").lower() for action in actions}
-    if not any("metric" in label for label in labels):
-        actions.extend(_fallback_safe_actions()[1:])
     return tuple(actions)
 
 
@@ -261,85 +289,4 @@ def _fallback_safe_actions() -> tuple[dict[str, object], ...]:
             "score": 1.0,
             "requires_confirmation": False,
         },
-        {
-            "action_id": "act_highlight_overview",
-            "action_type": "highlight_element",
-            "label": "Overview",
-            "risk_level": "low",
-            "score": 0.8,
-            "requires_confirmation": False,
-            "bbox": {"x": 96, "y": 462, "width": 340, "height": 176},
-        },
-        {
-            "action_id": "act_add_metric",
-            "action_type": "click_element",
-            "label": "Add Metric",
-            "risk_level": "low",
-            "score": 0.86,
-            "requires_confirmation": False,
-            "bbox": {"x": 550, "y": 462, "width": 340, "height": 176},
-        },
-        {
-            "action_id": "act_reports",
-            "action_type": "click_element",
-            "label": "Reports",
-            "risk_level": "low",
-            "score": 0.82,
-            "requires_confirmation": False,
-            "bbox": {"x": 1004, "y": 462, "width": 340, "height": 176},
-        },
-    )
-
-
-def _generated_screen_image(*, title: str, url: str, summary: str) -> str:
-    safe_title = escape(title or "Product")
-    safe_url = escape(url)
-    safe_summary = escape(summary or "Initial screen loaded.")
-    svg = "\n".join(
-        [
-            '<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900"',
-            '  viewBox="0 0 1440 900">',
-            '<rect width="1440" height="900" fill="#f8fafc"/>',
-            '<rect x="64" y="56" width="1312" height="96" rx="20"',
-            '  fill="#ffffff" stroke="#dbe3ef"/>',
-            '<circle cx="112" cy="104" r="12" fill="#ef4444"/>',
-            '<circle cx="148" cy="104" r="12" fill="#f59e0b"/>',
-            '<circle cx="184" cy="104" r="12" fill="#10b981"/>',
-            _svg_text(232, 112, 28, "#475569", safe_url),
-            '<rect x="96" y="214" width="1248" height="184" rx="28" fill="#eef2ff"/>',
-            _svg_text(136, 292, 54, "#111827", safe_title, weight=700),
-            _svg_text(138, 346, 28, "#475569", safe_summary[:120]),
-            _card_svg(96, "Overview", "Current screen detected"),
-            _card_svg(550, "Add Metric", "Safe action candidate"),
-            _card_svg(1004, "Reports", "Demo route candidate"),
-            "</svg>",
-        ]
-    )
-    return "data:image/svg+xml;utf8," + quote(svg)
-
-
-def _card_svg(x: int, title: str, subtitle: str) -> str:
-    return "\n".join(
-        [
-            f'<rect x="{x}" y="462" width="340" height="176" rx="24"',
-            '  fill="#ffffff" stroke="#dbe3ef"/>',
-            _svg_text(x + 36, 534, 34, "#111827", title, weight=700),
-            _svg_text(x + 36, 586, 24, "#64748b", subtitle),
-        ]
-    )
-
-
-def _svg_text(
-    x: int,
-    y: int,
-    size: int,
-    fill: str,
-    text: str,
-    *,
-    weight: int | None = None,
-) -> str:
-    weight_attr = "" if weight is None else f' font-weight="{weight}"'
-    return (
-        f'<text x="{x}" y="{y}" fill="{fill}" font-family="Inter, Arial" '
-        f'font-size="{size}"{weight_attr}>{text}</text>'
     )

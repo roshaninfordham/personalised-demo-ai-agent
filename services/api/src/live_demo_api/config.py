@@ -108,6 +108,7 @@ class ApiSettings(BaseSettings):
     session_shutdown_enqueue_lead_summary: bool = True
     session_shutdown_generate_deterministic_summary: bool = True
     browser_runtime_base_url: str = "http://browser-runtime:8200"
+    browser_runtime_enable_mock_fallback: bool = False
     agent_runtime_base_url: str = "http://agent-runtime:8300"
     learner_worker_base_url: str = "http://learner-worker:8400"
     internal_service_timeout_ms: int = 5000

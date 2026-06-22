@@ -8,6 +8,7 @@ export type PublicConfig = {
   eventTransport: EventTransport;
   enableDebugPanel: boolean;
   enableMockEvents: boolean;
+  enableMockDemo: boolean;
   enableWebrtcPlaceholder: boolean;
   browserFrameMode: BrowserFrameMode;
   maxEventBufferSize: number;
@@ -36,6 +37,7 @@ export function getPublicConfig(): PublicConfig {
     eventTransport: readEventTransport(process.env.NEXT_PUBLIC_EVENT_TRANSPORT),
     enableDebugPanel: readBoolean("NEXT_PUBLIC_ENABLE_DEBUG_PANEL", true),
     enableMockEvents: readBoolean("NEXT_PUBLIC_ENABLE_MOCK_EVENTS", false),
+    enableMockDemo: readBoolean("NEXT_PUBLIC_ENABLE_MOCK_DEMO", false),
     enableWebrtcPlaceholder: readBoolean("NEXT_PUBLIC_ENABLE_WEBRTC_PLACEHOLDER", true),
     browserFrameMode: readBrowserFrameMode(process.env.NEXT_PUBLIC_BROWSER_FRAME_MODE),
     maxEventBufferSize: readInteger("NEXT_PUBLIC_MAX_EVENT_BUFFER_SIZE", 1000, 10, 5000),

@@ -1014,4 +1014,14 @@ def _screen_event_payload(result: BrowserScreenResult) -> dict[str, object]:
     screenshot_uri = screen.get("screenshot_uri")
     if isinstance(screenshot_uri, str) and screenshot_uri:
         payload["screenshot_uri"] = screenshot_uri
+        payload["screenshot"] = {
+            "object_key": screenshot_uri,
+            "url": image_url if isinstance(image_url, str) and image_url else "",
+            "content_type": "image/webp",
+            "width": int(screen.get("width") or 1440),
+            "height": int(screen.get("height") or 900),
+        }
+    diagnostics = screen.get("diagnostics")
+    if isinstance(diagnostics, dict) and diagnostics:
+        payload["diagnostics"] = diagnostics
     return payload
