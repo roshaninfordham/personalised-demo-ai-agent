@@ -1,0 +1,63 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  unit-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+      - run: cp .env.example .env
+      - run: uv sync --all-packages
+      - run: pnpm install --frozen-lockfile
+      - run: make test-fixture-secrets
+      - run: make test-unit
+
+  contracts-lint-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+      - run: cp .env.example .env
+      - run: uv sync --all-packages
+      - run: pnpm install --frozen-lockfile
+      - run: make contracts
+      - run: make lint
+      - run: make typecheck
+
+  main-quality:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+      - run: cp .env.example .env
+      - run: uv sync --all-packages
+      - run: pnpm install --frozen-lockfile
+      - run: make test-browser
+      - run: make test-evals
+      - run: make test-load-smoke

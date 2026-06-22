@@ -1,6 +1,6 @@
 # Local Development And Verification
 
-This guide covers the local workflow used to validate the repository through Phase 12.
+This guide covers the local workflow used to validate the repository through Phase 15.
 
 ## Toolchain
 
@@ -39,6 +39,15 @@ make policy-test
 make learner-test
 make recipe-test
 make orchestration-test
+make post-demo-test
+make obs-test
+make test-fixture-secrets
+make test-unit
+make test-browser
+make test-session-lifecycle
+make test-e2e
+make test-evals
+make test-load-smoke
 ```
 
 ```mermaid
@@ -46,8 +55,40 @@ flowchart TD
     Contracts["make contracts"] --> Lint["make lint"]
     Lint --> Typecheck["make typecheck"]
     Typecheck --> Unit["make test"]
-    Unit --> Smoke["orchestration smoke"]
+    Unit --> Quality["make test-all-quality"]
+    Quality --> Smoke["orchestration smoke"]
 ```
+
+## Phase 15 Quality Workflow
+
+```mermaid
+flowchart LR
+    Fixtures["fixture secret scan"] --> Unit["unit + contract tests"]
+    Unit --> Browser["browser runtime integration"]
+    Browser --> Lifecycle["session lifecycle"]
+    Lifecycle --> E2E["scripted E2E demo"]
+    E2E --> Evals["agent quality evals"]
+    Evals --> Load["load smoke"]
+    Load --> Reports["machine-readable reports"]
+```
+
+Fast local gate:
+
+```bash
+make test-fixture-secrets
+make test-unit
+make test-evals
+make test-load-smoke
+```
+
+Full local quality gate:
+
+```bash
+make test-all-quality
+```
+
+Reports are written to `.local/test-results`, `.local/load-results`, and
+`tests/evals/reports`.
 
 ## Full Local Orchestration Smoke
 

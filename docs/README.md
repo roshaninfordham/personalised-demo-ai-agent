@@ -9,15 +9,17 @@ The platform has two execution paths:
 
 ## Reading Map
 
-| Area | Document |
-| --- | --- |
-| System architecture | [architecture/system-design.md](architecture/system-design.md) |
-| Post-demo intelligence | [architecture/post-demo-intelligence.md](architecture/post-demo-intelligence.md) |
-| User and agent flows | [flows/user-agent-flow.md](flows/user-agent-flow.md) |
-| Local development and verification | [operations/local-development.md](operations/local-development.md) |
-| Phase 0 foundation | [../architecture/README.md](../architecture/README.md) |
-| Shared contracts | [../packages/contracts/README.md](../packages/contracts/README.md) |
-| Shared policy package | [../packages/policies/README.md](../packages/policies/README.md) |
+| Area                               | Document                                                                         |
+| ---------------------------------- | -------------------------------------------------------------------------------- |
+| System architecture                | [architecture/system-design.md](architecture/system-design.md)                   |
+| Observability and latency          | [architecture/observability-latency.md](architecture/observability-latency.md)   |
+| Testing and evaluation             | [architecture/testing-evaluation.md](architecture/testing-evaluation.md)         |
+| Post-demo intelligence             | [architecture/post-demo-intelligence.md](architecture/post-demo-intelligence.md) |
+| User and agent flows               | [flows/user-agent-flow.md](flows/user-agent-flow.md)                             |
+| Local development and verification | [operations/local-development.md](operations/local-development.md)               |
+| Phase 0 foundation                 | [../architecture/README.md](../architecture/README.md)                           |
+| Shared contracts                   | [../packages/contracts/README.md](../packages/contracts/README.md)               |
+| Shared policy package              | [../packages/policies/README.md](../packages/policies/README.md)                 |
 
 ## Product Capability Map
 
@@ -52,6 +54,12 @@ mindmap
       Lead insights
       Features shown
       CRM payloads
+    Quality System
+      Safety policy tests
+      Browser integration
+      E2E demo flow
+      Agent evals
+      Load tests
     Authoring
       Demo recipes
       Text guidance conversion
@@ -159,10 +167,10 @@ Rules:
 
 ## Service READMEs
 
-| Service | README |
-| --- | --- |
-| API / orchestrator | [../services/api/README.md](../services/api/README.md) |
-| Agent runtime | [../services/agent_runtime/README.md](../services/agent_runtime/README.md) |
-| Browser runtime | [../services/browser_runtime/README.md](../services/browser_runtime/README.md) |
-| Learner worker | [../services/learner_worker/README.md](../services/learner_worker/README.md) |
-| Frontend | [../apps/web/README.md](../apps/web/README.md) |
+| Service            | README                                                                         |
+| ------------------ | ------------------------------------------------------------------------------ |
+| API / orchestrator | [../services/api/README.md](../services/api/README.md)                         |
+| Agent runtime      | [../services/agent_runtime/README.md](../services/agent_runtime/README.md)     |
+| Browser runtime    | [../services/browser_runtime/README.md](../services/browser_runtime/README.md) |
+| Learner worker     | [../services/learner_worker/README.md](../services/learner_worker/README.md)   |
+| Frontend           | [../apps/web/README.md](../apps/web/README.md)                                 |

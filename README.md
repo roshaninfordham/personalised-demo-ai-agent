@@ -2,7 +2,7 @@
 
 Monorepo foundation for a production-grade, low-latency, secure, deterministic, provider-agnostic AI product-demo agent platform.
 
-Through Phase 13, this repo now contains the monorepo foundation, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, deterministic Playwright browser runtime, frontend live demo UI, Pipecat voice runtime foundation, realtime grounded agent brain, shared safety/policy layer, product learner and demo graph, recipe engine, end-to-end session orchestration, and post-demo intelligence.
+Through Phase 15, this repo now contains the monorepo foundation, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, deterministic Playwright browser runtime, frontend live demo UI, Pipecat voice runtime foundation, realtime grounded agent brain, shared safety/policy layer, product learner and demo graph, recipe engine, end-to-end session orchestration, post-demo intelligence, observability/latency engineering, and deterministic testing/evaluation infrastructure.
 
 ## What This Repo Is
 
@@ -24,22 +24,26 @@ This repository currently contains:
 - Phase 11 demo recipe engine.
 - Phase 12 end-to-end session orchestration.
 - Phase 13 post-demo intelligence, feature tracking, lead summaries, and mock CRM export.
+- Phase 14 OpenTelemetry, Prometheus metrics, JSON logs, dashboards, and latency budgets.
+- Phase 15 deterministic quality gates, browser fixture apps, E2E demo tests, agent evals, and load testing.
 - Python and TypeScript workspace tooling.
 - Shared JSON Schema contracts with generated Python and TypeScript outputs.
 - Shared policy rules with generated Python and TypeScript outputs.
 - Local Docker Compose stack for lightweight development.
-- Observability placeholders.
+- Local observability stack and deterministic quality harness.
 
 ## Documentation Map
 
-| Start here | Purpose |
-| --- | --- |
-| [docs/README.md](docs/README.md) | Current documentation hub and component map |
-| [docs/architecture/system-design.md](docs/architecture/system-design.md) | Phase 12 system design with architecture diagrams |
-| [docs/architecture/post-demo-intelligence.md](docs/architecture/post-demo-intelligence.md) | Phase 13 evidence-backed summaries and CRM handoff |
-| [docs/flows/user-agent-flow.md](docs/flows/user-agent-flow.md) | User journey, agent turn, browser sync, recovery, shutdown |
-| [docs/operations/local-development.md](docs/operations/local-development.md) | Local setup, verification, smoke testing, debugging |
-| [architecture/README.md](architecture/README.md) | Phase 0 foundation documents and early architecture |
+| Start here                                                                                 | Purpose                                                         |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| [docs/README.md](docs/README.md)                                                           | Current documentation hub and component map                     |
+| [docs/architecture/system-design.md](docs/architecture/system-design.md)                   | Phase 12 system design with architecture diagrams               |
+| [docs/architecture/post-demo-intelligence.md](docs/architecture/post-demo-intelligence.md) | Phase 13 evidence-backed summaries and CRM handoff              |
+| [docs/architecture/observability-latency.md](docs/architecture/observability-latency.md)   | Phase 14 traces, metrics, logs, dashboards, latency budgets     |
+| [docs/architecture/testing-evaluation.md](docs/architecture/testing-evaluation.md)         | Phase 15 safety tests, E2E demo flow, evals, and load scenarios |
+| [docs/flows/user-agent-flow.md](docs/flows/user-agent-flow.md)                             | User journey, agent turn, browser sync, recovery, shutdown      |
+| [docs/operations/local-development.md](docs/operations/local-development.md)               | Local setup, verification, smoke testing, debugging             |
+| [architecture/README.md](architecture/README.md)                                           | Phase 0 foundation documents and early architecture             |
 
 ```mermaid
 flowchart LR
@@ -94,7 +98,7 @@ flowchart TB
         Postgres["Postgres + pgvector"]
         Redis["Redis live state + streams"]
         MinIO["MinIO/S3 artifacts"]
-        Observability["Observability placeholders"]
+        Observability["Observability stack"]
     end
 
     User --> Web
@@ -204,6 +208,10 @@ Forbidden directions:
 |   `-- tts_service
 |-- tests
 |   |-- integration
+|   |-- unit
+|   |-- fixtures
+|   |-- evals
+|   |-- load
 |   `-- e2e
 |-- docker-compose.yml
 |-- Makefile
@@ -254,6 +262,13 @@ make db-downgrade
 make ai-test
 make browser-test
 make browser-test-integration
+make test-fixture-secrets
+make test-unit
+make test-browser
+make test-session-lifecycle
+make test-e2e
+make test-evals
+make test-load-smoke
 make web-dev
 make web-test
 make web-build
