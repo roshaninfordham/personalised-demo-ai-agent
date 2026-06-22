@@ -13,7 +13,8 @@ COPY services/browser_runtime/package.json services/browser_runtime/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/policies/package.json packages/policies/package.json
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/pnpm/store \
+  pnpm install --frozen-lockfile
 
 COPY services/browser_runtime services/browser_runtime
 COPY packages/contracts packages/contracts
@@ -63,4 +64,4 @@ USER 10001:10001
 
 EXPOSE 8200
 
-CMD ["node", "services/browser_runtime/dist/src/index.js"]
+CMD ["node", "dist/src/index.js"]

@@ -1,0 +1,11 @@
+services:
+  otel-collector:
+    profiles: ["observability"]
+  prometheus:
+    profiles: ["observability"]
+  grafana:
+    profiles: ["observability"]
+  loki:
+    profiles: ["observability"]
+  jaeger:
+    profiles: ["observability"]

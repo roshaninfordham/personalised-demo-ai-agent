@@ -1,0 +1,7 @@
+services:
+  ollama:
+    profiles: ["ai-local"]
+  tts-service:
+    profiles: ["tts-local"]
+  learner-worker-scrapegraph:
+    profiles: ["scrapegraph"]

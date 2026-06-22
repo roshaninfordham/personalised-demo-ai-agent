@@ -2,12 +2,12 @@ FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    UV_PROJECT_ENVIRONMENT=/app/.venv \
-    UV_NO_CACHE=1
+    UV_PROJECT_ENVIRONMENT=/app/.venv
 
 WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:0.5.31 /uv /usr/local/bin/uv
+ARG UV_EXTRA_ARGS=""
 
 COPY pyproject.toml uv.lock ./
 COPY services/api/pyproject.toml services/api/pyproject.toml
@@ -19,7 +19,8 @@ COPY packages/policies packages/policies
 COPY packages/contracts/generated/python packages/contracts/generated/python
 COPY services/learner_worker services/learner_worker
 
-RUN uv sync --frozen --package live-demo-learner-worker --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv \
+  uv sync --frozen --package live-demo-learner-worker --no-dev $UV_EXTRA_ARGS
 
 FROM python:3.12-slim AS runtime
 

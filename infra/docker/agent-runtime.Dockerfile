@@ -2,8 +2,7 @@ FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    UV_PROJECT_ENVIRONMENT=/app/.venv \
-    UV_NO_CACHE=1
+    UV_PROJECT_ENVIRONMENT=/app/.venv
 
 WORKDIR /app
 
@@ -19,7 +18,8 @@ COPY packages/policies packages/policies
 COPY packages/contracts/generated/python packages/contracts/generated/python
 COPY services/agent_runtime services/agent_runtime
 
-RUN uv sync --frozen --package live-demo-agent-runtime --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv \
+  uv sync --frozen --package live-demo-agent-runtime --no-dev
 
 FROM python:3.12-slim AS runtime
 

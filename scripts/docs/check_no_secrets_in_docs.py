@@ -16,9 +16,28 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("aws_access_key", re.compile(r"AKIA[0-9A-Z]{16}")),
     ("private_key", re.compile(r"BEGIN (RSA |EC |OPENSSH |)?PRIVATE KEY")),
     ("auth_header", re.compile(r"Authorization:\s+[A-Za-z]+")),
-    ("database_url_real", re.compile(r"DATABASE_URL=postgres(?:ql)?://(?!.*(?:example|REPLACE_ME|fake_|localhost))", re.IGNORECASE)),
-    ("jwt_secret_real", re.compile(r"JWT_SECRET=(?!<|REPLACE_ME|fake_|replace-with|example)[^\s]+", re.IGNORECASE)),
-    ("session_secret_real", re.compile(r"SESSION_SECRET=(?!<|REPLACE_ME|fake_|replace-with|example)[^\s]+", re.IGNORECASE)),
+    (
+        "database_url_real",
+        re.compile(
+            r"DATABASE_URL=postgres(?:ql)?://"
+            r"(?!.*(?:example|REPLACE_ME|fake_|localhost))",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "jwt_secret_real",
+        re.compile(
+            r"JWT_SECRET=(?!<|REPLACE_ME|fake_|replace-with|example)[^\s]+",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "session_secret_real",
+        re.compile(
+            r"SESSION_SECRET=(?!<|REPLACE_ME|fake_|replace-with|example)[^\s]+",
+            re.IGNORECASE,
+        ),
+    ),
 ]
 
 

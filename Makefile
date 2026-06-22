@@ -1,11 +1,15 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python:packages/policies/generated/python:packages/backend_common/src
 LEARNER_PYTHONPATH := services/learner_worker/src:packages/backend_common/src:packages/policies/generated/python:packages/contracts/generated/python
 
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production docs-validate docs-links docs-secrets docs-mermaid docs-index docs-all py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help up up-lite up-full up-observability up-ai-local up-nim up-scrapegraph down restart logs status health open doctor clean clean-docker clean-docker-safe clean-docker-deep rebuild rebuild-service test-e2e-user test-e2e-full test-ui-ux test-ready deploy-check final-ready readiness-report design-lint design-export design-check production-config-test install lint format format-write typecheck test contracts docker-config docker-up docker-down db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production docs-validate docs-links docs-secrets docs-mermaid docs-index docs-all py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
 	@echo "  make install          Install Python and TypeScript dependencies"
+	@echo "  make up               Start default local demo stack"
+	@echo "  make up-lite          Start low-memory fake-provider stack"
+	@echo "  make doctor           Show local diagnostics and Docker disk usage"
+	@echo "  make final-ready      Run final readiness gate"
 	@echo "  make lint             Run Python and TypeScript linters"
 	@echo "  make format           Check formatting"
 	@echo "  make format-write     Apply formatting"
@@ -32,6 +36,126 @@ help:
 	@echo "  make docker-up        Start local stack"
 	@echo "  make docker-down      Stop local stack"
 	@echo "  make clean            Remove caches"
+
+up:
+	docker compose up --build web api browser-runtime agent-runtime learner-worker post-demo-worker postgres redis minio
+
+up-lite:
+	AI_TEXT_PROVIDER=fake AI_STT_PROVIDER=fake AI_TTS_PROVIDER=fake docker compose up --build web api browser-runtime agent-runtime postgres redis minio
+
+up-full:
+	docker compose --profile ai-local --profile tts-local --profile observability up --build
+
+up-observability:
+	docker compose --profile observability up --build
+
+up-ai-local:
+	docker compose --profile ai-local up --build
+
+up-nim:
+	AI_TEXT_PROVIDER=nvidia_nim docker compose up --build web api browser-runtime agent-runtime learner-worker post-demo-worker postgres redis minio
+
+up-scrapegraph:
+	SCRAPEGRAPH_ENABLED=true docker compose --profile scrapegraph up --build learner-worker-scrapegraph
+
+down:
+	docker compose down
+
+restart:
+	docker compose restart
+
+logs:
+	docker compose logs -f --tail=200
+
+status:
+	docker compose ps
+
+health:
+	scripts/dev/health_check.sh
+
+open:
+	scripts/dev/open_local.sh
+
+doctor:
+	scripts/dev/doctor.sh
+
+clean-docker:
+	make clean-docker-safe
+
+clean-docker-safe:
+	scripts/dev/docker_clean_safe.sh
+
+clean-docker-deep:
+	scripts/dev/docker_clean_deep.sh
+
+rebuild:
+	docker compose build
+
+rebuild-service:
+	docker compose build $(service)
+
+test-e2e-user:
+	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/user-demo.spec.ts --headed
+
+test-e2e-full:
+	make test-fixture-secrets
+	make test-unit
+	make test-browser
+	make test-session-lifecycle
+	make test-e2e
+	make test-evals
+
+test-ui-ux:
+	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/ui-ux.spec.ts --headed
+
+test-ready:
+	make health
+	make test-e2e-user
+	make obs-smoke
+
+deploy-check:
+	make ci-local
+	make k8s-validate
+	make docker-scan
+
+design-lint:
+	npx @google/design.md lint DESIGN.md
+	npx @google/design.md lint apps/web/DESIGN.md
+
+design-export:
+	uv run python scripts/design/export_design_tokens.py
+
+design-check:
+	make design-lint
+	make design-export
+	git diff --exit-code -- apps/web/app/design-tokens.css
+
+production-config-test:
+	uv run pytest services/api/tests/test_production_safety_gates.py
+	pnpm --filter @live-demo-agent/browser-runtime test -- config
+
+readiness-report:
+	uv run python scripts/dev/generate_readiness_report.py
+
+final-ready:
+	make docs-secrets
+	make test-fixture-secrets
+	make contracts
+	make policy-validate
+	make lint
+	make typecheck
+	make test-unit
+	make test-browser
+	make test-session-lifecycle
+	make test-e2e-user
+	make test-evals
+	make docker-build-all
+	scripts/security/verify_no_env_in_images.sh
+	scripts/security/verify_container_user.sh
+	scripts/dev/docker_disk_usage.sh
+	make obs-dashboards-validate
+	make production-config-test
+	make readiness-report
 
 install:
 	uv sync --all-packages
@@ -367,7 +491,7 @@ policy-fixtures-check:
 	uv run pytest tests/security/test_cross_service_policy_consistency.py
 
 clean:
-	rm -rf .pytest_cache .mypy_cache .ruff_cache
+	rm -rf .pytest_cache .mypy_cache .ruff_cache node_modules/.cache apps/web/.next .local/test-artifacts
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 
 py-sync:

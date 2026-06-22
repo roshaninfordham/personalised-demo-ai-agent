@@ -2,8 +2,7 @@ FROM python:3.12-slim AS base-python
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    UV_PROJECT_ENVIRONMENT=/app/.venv \
-    UV_NO_CACHE=1
+    UV_PROJECT_ENVIRONMENT=/app/.venv
 
 WORKDIR /app
 

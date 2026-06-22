@@ -40,9 +40,12 @@ def main() -> int:
         "| Audience | Start here |",
         "| --- | --- |",
         "| New local developer | [setup/local-setup.md](setup/local-setup.md) |",
-        "| Staff/system-design reviewer | [architecture/system-design.md](architecture/system-design.md) |",
-        "| Interviewer or demo reviewer | [demo/interview-demo-script.md](demo/interview-demo-script.md) |",
-        "| Maintainer debugging issues | [troubleshooting/troubleshooting.md](troubleshooting/troubleshooting.md) |",
+        "| Staff/system-design reviewer | "
+        "[architecture/system-design.md](architecture/system-design.md) |",
+        "| Interviewer or demo reviewer | "
+        "[demo/interview-demo-script.md](demo/interview-demo-script.md) |",
+        "| Maintainer debugging issues | "
+        "[troubleshooting/troubleshooting.md](troubleshooting/troubleshooting.md) |",
         "",
         "## Capability Map",
         "",

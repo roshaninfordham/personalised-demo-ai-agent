@@ -14,7 +14,8 @@ COPY apps/web/package.json apps/web/package.json
 COPY services/browser_runtime/package.json services/browser_runtime/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/pnpm/store \
+  pnpm install --frozen-lockfile
 
 COPY apps/web apps/web
 COPY packages/contracts packages/contracts
