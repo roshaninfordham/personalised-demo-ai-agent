@@ -2,11 +2,11 @@
 
 Monorepo foundation for a production-grade, low-latency, secure, deterministic, provider-agnostic AI product-demo agent platform.
 
-Phase 8 provides the monorepo, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, a deterministic Playwright browser runtime, the frontend live demo UI shell, Pipecat voice runtime foundation, and a realtime grounded agent brain. It does not yet implement autonomous product crawling, full product learner intelligence, CRM export workflow, or production WebRTC media infrastructure.
+Through Phase 12, this repo now contains the monorepo foundation, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, deterministic Playwright browser runtime, frontend live demo UI, Pipecat voice runtime foundation, realtime grounded agent brain, shared safety/policy layer, product learner and demo graph, recipe engine, and end-to-end session orchestration.
 
 ## What This Repo Is
 
-The eventual system will run a live AI product-demo agent that opens a product URL in an isolated browser, learns the interface, speaks with a user in real time, controls the browser through safe actions, answers from grounded UI evidence, and creates CRM-ready sales intelligence.
+The system runs a live AI product-demo agent that opens a product URL in an isolated browser, learns the interface in the background, speaks with a user in real time, controls the browser through safe actions, answers from grounded UI evidence, and records the evidence needed for CRM-ready sales intelligence.
 
 This repository currently contains:
 
@@ -19,10 +19,39 @@ This repository currently contains:
 - Phase 6 Next.js frontend live demo shell.
 - Phase 7 Pipecat voice runtime foundation.
 - Phase 8 realtime grounded agent brain.
+- Phase 9 safety, policy, RBAC, audit, and redaction layer.
+- Phase 10 product learner, demo graph, screen matching, routes, and knowledge retrieval.
+- Phase 11 demo recipe engine.
+- Phase 12 end-to-end session orchestration.
 - Python and TypeScript workspace tooling.
 - Shared JSON Schema contracts with generated Python and TypeScript outputs.
+- Shared policy rules with generated Python and TypeScript outputs.
 - Local Docker Compose stack for lightweight development.
 - Observability placeholders.
+
+## Documentation Map
+
+| Start here | Purpose |
+| --- | --- |
+| [docs/README.md](docs/README.md) | Current documentation hub and component map |
+| [docs/architecture/system-design.md](docs/architecture/system-design.md) | Phase 12 system design with architecture diagrams |
+| [docs/flows/user-agent-flow.md](docs/flows/user-agent-flow.md) | User journey, agent turn, browser sync, recovery, shutdown |
+| [docs/operations/local-development.md](docs/operations/local-development.md) | Local setup, verification, smoke testing, debugging |
+| [architecture/README.md](architecture/README.md) | Phase 0 foundation documents and early architecture |
+
+```mermaid
+flowchart LR
+    Root["README.md"] --> Docs["docs/README.md"]
+    Docs --> System["System design"]
+    Docs --> Flows["User and agent flows"]
+    Docs --> Ops["Local operations"]
+    Docs --> Services["Service READMEs"]
+    Services --> API["services/api"]
+    Services --> Agent["services/agent_runtime"]
+    Services --> Browser["services/browser_runtime"]
+    Services --> Learner["services/learner_worker"]
+    Services --> Web["apps/web"]
+```
 
 ## System Components
 
@@ -31,8 +60,8 @@ flowchart TB
     User["User / Prospect"]
 
     subgraph Web["apps/web"]
-        Start["Demo start skeleton"]
-        Panels["Call / browser / transcript panels"]
+        Start["Demo start + readiness"]
+        Panels["Call / browser / transcript / learning panels"]
     end
 
     subgraph PythonServices["Python services"]
@@ -52,6 +81,12 @@ flowchart TB
         TsTypes["Generated TypeScript types"]
     end
 
+    subgraph Policy["packages/policies + backend_common"]
+        Rules["Policy rule JSON"]
+        Engines["Python policy/AI engines"]
+        GeneratedPolicy["Generated TS/Python policy constants"]
+    end
+
     subgraph Infra["infra"]
         Compose["Docker Compose"]
         Postgres["Postgres + pgvector"]
@@ -67,6 +102,10 @@ flowchart TB
     Learner --> Contracts
     TTS --> Contracts
     Browser --> Contracts
+    API --> Policy
+    Agent --> Policy
+    Learner --> Policy
+    Browser --> Policy
     Compose --> Web
     Compose --> API
     Compose --> Agent
@@ -85,6 +124,8 @@ The dependency graph is intentionally acyclic.
 ```mermaid
 flowchart LR
     Contracts["packages/contracts"]
+    Policies["packages/policies"]
+    BackendCommon["packages/backend_common"]
     Web["apps/web"]
     API["services/api"]
     Agent["services/agent_runtime"]
@@ -100,6 +141,14 @@ flowchart LR
     Browser --> Contracts
     Learner --> Contracts
     TTS --> Contracts
+    API --> Policies
+    Agent --> Policies
+    Browser --> Policies
+    Learner --> Policies
+    API --> BackendCommon
+    Agent --> BackendCommon
+    Learner --> BackendCommon
+    BackendCommon --> Policies
     Infra --> Web
     Infra --> API
     Infra --> Agent
@@ -128,14 +177,23 @@ Forbidden directions:
 |-- apps
 |   `-- web
 |-- architecture
+|-- docs
+|   |-- architecture
+|   |-- flows
+|   `-- operations
 |-- infra
 |   |-- docker
 |   `-- observability
 |-- packages
-|   `-- contracts
+|   |-- backend_common
+|   |-- contracts
+|   |   |-- schemas
+|   |   |-- generated
+|   |   `-- scripts
+|   `-- policies
+|       |-- rules
 |       |-- schemas
-|       |-- generated
-|       `-- scripts
+|       `-- generated
 |-- services
 |   |-- api
 |   |-- agent_runtime

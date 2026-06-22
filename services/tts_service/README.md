@@ -32,4 +32,3 @@ TTS warmup is bounded and should not block prewarm unless the deployment explici
 ```bash
 uv run pytest services/tts_service/tests
 ```
-

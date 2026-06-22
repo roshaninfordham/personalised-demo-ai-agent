@@ -257,4 +257,3 @@ flowchart TB
 ```
 
 The API treats runtime dependencies as orchestration resources. Readiness can degrade instead of forcing all optional dependencies to block local boot.
-

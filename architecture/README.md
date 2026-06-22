@@ -1,6 +1,27 @@
 # Architecture Documentation
 
-This directory contains the Phase 0 foundation for the live AI demo-agent platform. The documents are intended to be implementable directly by a junior engineer and defensible in a staff-level architecture review.
+This directory contains the Phase 0 foundation for the live AI demo-agent platform. The current Phase 12 architecture and operational documentation now lives in [../docs/README.md](../docs/README.md).
+
+Use this directory for the original product, provider, environment, and early architecture decisions. Use `docs/` for the current end-to-end system, user/agent flows, service boundaries, and local verification.
+
+## Current Documentation Hub
+
+```mermaid
+flowchart TB
+    Phase0["architecture/<br/>Phase 0 foundation"]
+    Docs["docs/<br/>Current architecture"]
+    Root["README.md"]
+    Services["Service READMEs"]
+    Contracts["packages/contracts"]
+    Policies["packages/policies"]
+
+    Root --> Docs
+    Root --> Phase0
+    Docs --> Services
+    Docs --> Contracts
+    Docs --> Policies
+    Phase0 --> Docs
+```
 
 ## Phase 0 Package
 

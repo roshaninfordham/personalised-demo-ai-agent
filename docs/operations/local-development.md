@@ -121,4 +121,3 @@ flowchart LR
 ```
 
 Keep commits focused by subsystem or documentation area. Avoid committing `.env`, local caches, container artifacts, or generated files that were not intentionally regenerated.
-

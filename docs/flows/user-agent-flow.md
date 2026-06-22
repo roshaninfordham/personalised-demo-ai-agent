@@ -199,4 +199,3 @@ flowchart TD
 ```
 
 The LLM never chooses selectors, JavaScript, credentials, or unvalidated browser commands.
-
