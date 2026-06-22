@@ -28,6 +28,11 @@ from live_demo_agent_runtime.persona.persona_types import PersonaState
 from live_demo_agent_runtime.tools.browser_tool_results import ToolRouteRequest, ToolRouteResult
 from live_demo_agent_runtime.tools.browser_tool_router import BrowserToolRouter
 from live_demo_backend_common.ai.text.base import TextGenerationProvider
+from live_demo_backend_common.observability import metric_names, span_names
+from live_demo_backend_common.observability.latency_enforcer import LatencyEnforcer
+from live_demo_backend_common.observability.metrics import get_global_registry
+from live_demo_backend_common.observability.trace_context import TraceContext
+from live_demo_backend_common.observability.tracing import start_span
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,15 +82,31 @@ class HostAgentRunner:
 
     async def run_turn(self, request: AgentTurnRequest) -> AgentTurnResult:
         started = time.perf_counter_ns()
-        await self._event_publisher.publish(
-            organization_id=request.organization_id,
-            demo_session_id=request.demo_session_id,
-            event_type=event_types.AGENT_TURN_STARTED,
-            trace_id=request.trace_id,
-            payload={"turn_id": str(request.active_turn_id)},
+        trace_context = (
+            TraceContext(trace_id=request.trace_id, span_id=uuid4().hex[:16])
+            if len(request.trace_id) == 32
+            else TraceContext.new()
         )
-        context = await self._context_builder.build_context(
-            BuildRealtimeContextRequest(
+        registry = get_global_registry()
+        enforcer = LatencyEnforcer(metrics=registry)
+        with start_span(
+            span_names.TURN_PROCESS,
+            trace_context=trace_context,
+            attributes={
+                "live_demo.organization_id": str(request.organization_id),
+                "live_demo.session_id": str(request.demo_session_id),
+                "live_demo.product_id": str(request.product_id),
+                "live_demo.turn_id": str(request.active_turn_id),
+            },
+        ):
+            await self._event_publisher.publish(
+                organization_id=request.organization_id,
+                demo_session_id=request.demo_session_id,
+                event_type=event_types.AGENT_TURN_STARTED,
+                trace_id=request.trace_id,
+                payload={"turn_id": str(request.active_turn_id)},
+            )
+            context_request = BuildRealtimeContextRequest(
                 organization_id=request.organization_id,
                 demo_session_id=request.demo_session_id,
                 product_id=request.product_id,
@@ -94,62 +115,105 @@ class HostAgentRunner:
                 active_turn_id=request.active_turn_id,
                 trace_id=request.trace_id,
             )
-        )
-        persona_state = request.persona_state or self._persona_tracker.initial_state()
-        persona_state = self._persona_tracker.update(persona_state, request.user_utterance)
-        provider_request = build_host_agent_request(
-            context=context,
-            settings=self._settings,
-            request_id=str(uuid4()),
-            trace_id=request.trace_id,
-            fake_response=request.fake_llm_response,
-        )
-        used_fallback = False
-        response = await self._text_provider.generate(provider_request)
-        try:
-            decision = self._output_validator.validate(response.content, context)
-        except AgentOutputValidationError:
-            used_fallback = True
-            decision = self._output_validator.fallback_decision(context)
-        memory_updates = tuple(
-            _memory_decision_to_update(update) for update in decision.memory_updates
-        )
-        await self._memory_handler.handle_updates(
-            organization_id=request.organization_id,
-            demo_session_id=request.demo_session_id,
-            updates=memory_updates,
-            trace_id=request.trace_id,
-        )
-        tool_result: ToolRouteResult | None = None
-        if decision.browser_action is not None:
-            tool_result = await self._tool_router.route(
-                ToolRouteRequest(
+            context_start = time.perf_counter_ns()
+            with start_span(span_names.TURN_CONTEXT_BUILD):
+                context = await self._context_builder.build_context(context_request)
+            context_ms = (time.perf_counter_ns() - context_start) / 1_000_000
+            enforcer.check(
+                "context_build",
+                context_ms,
+                context={"session_id": str(request.demo_session_id)},
+            )
+            persona_state = request.persona_state or self._persona_tracker.initial_state()
+            persona_state = self._persona_tracker.update(persona_state, request.user_utterance)
+            provider_request = build_host_agent_request(
+                context=context,
+                settings=self._settings,
+                request_id=str(uuid4()),
+                trace_id=request.trace_id,
+                fake_response=request.fake_llm_response,
+            )
+            used_fallback = False
+            llm_start = time.perf_counter_ns()
+            with start_span(
+                span_names.TURN_LLM_REQUEST,
+                attributes={
+                    "live_demo.provider": self._settings.agent_brain_provider_purpose,
+                    "live_demo.operation": "realtime_host",
+                },
+            ):
+                response = await self._text_provider.generate(provider_request)
+            llm_seconds = (time.perf_counter_ns() - llm_start) / 1_000_000_000
+            registry.observe(
+                metric_names.LLM_LATENCY_SECONDS,
+                llm_seconds,
+                labels={
+                    "provider": "configured",
+                    "purpose": "realtime_host",
+                    "result": "success",
+                },
+            )
+            enforcer.check(
+                "llm_realtime_host",
+                llm_seconds * 1000,
+                context={"session_id": str(request.demo_session_id)},
+            )
+            with start_span(span_names.TURN_OUTPUT_VALIDATE):
+                try:
+                    decision = self._output_validator.validate(response.content, context)
+                except AgentOutputValidationError:
+                    used_fallback = True
+                    registry.increment(
+                        metric_names.AGENT_OUTPUT_VALIDATION_FAILURES_TOTAL,
+                        labels={"operation": "realtime_host", "result": "fallback"},
+                    )
+                    decision = self._output_validator.fallback_decision(context)
+            memory_updates = tuple(
+                _memory_decision_to_update(update) for update in decision.memory_updates
+            )
+            with start_span(span_names.TURN_MEMORY_UPDATE):
+                await self._memory_handler.handle_updates(
                     organization_id=request.organization_id,
                     demo_session_id=request.demo_session_id,
-                    product_id=request.product_id,
-                    active_turn_id=request.active_turn_id,
-                    agent_decision=decision,
-                    current_context=context,
+                    updates=memory_updates,
                     trace_id=request.trace_id,
                 )
+            tool_result: ToolRouteResult | None = None
+            if decision.browser_action is not None:
+                with start_span(span_names.TURN_TOOL_ROUTE):
+                    tool_result = await self._tool_router.route(
+                        ToolRouteRequest(
+                            organization_id=request.organization_id,
+                            demo_session_id=request.demo_session_id,
+                            product_id=request.product_id,
+                            active_turn_id=request.active_turn_id,
+                            agent_decision=decision,
+                            current_context=context,
+                            trace_id=request.trace_id,
+                        )
+                    )
+            latency_ms = int((time.perf_counter_ns() - started) / 1_000_000)
+            registry.observe(
+                metric_names.TURN_LATENCY_SECONDS,
+                latency_ms / 1000,
+                labels={"phase": "realtime"},
             )
-        latency_ms = int((time.perf_counter_ns() - started) / 1_000_000)
-        await self._event_publisher.publish(
-            organization_id=request.organization_id,
-            demo_session_id=request.demo_session_id,
-            event_type=event_types.AGENT_TURN_COMPLETED,
-            trace_id=request.trace_id,
-            payload={
-                "turn_id": str(request.active_turn_id),
-                "latency_ms": latency_ms,
-                "used_fallback": used_fallback,
-                "browser_action_id": (
-                    decision.browser_action.action_id
-                    if decision.browser_action is not None
-                    else None
-                ),
-            },
-        )
+            await self._event_publisher.publish(
+                organization_id=request.organization_id,
+                demo_session_id=request.demo_session_id,
+                event_type=event_types.AGENT_TURN_COMPLETED,
+                trace_id=request.trace_id,
+                payload={
+                    "turn_id": str(request.active_turn_id),
+                    "latency_ms": latency_ms,
+                    "used_fallback": used_fallback,
+                    "browser_action_id": (
+                        decision.browser_action.action_id
+                        if decision.browser_action is not None
+                        else None
+                    ),
+                },
+            )
         return AgentTurnResult(
             decision=decision,
             context=context,

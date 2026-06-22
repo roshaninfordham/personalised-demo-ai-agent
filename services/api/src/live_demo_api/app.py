@@ -16,6 +16,7 @@ from live_demo_api.errors import register_error_handlers
 from live_demo_api.events.redis_stream_event_bus import RedisStreamEventBus
 from live_demo_api.logging_config import configure_logging
 from live_demo_api.middleware import setup_middleware
+from live_demo_api.observability.setup import setup_observability
 from live_demo_api.observability.tracing import configure_tracing
 from live_demo_api.routers import (
     audit_logs,
@@ -38,6 +39,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
+    setup_observability(settings)
     get_async_engine()
     get_sessionmaker()
     redis: Any = Redis.from_url(settings.redis_url)

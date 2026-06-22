@@ -15,6 +15,10 @@ from starlette.responses import Response
 
 from live_demo_api.config import ApiSettings
 from live_demo_api.logging_config import request_id_var, trace_id_var
+from live_demo_api.observability.metrics import metrics
+from live_demo_backend_common.observability.span_names import SESSION_CREATE
+from live_demo_backend_common.observability.trace_context import TraceContext
+from live_demo_backend_common.observability.tracing import start_span
 
 ID_RE = re.compile(r"^[A-Za-z0-9_.-]{1,128}$")
 logger = logging.getLogger(__name__)
@@ -36,23 +40,36 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         request_id = _clean_header_id(request.headers.get("x-request-id")) or str(uuid4())
-        trace_id = _clean_header_id(request.headers.get("x-trace-id")) or request_id
+        trace_context = TraceContext.from_headers(dict(request.headers))
+        trace_id = trace_context.trace_id
         request.state.request_id = request_id
         request.state.trace_id = trace_id
         token_request = request_id_var.set(request_id)
         token_trace = trace_id_var.set(trace_id)
         start = time.monotonic()
         try:
-            response = await call_next(request)
+            with start_span(
+                SESSION_CREATE,
+                trace_context=trace_context,
+                attributes={
+                    "http.request.method": request.method,
+                    "url.path": request.url.path,
+                    "live_demo.operation": "http_request",
+                },
+            ) as span:
+                response = await call_next(request)
+                span.set_attribute("http.response.status_code", response.status_code)
         except Exception:
             duration_ms = round((time.monotonic() - start) * 1000, 3)
+            metrics.record_request(request.method, request.url.path, 500, duration_ms)
             logger.exception(
                 "http.request.failed",
                 extra={
-                    "event": "http.request.failed",
+                    "event_type": "http.request.failed",
                     "method": request.method,
                     "path": request.url.path,
-                    "duration_ms": duration_ms,
+                    "latency_ms": duration_ms,
+                    "success": False,
                 },
             )
             raise
@@ -62,15 +79,20 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         duration_ms = round((time.monotonic() - start) * 1000, 3)
         response.headers["X-Request-ID"] = request_id
         response.headers["X-Trace-ID"] = trace_id
+        response.headers["traceparent"] = TraceContext(
+            trace_id=trace_id, span_id=trace_context.span_id
+        ).traceparent
         response.headers["X-Process-Time-MS"] = str(duration_ms)
+        metrics.record_request(request.method, request.url.path, response.status_code, duration_ms)
         logger.info(
             "http.request.completed",
             extra={
-                "event": "http.request.completed",
+                "event_type": "http.request.completed",
                 "method": request.method,
                 "path": request.url.path,
                 "status_code": response.status_code,
-                "duration_ms": duration_ms,
+                "latency_ms": duration_ms,
+                "success": response.status_code < 500,
             },
         )
         return response

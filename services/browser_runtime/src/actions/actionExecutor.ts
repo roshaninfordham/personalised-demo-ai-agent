@@ -8,6 +8,8 @@ import { waitForPageIdle } from "../browser/waitStrategies.js";
 import type { BrowserEventPublisher } from "../events/browserEventPublisher.js";
 import type { CursorEventEmitter } from "../events/cursorEventEmitter.js";
 import type { ScreenReader } from "../screen/screenReader.js";
+import { recordBrowserAction } from "../observability/browserInstrumentation.js";
+import { checkLatencyBudget } from "../observability/latencyBudget.js";
 import { observeActionResult } from "./actionObservation.js";
 import { validateAction } from "./actionValidator.js";
 
@@ -23,6 +25,9 @@ export class ActionExecutor {
     const started = performance.now();
     const validated = validateAction(session, command, this.config);
     if (validated.policyDecision === "confirmation_required") {
+      const latencyMs = Math.round(performance.now() - started);
+      recordBrowserAction(command.action_type, validated.riskLevel, "blocked", latencyMs);
+      checkLatencyBudget("browser_action_total", latencyMs);
       return {
         command_id: command.command_id,
         session_id: command.session_id,
@@ -36,6 +41,7 @@ export class ActionExecutor {
       };
     }
     session.actionInFlight = true;
+    let result: "success" | "failed" = "success";
     try {
       await this.events.publish(session, "browser.action.started", {
         command_id: command.command_id,
@@ -105,7 +111,13 @@ export class ActionExecutor {
         default:
           throw new BrowserRuntimeError("unsupported_action", "Browser action is unsupported.", 422);
       }
+    } catch (error) {
+      result = "failed";
+      throw error;
     } finally {
+      const latencyMs = Math.round(performance.now() - started);
+      recordBrowserAction(command.action_type, validated.riskLevel, result, latencyMs);
+      checkLatencyBudget("browser_action_total", latencyMs);
       session.actionInFlight = false;
       session.lastActionAt = new Date().toISOString();
     }

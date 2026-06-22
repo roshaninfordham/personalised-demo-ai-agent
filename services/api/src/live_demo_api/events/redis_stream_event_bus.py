@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator, Sequence
+from time import perf_counter_ns
 from typing import Any
 
 from pydantic import ValidationError
@@ -14,6 +15,12 @@ from live_demo_api.config import get_settings
 from live_demo_api.events.dead_letter import write_dead_letter
 from live_demo_api.events.event_bus import EventStreamName, PublishedEvent, ReceivedEvent
 from live_demo_api.live_state.redis_keys import global_events_stream_key, session_events_stream_key
+from live_demo_backend_common.observability.metric_names import (
+    EVENT_PUBLISH_LATENCY_SECONDS,
+    EVENTS_PUBLISHED_TOTAL,
+)
+from live_demo_backend_common.observability.metrics import get_global_registry
+from live_demo_backend_common.observability.tracing import get_current_span
 from live_demo_contracts.event import EventEnvelope
 
 
@@ -115,15 +122,31 @@ class RedisStreamEventBus:
 
     async def _xadd(self, stream_key: str, event: EventEnvelope) -> str:
         event_json = event.model_dump_json()
+        span = get_current_span()
+        start_ns = perf_counter_ns()
         message_id = await self._redis.xadd(
             stream_key,
             {
                 "event_json": event_json,
                 "event_type": event.event_type,
                 "trace_id": event.trace_id,
+                "traceparent": span.trace_context.traceparent if span else "",
+                "span_id": span.span_id if span else "",
             },
             maxlen=self._stream_maxlen,
             approximate=True,
+        )
+        elapsed_seconds = (perf_counter_ns() - start_ns) / 1_000_000_000
+        group = str(event.event_type).split(".")[0]
+        registry = get_global_registry()
+        registry.increment(
+            EVENTS_PUBLISHED_TOTAL,
+            labels={"event_type_group": group, "result": "success"},
+        )
+        registry.observe(
+            EVENT_PUBLISH_LATENCY_SECONDS,
+            elapsed_seconds,
+            labels={"event_type_group": group, "result": "success"},
         )
         return self._decode(message_id)
 

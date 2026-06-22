@@ -65,6 +65,8 @@ from live_demo_api.security import Principal, RequestContext
 from live_demo_api.services.audit_service import AuditService
 from live_demo_api.services.join_config_service import JoinConfigService
 from live_demo_api.services.recipe_service import RecipeService
+from live_demo_backend_common.observability import span_names
+from live_demo_backend_common.observability.decorators import trace_async_span
 
 
 class SessionOrchestrator:
@@ -93,6 +95,7 @@ class SessionOrchestrator:
         self._audit = AuditService()
         self._join_config = JoinConfigService()
 
+    @trace_async_span(span_names.SESSION_PREWARM)
     async def prewarm_session(self, request: PrewarmSessionRequest) -> PrewarmSessionResult:
         key = request.idempotency_key or derive_idempotency_key(
             "prewarm", request.session_id, "waiting_for_user"
@@ -284,6 +287,7 @@ class SessionOrchestrator:
             )
             return result
 
+    @trace_async_span(span_names.SESSION_START_LIVE)
     async def start_live_session(
         self, request: StartLiveSessionRequest
     ) -> LiveSessionStartResult:
@@ -379,6 +383,7 @@ class SessionOrchestrator:
             greeting_dispatched=greeting,
         )
 
+    @trace_async_span(span_names.SESSION_RECOVERY)
     async def recover_session(self, request: RecoverSessionRequest) -> RecoveryResult:
         owner_id = str(uuid4())
         async with SessionOrchestrationLock(self._redis, request.session_id, owner_id):
@@ -470,6 +475,7 @@ class SessionOrchestrator:
                 safe_message=decision.safe_message,
             )
 
+    @trace_async_span(span_names.SESSION_SHUTDOWN)
     async def shutdown_session(self, request: ShutdownSessionRequest) -> ShutdownSessionResult:
         owner_id = str(uuid4())
         async with SessionOrchestrationLock(self._redis, request.session_id, owner_id):

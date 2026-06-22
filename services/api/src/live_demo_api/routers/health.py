@@ -5,11 +5,13 @@ from __future__ import annotations
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from live_demo_api.dependencies import get_db_session, get_redis_client
 from live_demo_api.health import get_health
+from live_demo_api.observability.metrics import metrics
 
 router = APIRouter(tags=["health"])
 api_router = APIRouter(prefix="/api/v1", tags=["health"])
@@ -38,6 +40,11 @@ async def readyz(
     redis: Annotated[Any, Depends(get_redis_client)],
 ) -> dict[str, object]:
     return await _ready_payload(db, redis)
+
+
+@router.get("/metrics", include_in_schema=False)
+async def prometheus_metrics() -> Response:
+    return Response(content=metrics.prometheus_text(), media_type="text/plain; version=0.0.4")
 
 
 @api_router.get("/healthz")

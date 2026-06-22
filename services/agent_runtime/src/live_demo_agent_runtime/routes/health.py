@@ -1,10 +1,12 @@
 """Health and readiness routes."""
 
 from fastapi import APIRouter
+from fastapi.responses import Response
 
 from live_demo_agent_runtime.db.session import ping_database
 from live_demo_agent_runtime.health import health_check
 from live_demo_agent_runtime.redis.redis_client import ping_redis
+from live_demo_backend_common.observability.metrics import get_global_registry
 
 router = APIRouter()
 
@@ -34,3 +36,11 @@ async def readyz() -> dict[str, object]:
         "status": "ok" if all(checks.values()) else "degraded",
         "checks": checks,
     }
+
+
+@router.get("/metrics", include_in_schema=False)
+async def metrics() -> Response:
+    return Response(
+        content=get_global_registry().render_prometheus(),
+        media_type="text/plain; version=0.0.4",
+    )

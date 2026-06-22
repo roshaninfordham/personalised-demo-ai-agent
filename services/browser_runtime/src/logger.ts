@@ -52,6 +52,8 @@ export class Logger {
       timestamp: new Date().toISOString(),
       level,
       service: "browser-runtime",
+      environment: process.env.DEPLOYMENT_ENVIRONMENT ?? process.env.APP_ENV ?? "local",
+      event_type: message,
       message,
       request_id: context.requestId,
       trace_id: context.traceId,

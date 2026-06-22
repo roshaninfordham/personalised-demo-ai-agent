@@ -54,10 +54,20 @@ class JsonFormatter(logging.Formatter):
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname.lower(),
             "logger": record.name,
+            "event_type": getattr(
+                record, "event_type", getattr(record, "event", record.getMessage())
+            ),
             "message": record.getMessage(),
-            "service": "live-demo-api",
+            "service": "api",
+            "environment": "local",
             "request_id": request_id_var.get(),
             "trace_id": trace_id_var.get(),
+            "span_id": getattr(record, "span_id", None),
+            "component": getattr(record, "component", record.name),
+            "operation": getattr(record, "operation", None),
+            "latency_ms": getattr(record, "latency_ms", None),
+            "success": getattr(record, "success", None),
+            "error": getattr(record, "error", None),
         }
         for key, value in record.__dict__.items():
             if key.startswith("_") or key in payload:

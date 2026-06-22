@@ -16,6 +16,7 @@ from live_demo_agent_runtime.db.session import (
 from live_demo_agent_runtime.errors import AgentRuntimeError
 from live_demo_agent_runtime.events.redis_event_publisher import RedisEventPublisher
 from live_demo_agent_runtime.logging_config import configure_logging
+from live_demo_agent_runtime.observability.setup import setup_observability
 from live_demo_agent_runtime.pipecat_adapters.transport_factory import TransportFactory
 from live_demo_agent_runtime.redis.redis_client import close_redis_client, get_redis_client
 from live_demo_agent_runtime.routes.health import router as health_router
@@ -51,6 +52,7 @@ def _error_envelope(
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
+    setup_observability(settings)
     get_async_engine()
     sessionmaker = get_sessionmaker()
     redis_client = get_redis_client()

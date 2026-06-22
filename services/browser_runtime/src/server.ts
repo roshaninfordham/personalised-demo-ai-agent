@@ -19,6 +19,8 @@ import { registerBrowserSessionRoutes } from "./routes/browserSessionRoutes.js";
 import { registerNavigationRoutes } from "./routes/navigationRoutes.js";
 import { registerScreenRoutes } from "./routes/screenRoutes.js";
 import { registerActionRoutes } from "./routes/actionRoutes.js";
+import { browserMetrics } from "./observability/metrics.js";
+import { setupObservabilityRoutes } from "./observability/setup.js";
 
 export type BrowserRuntimeDependencies = {
   config: BrowserRuntimeConfig;
@@ -69,6 +71,10 @@ export function buildServer(deps = buildDependencies()): FastifyInstance {
   });
 
   server.addHook("onResponse", (request, reply, done) => {
+    browserMetrics.increment("live_demo_events_published_total", {
+      event_type_group: "http",
+      result: reply.statusCode >= 500 ? "failed" : "success",
+    });
     deps.logger.info("http.request.completed", {
       method: request.method,
       path: request.url,
@@ -98,6 +104,7 @@ export function buildServer(deps = buildDependencies()): FastifyInstance {
   registerNavigationRoutes(server, deps);
   registerScreenRoutes(server, deps);
   registerActionRoutes(server, deps);
+  setupObservabilityRoutes(server);
 
   server.addHook("onClose", async () => {
     await deps.sessionManager.shutdown();

@@ -12,6 +12,7 @@ from redis.asyncio import Redis
 from live_demo_learner_worker.config import get_settings
 from live_demo_learner_worker.dependencies import build_dependencies
 from live_demo_learner_worker.logging_config import configure_logging
+from live_demo_learner_worker.observability.setup import setup_observability
 from live_demo_learner_worker.worker.product_learner_worker import ProductLearnerWorker
 
 LOGGER = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ LOGGER = logging.getLogger(__name__)
 async def run_worker() -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
+    setup_observability(settings)
     redis: Redis[bytes] = Redis.from_url(settings.redis_url)
     dependencies = build_dependencies(settings, redis)
     worker = ProductLearnerWorker(dependencies)

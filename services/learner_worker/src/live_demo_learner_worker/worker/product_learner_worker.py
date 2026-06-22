@@ -5,8 +5,13 @@ from __future__ import annotations
 import logging
 import os
 import socket
+import time
 from uuid import UUID
 
+from live_demo_backend_common.observability import metric_names, span_names
+from live_demo_backend_common.observability.metrics import get_global_registry
+from live_demo_backend_common.observability.trace_context import TraceContext
+from live_demo_backend_common.observability.tracing import start_span
 from live_demo_learner_worker.demo_graph.graph_repository import PostgresGraphRepository
 from live_demo_learner_worker.dependencies import LearnerDependencies
 from live_demo_learner_worker.events.event_types import (
@@ -100,6 +105,13 @@ class ProductLearnerWorker:
         if not isinstance(job, LearnerJobEnvelope):
             await self._queue.ack(message_id)
             return
+        started_ns = time.perf_counter_ns()
+        registry = get_global_registry()
+        trace_context = (
+            TraceContext(trace_id=job.trace_id, span_id=job.job_id.hex[:16])
+            if len(job.trace_id) == 32
+            else TraceContext.new()
+        )
         locked = await acquire_job_lock(
             self._dependencies.redis,
             job_id=job.job_id,
@@ -108,15 +120,43 @@ class ProductLearnerWorker:
         if not locked:
             await self._queue.ack(message_id)
             return
-        try:
-            await self._publish(job, LEARNER_JOB_STARTED, {"attempt": job.attempt})
-            await self._runner.run(job)
-            await self._publish(job, LEARNER_JOB_COMPLETED, {"attempt": job.attempt})
-            await self._queue.ack(message_id)
-        except Exception as exc:
-            await self._handle_failure(message_id, job, exc)
-        finally:
-            await release_job_lock(self._dependencies.redis, job_id=job.job_id)
+        with start_span(
+            span_names.LEARNER_JOB_PROCESS,
+            trace_context=trace_context,
+            attributes={
+                "live_demo.organization_id": str(job.organization_id),
+                "live_demo.product_id": str(job.product_id),
+                "live_demo.session_id": str(job.session_id) if job.session_id else "",
+                "live_demo.operation": job.job_type.value,
+            },
+        ):
+            try:
+                await self._publish(job, LEARNER_JOB_STARTED, {"attempt": job.attempt})
+                await self._runner.run(job)
+                registry.increment(
+                    metric_names.LEARNER_JOBS_TOTAL,
+                    labels={"job_type": job.job_type.value, "result": "success"},
+                )
+                registry.observe(
+                    metric_names.LEARNER_JOB_DURATION_SECONDS,
+                    (time.perf_counter_ns() - started_ns) / 1_000_000_000,
+                    labels={"job_type": job.job_type.value, "result": "success"},
+                )
+                await self._publish(job, LEARNER_JOB_COMPLETED, {"attempt": job.attempt})
+                await self._queue.ack(message_id)
+            except Exception as exc:
+                registry.increment(
+                    metric_names.LEARNER_JOBS_TOTAL,
+                    labels={"job_type": job.job_type.value, "result": "failed"},
+                )
+                registry.observe(
+                    metric_names.LEARNER_JOB_DURATION_SECONDS,
+                    (time.perf_counter_ns() - started_ns) / 1_000_000_000,
+                    labels={"job_type": job.job_type.value, "result": "failed"},
+                )
+                await self._handle_failure(message_id, job, exc)
+            finally:
+                await release_job_lock(self._dependencies.redis, job_id=job.job_id)
 
     async def _handle_failure(
         self, message_id: str, job: LearnerJobEnvelope, exc: Exception
