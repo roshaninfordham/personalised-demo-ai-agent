@@ -1,0 +1,20 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: test -n "${{ github.ref_name }}"
+      - run: echo "IMAGE_TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
+      - run: scripts/k8s/render_manifests.sh production
+      - run: CONFIRM_PRODUCTION_DEPLOY=yes scripts/deploy/deploy_production.sh

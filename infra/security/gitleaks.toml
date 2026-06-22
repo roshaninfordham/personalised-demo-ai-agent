@@ -1,0 +1,10 @@
+title = "live-demo-agent gitleaks config"
+
+[allowlist]
+description = "Allow documented placeholders and deterministic fake test values."
+regexes = [
+  '''REPLACE_ME''',
+  '''fake_[A-Za-z0-9_\-]+''',
+  '''example\.com''',
+  '''minioadmin''',
+]

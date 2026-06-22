@@ -1,0 +1,21 @@
+name: Load Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  load-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: cp .env.example .env
+      - run: uv sync --all-packages
+      - run: make test-load-smoke
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-results
+          path: .local/load-results

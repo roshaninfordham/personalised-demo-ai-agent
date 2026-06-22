@@ -1,0 +1,6 @@
+rules:
+  - id: no-hardcoded-production-secret
+    message: Do not hardcode production secrets.
+    severity: ERROR
+    languages: [python, javascript, typescript]
+    pattern-regex: '(?i)(api_key|secret|token|password)\s*=\s*["''][^"'']{16,}["'']'

@@ -1,0 +1,5 @@
+fail-on-severity: critical
+output: table
+ignore:
+  - vulnerability: CVE-EXAMPLE
+    reason: Example only; real allowlists require owner and expiration.

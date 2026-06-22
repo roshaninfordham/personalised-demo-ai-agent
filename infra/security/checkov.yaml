@@ -1,0 +1,6 @@
+framework:
+  - kubernetes
+skip-check:
+  - CKV_K8S_21
+compact: true
+quiet: true

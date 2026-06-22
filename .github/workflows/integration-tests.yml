@@ -1,0 +1,29 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+      - run: cp .env.example .env
+      - run: uv sync --all-packages
+      - run: pnpm install --frozen-lockfile
+      - run: make test-browser
+      - run: make test-session-lifecycle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-results
+          path: .local/test-results

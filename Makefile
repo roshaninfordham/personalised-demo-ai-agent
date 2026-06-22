@@ -1,7 +1,7 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python:packages/policies/generated/python:packages/backend_common/src
 LEARNER_PYTHONPATH := services/learner_worker/src:packages/backend_common/src:packages/policies/generated/python:packages/contracts/generated/python
 
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -24,6 +24,9 @@ help:
 	@echo "  make agent-brain-test Run realtime agent brain tests"
 	@echo "  make recipe-test      Run demo recipe engine tests"
 	@echo "  make test-all-quality Run Phase 15 safety, integration, e2e, eval, and load smoke gates"
+	@echo "  make ci-local         Run Phase 16 local CI gate"
+	@echo "  make docker-build-all Build hardened service images"
+	@echo "  make k8s-validate     Render and validate Kubernetes manifests"
 	@echo "  make docker-config    Validate Docker Compose config"
 	@echo "  make docker-up        Start local stack"
 	@echo "  make docker-down      Stop local stack"
@@ -273,6 +276,51 @@ test-all-quality:
 	make test-evals
 	make test-load-smoke
 	uv run python scripts/test/collect_test_artifacts.py
+
+docker-build-all:
+	docker build -f infra/docker/web.Dockerfile -t live-demo-agent/web:local .
+	docker build -f infra/docker/api.Dockerfile -t live-demo-agent/api:local .
+	docker build -f infra/docker/agent-runtime.Dockerfile -t live-demo-agent/agent-runtime:local .
+	docker build -f infra/docker/browser-runtime.Dockerfile -t live-demo-agent/browser-runtime:local .
+	docker build -f infra/docker/learner-worker.Dockerfile -t live-demo-agent/learner-worker:local .
+	docker build -f infra/docker/post-demo-worker.Dockerfile -t live-demo-agent/post-demo-worker:local .
+
+docker-scan:
+	scripts/security/scan_images.sh
+
+k8s-render:
+	scripts/k8s/render_manifests.sh staging
+	scripts/k8s/render_manifests.sh production
+
+k8s-validate:
+	scripts/k8s/validate_manifests.sh
+
+security-scan:
+	scripts/security/scan_secrets.sh
+	scripts/security/scan_dependencies.sh
+	scripts/security/scan_k8s_manifests.sh
+
+ci-local:
+	make contracts
+	make policy-validate
+	make lint
+	make typecheck
+	make test-unit
+	make docker-build-all
+	make security-scan
+	make k8s-validate
+
+deploy-staging:
+	scripts/deploy/deploy_staging.sh
+
+deploy-production:
+	scripts/deploy/deploy_production.sh
+
+rollback-staging:
+	scripts/deploy/rollback.sh staging
+
+rollback-production:
+	scripts/deploy/rollback.sh production
 
 policy-validate:
 	pnpm --filter @live-demo-agent/policies validate

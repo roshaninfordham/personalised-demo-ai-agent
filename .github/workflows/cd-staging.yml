@@ -1,0 +1,22 @@
+name: Deploy Staging
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy-staging:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "IMAGE_TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
+      - run: scripts/k8s/render_manifests.sh staging
+      - run: scripts/deploy/deploy_staging.sh
