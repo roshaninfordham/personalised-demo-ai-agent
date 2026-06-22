@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: live-demo-agent-config
+  labels:
+{{ include "live-demo-agent.labels" . | indent 4 }}
+data:
+  APP_ENV: {{ .Values.environment | quote }}
+  DEPLOYMENT_ENVIRONMENT: {{ .Values.environment | quote }}
+  BROWSER_CHROMIUM_NO_SANDBOX: "false"
+  ALLOW_LOCAL_PRODUCT_URLS: "false"
+  ALLOW_DESTRUCTIVE_ACTIONS: "false"
+  ALLOW_DOWNLOADS: "false"
+  ALLOW_FILE_UPLOADS: "false"

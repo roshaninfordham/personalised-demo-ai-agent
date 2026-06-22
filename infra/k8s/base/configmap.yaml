@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: live-demo-agent-config
+data:
+  APP_ENV: "production"
+  DEPLOYMENT_ENVIRONMENT: "production"
+  LOG_FORMAT: "json"
+  LOG_LEVEL: "info"
+  API_BASE_URL: "http://api:8000"
+  BROWSER_RUNTIME_BASE_URL: "http://browser-runtime:8200"
+  AGENT_RUNTIME_BASE_URL: "http://agent-runtime:8300"
+  LEARNER_WORKER_BASE_URL: "http://learner-worker:8400"
+  OBJECT_STORAGE_PROVIDER: "s3"
+  OBJECT_STORAGE_BUCKET: "demo-agent-artifacts"
+  OBJECT_STORAGE_FORCE_PATH_STYLE: "false"
+  BROWSER_BLOCK_EXTERNAL_NAVIGATION: "true"
+  BROWSER_CHROMIUM_NO_SANDBOX: "false"
+  ALLOW_LOCAL_PRODUCT_URLS: "false"
+  ALLOW_DESTRUCTIVE_ACTIONS: "false"
+  ALLOW_DOWNLOADS: "false"
+  ALLOW_FILE_UPLOADS: "false"
+  ALLOW_PAYMENT_PAGES: "false"
+  CRM_EXPORT_DRY_RUN: "true"
+  DEV_ALLOW_IMPLICIT_LOCAL_ORG: "false"
+  AI_TEXT_PROVIDER: "nvidia_nim"
+  AI_STT_PROVIDER: "deepgram"
+  AI_TTS_PROVIDER: "cartesia"

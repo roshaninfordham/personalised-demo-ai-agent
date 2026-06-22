@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: browser-runtime
+spec:
+  replicas: {{ .Values.replicaCounts.browserRuntime }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: browser-runtime
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: browser-runtime
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: browser-runtime
+          image: "{{ .Values.image.registry }}/browser-runtime:{{ .Values.image.tag }}"
+          securityContext:
+{{ include "live-demo-agent.containerSecurityContext" . | indent 12 }}
+          resources:
+{{ toYaml .Values.resources.browserRuntime | indent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: dshm
+              mountPath: /dev/shm
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi

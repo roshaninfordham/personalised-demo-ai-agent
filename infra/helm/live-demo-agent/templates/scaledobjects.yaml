@@ -1,0 +1,16 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: learner-worker
+spec:
+  scaleTargetRef:
+    name: learner-worker
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+    - type: redis-streams
+      metadata:
+        addressFromEnv: REDIS_URL
+        stream: live_demo:stream:learner:jobs
+        consumerGroup: learner-worker
+        pendingEntriesCount: "5"

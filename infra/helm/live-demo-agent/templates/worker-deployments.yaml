@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learner-worker
+spec:
+  replicas: {{ .Values.replicaCounts.learnerWorker }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: learner-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: learner-worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      containers:
+        - name: learner-worker
+          image: "{{ .Values.image.registry }}/learner-worker:{{ .Values.image.tag }}"
+          securityContext:
+{{ include "live-demo-agent.containerSecurityContext" . | indent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: post-demo-worker
+spec:
+  replicas: {{ .Values.replicaCounts.postDemoWorker }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: post-demo-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: post-demo-worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      containers:
+        - name: post-demo-worker
+          image: "{{ .Values.image.registry }}/post-demo-worker:{{ .Values.image.tag }}"
+          securityContext:
+{{ include "live-demo-agent.containerSecurityContext" . | indent 12 }}

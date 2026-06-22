@@ -17,16 +17,16 @@ COPY services/tts_service/pyproject.toml services/tts_service/pyproject.toml
 COPY packages/backend_common packages/backend_common
 COPY packages/policies packages/policies
 COPY packages/contracts/generated/python packages/contracts/generated/python
-COPY services/agent_runtime services/agent_runtime
+COPY services/api services/api
 
-RUN uv sync --frozen --package live-demo-agent-runtime --no-dev
+RUN uv sync --frozen --package live-demo-api --no-dev
 
 FROM python:3.12-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_PROJECT_ENVIRONMENT=/app/.venv \
-    PYTHONPATH=/app/services/agent_runtime/src:/app/packages/contracts/generated/python:/app/packages/backend_common/src:/app/packages/policies/generated/python
+    PYTHONPATH=/app/services/api/src:/app/packages/contracts/generated/python:/app/packages/backend_common/src:/app/packages/policies/generated/python
 
 WORKDIR /app
 
@@ -39,6 +39,4 @@ COPY --from=builder --chown=10001:10001 /app /app
 
 USER 10001:10001
 
-EXPOSE 8300
-
-CMD ["/app/.venv/bin/live-demo-agent-runtime"]
+CMD ["/app/.venv/bin/python", "-m", "live_demo_api.post_demo.worker_main"]

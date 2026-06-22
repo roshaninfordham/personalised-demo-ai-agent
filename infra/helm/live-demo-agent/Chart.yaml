@@ -1,0 +1,6 @@
+apiVersion: v2
+name: live-demo-agent
+description: Hardened deployment chart for the live AI product-demo agent platform.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

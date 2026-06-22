@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: live-demo-agent
+resources:
+  - namespace.yaml
+  - service-account.yaml
+  - configmap.yaml
+  - secrets.example.yaml
+  - network-policy.yaml
+  - pod-security.yaml
+  - resource-quota.yaml
+  - limit-range.yaml
+  - web/deployment.yaml
+  - web/service.yaml
+  - web/ingress.yaml
+  - web/hpa.yaml
+  - api/deployment.yaml
+  - api/service.yaml
+  - api/hpa.yaml
+  - api/pdb.yaml
+  - agent-runtime/deployment.yaml
+  - agent-runtime/service.yaml
+  - agent-runtime/hpa.yaml
+  - agent-runtime/pdb.yaml
+  - browser-runtime/deployment.yaml
+  - browser-runtime/service.yaml
+  - browser-runtime/hpa.yaml
+  - browser-runtime/pdb.yaml
+  - learner-worker/deployment.yaml
+  - learner-worker/service.yaml
+  - learner-worker/scaledobject.yaml
+  - learner-worker/pdb.yaml
+  - post-demo-worker/deployment.yaml
+  - post-demo-worker/scaledobject.yaml
+  - post-demo-worker/pdb.yaml
+  - tts-service/deployment.yaml
+  - tts-service/service.yaml
+  - tts-service/hpa.yaml
+  - tts-service/pdb.yaml
+  - redis/statefulset.yaml
+  - redis/service.yaml
+  - redis/pvc.yaml
+  - observability/otel-collector.yaml
+  - observability/prometheus.yaml
+  - observability/grafana.yaml
+  - observability/loki.yaml
+  - observability/jaeger.yaml
+  - jobs/db-migrate-job.yaml
+  - jobs/smoke-test-job.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: live-demo-agent

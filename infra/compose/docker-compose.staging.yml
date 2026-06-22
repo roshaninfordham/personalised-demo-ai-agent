@@ -1,0 +1,27 @@
+name: live-demo-agent-staging
+
+services:
+  api:
+    environment:
+      APP_ENV: staging
+      DEPLOYMENT_ENVIRONMENT: staging
+  web:
+    environment:
+      APP_ENV: staging
+      PUBLIC_BASE_URL: https://staging.example.com
+  agent-runtime:
+    environment:
+      APP_ENV: staging
+  browser-runtime:
+    environment:
+      APP_ENV: staging
+      BROWSER_CHROMIUM_NO_SANDBOX: "false"
+      ALLOW_LOCAL_PRODUCT_URLS: "false"
+      ALLOW_DOWNLOADS: "false"
+      ALLOW_FILE_UPLOADS: "false"
+  learner-worker:
+    environment:
+      APP_ENV: staging
+  post-demo-worker:
+    environment:
+      APP_ENV: staging

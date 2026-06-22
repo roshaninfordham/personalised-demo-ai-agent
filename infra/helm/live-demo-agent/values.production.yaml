@@ -1,0 +1,8 @@
+environment: production
+replicaCounts:
+  web: 3
+  api: 3
+  agentRuntime: 3
+  browserRuntime: 3
+ingress:
+  host: app.example.com

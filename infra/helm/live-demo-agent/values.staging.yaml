@@ -1,0 +1,8 @@
+environment: staging
+replicaCounts:
+  web: 1
+  api: 1
+  agentRuntime: 1
+  browserRuntime: 1
+ingress:
+  host: staging.example.com

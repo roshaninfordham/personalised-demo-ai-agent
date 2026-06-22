@@ -1,0 +1,35 @@
+image:
+  registry: live-demo-agent
+  tag: latest
+environment: production
+replicaCounts:
+  web: 2
+  api: 2
+  agentRuntime: 2
+  browserRuntime: 2
+  learnerWorker: 1
+  postDemoWorker: 1
+securityContext:
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+resources:
+  api:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  browserRuntime:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+    limits:
+      cpu: "4"
+      memory: 4Gi
+ingress:
+  enabled: true
+  host: app.example.com
+secrets:
+  existingSecret: live-demo-agent-secrets

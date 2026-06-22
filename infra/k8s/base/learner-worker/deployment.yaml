@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learner-worker
+  labels:
+    app.kubernetes.io/name: learner-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: learner-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: learner-worker
+    spec:
+      serviceAccountName: live-demo-agent
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: learner-worker
+          image: live-demo-agent/learner-worker:latest
+          ports:
+            - containerPort: 8400
+              name: http
+          envFrom:
+            - configMapRef:
+                name: live-demo-agent-config
+            - secretRef:
+                name: live-demo-agent-secrets
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /app/.cache
+          readinessProbe:
+            exec:
+              command: ["/app/.venv/bin/python", "-c", "from live_demo_learner_worker.health import health_check; raise SystemExit(0 if health_check()['status'] == 'ok' else 1)"]
+          livenessProbe:
+            exec:
+              command: ["/app/.venv/bin/python", "-c", "from live_demo_learner_worker.health import health_check; raise SystemExit(0 if health_check()['status'] == 'ok' else 1)"]
+          startupProbe:
+            exec:
+              command: ["/app/.venv/bin/python", "-c", "from live_demo_learner_worker.health import health_check; raise SystemExit(0 if health_check()['status'] == 'ok' else 1)"]
+            failureThreshold: 30
+            periodSeconds: 2
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}

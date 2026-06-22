@@ -1,0 +1,12 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: db-migrate
+          image: "{{ .Values.image.registry }}/api:{{ .Values.image.tag }}"
+          command: ["/app/.venv/bin/alembic", "-c", "services/api/alembic.ini", "upgrade", "head"]

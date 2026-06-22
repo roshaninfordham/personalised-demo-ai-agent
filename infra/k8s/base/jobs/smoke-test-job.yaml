@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: smoke-test
+  labels:
+    app.kubernetes.io/name: smoke-test
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smoke-test
+    spec:
+      restartPolicy: Never
+      serviceAccountName: live-demo-agent
+      automountServiceAccountToken: false
+      containers:
+        - name: smoke-test
+          image: curlimages/curl:8.11.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - "curl -fsS http://api:8000/healthz && curl -fsS http://browser-runtime:8200/healthz && curl -fsS http://agent-runtime:8300/healthz"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

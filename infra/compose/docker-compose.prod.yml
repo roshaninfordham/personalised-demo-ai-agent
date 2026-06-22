@@ -1,0 +1,104 @@
+name: live-demo-agent-prod
+
+services:
+  api:
+    image: live-demo-agent/api:${IMAGE_TAG:-local}
+    env_file: []
+    environment:
+      APP_ENV: production
+    read_only: true
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp
+      - /app/.cache
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+
+  web:
+    image: live-demo-agent/web:${IMAGE_TAG:-local}
+    read_only: true
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp
+      - /app/.cache
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 256M
+
+  agent-runtime:
+    image: live-demo-agent/agent-runtime:${IMAGE_TAG:-local}
+    read_only: true
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp
+      - /app/.cache
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 1G
+
+  browser-runtime:
+    image: live-demo-agent/browser-runtime:${IMAGE_TAG:-local}
+    read_only: true
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp
+      - /app/.cache
+    shm_size: "1gb"
+    environment:
+      APP_ENV: production
+      BROWSER_CHROMIUM_NO_SANDBOX: "false"
+      ALLOW_LOCAL_PRODUCT_URLS: "false"
+      ALLOW_DOWNLOADS: "false"
+      ALLOW_FILE_UPLOADS: "false"
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4G
+        reservations:
+          cpus: "1.0"
+          memory: 2G
+
+  learner-worker:
+    image: live-demo-agent/learner-worker:${IMAGE_TAG:-local}
+    read_only: true
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp
+      - /app/.cache
+
+  post-demo-worker:
+    image: live-demo-agent/post-demo-worker:${IMAGE_TAG:-local}
+    read_only: true
+    user: "10001:10001"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp
+      - /app/.cache

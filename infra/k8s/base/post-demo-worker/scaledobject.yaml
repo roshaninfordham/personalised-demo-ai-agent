@@ -1,0 +1,18 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: post-demo-worker
+spec:
+  scaleTargetRef:
+    name: post-demo-worker
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  pollingInterval: 15
+  cooldownPeriod: 300
+  triggers:
+    - type: redis-streams
+      metadata:
+        addressFromEnv: REDIS_URL
+        stream: live_demo:stream:post_demo:jobs
+        consumerGroup: post-demo-worker
+        pendingEntriesCount: "5"
