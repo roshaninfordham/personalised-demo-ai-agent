@@ -51,7 +51,10 @@ class ApiSettings(BaseSettings):
     allow_production_bucket_create: bool = False
 
     auth_provider: str = "local"
+    jwt_secret: SecretStr = SecretStr("")
+    session_secret: SecretStr = SecretStr("")
     cors_allowed_origins: str = "http://localhost:3000"
+    ai_text_provider: str = "fake"
     transport_provider: str = "small_webrtc"
     transport_room_ttl_seconds: int = 3600
 
@@ -294,4 +297,44 @@ ServiceSettings = ApiSettings
 
 @lru_cache(maxsize=1)
 def get_settings() -> ApiSettings:
-    return ApiSettings()
+    settings = ApiSettings()
+    validate_production_settings(settings)
+    return settings
+
+
+def validate_production_settings(settings: ApiSettings) -> None:
+    if settings.app_env != "production":
+        return
+    violations: list[str] = []
+    if settings.dev_allow_implicit_local_org:
+        violations.append("DEV_ALLOW_IMPLICIT_LOCAL_ORG")
+    if settings.allow_local_product_urls:
+        violations.append("ALLOW_LOCAL_PRODUCT_URLS")
+    if settings.allow_destructive_actions:
+        violations.append("ALLOW_DESTRUCTIVE_ACTIONS")
+    if settings.ai_text_provider == "fake":
+        violations.append("AI_TEXT_PROVIDER=fake")
+    if "*" in {origin.strip() for origin in settings.cors_allowed_origins.split(",")}:
+        violations.append("CORS_ALLOWED_ORIGINS=*")
+    if not settings.jwt_secret.get_secret_value() or _is_default_secret(settings.jwt_secret):
+        violations.append("JWT_SECRET")
+    if (
+        not settings.session_secret.get_secret_value()
+        or _is_default_secret(settings.session_secret)
+    ):
+        violations.append("SESSION_SECRET")
+    if (
+        settings.redaction_enabled
+        and settings.redaction_hash_secret.get_secret_value() == ""
+    ):
+        violations.append("REDACTION_HASH_SECRET")
+    if settings.crm_export_provider == "mock" and not settings.crm_export_dry_run:
+        violations.append("CRM_EXPORT_PROVIDER=mock with CRM_EXPORT_DRY_RUN=false")
+    if violations:
+        joined = ", ".join(sorted(violations))
+        raise ValueError(f"Unsafe production configuration: {joined}.")
+
+
+def _is_default_secret(value: SecretStr) -> bool:
+    normalized = value.get_secret_value().strip().lower()
+    return normalized in {"change_me", "changeme", "secret", "default", "replace_me"}

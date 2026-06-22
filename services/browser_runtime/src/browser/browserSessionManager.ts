@@ -95,6 +95,8 @@ export class BrowserSessionManager {
     }
     session.status = "closing";
     await session.page.close().catch(() => undefined);
+    await session.context.clearCookies().catch(() => undefined);
+    await session.context.clearPermissions().catch(() => undefined);
     await session.context.close().catch(() => undefined);
     session.status = "closed";
     this.sessions.delete(browserSessionId);

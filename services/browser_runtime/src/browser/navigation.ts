@@ -48,6 +48,13 @@ export function validateNavigationUrl(url: string, policy: NavigationPolicy): No
   parsed.hostname = parsed.hostname.toLowerCase();
   parsed.hash = "";
   const hostname = parsed.hostname;
+  if (isMetadataHost(hostname)) {
+    return {
+      ok: false,
+      errorCode: "metadata_endpoint_blocked",
+      message: "Cloud metadata endpoints are blocked.",
+    };
+  }
   if (isPrivateOrLocalHost(hostname) && !(policy.appEnv === "local" && policy.allowLocalProductUrls)) {
     return {
       ok: false,
@@ -128,7 +135,11 @@ export async function goBack(page: Page, config: BrowserRuntimeConfig): Promise<
 }
 
 function domainMatches(hostname: string, domain: string): boolean {
-  const normalized = domain.toLowerCase();
+  const normalized = domain.toLowerCase().replace(/\.$/u, "");
+  if (normalized.startsWith("*.")) {
+    const suffix = normalized.slice(2);
+    return hostname.endsWith(`.${suffix}`);
+  }
   return hostname === normalized || hostname.endsWith(`.${normalized}`);
 }
 
@@ -156,3 +167,11 @@ function isPrivateOrLocalHost(hostname: string): boolean {
   return false;
 }
 
+function isMetadataHost(hostname: string): boolean {
+  const normalized = hostname.toLowerCase().replace(/\.$/u, "");
+  return (
+    normalized === "169.254.169.254" ||
+    normalized === "metadata.google.internal" ||
+    normalized === "100.100.100.200"
+  );
+}

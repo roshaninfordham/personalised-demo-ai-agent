@@ -18,4 +18,25 @@ describe("getConfig", () => {
     const config = getConfig({ OBJECT_STORAGE_SECRET_KEY: "secret" });
     expect(safeConfig(config).objectStorageSecretKey).toBe("***REDACTED***");
   });
+
+  it("rejects unsafe production browser settings", () => {
+    expect(() =>
+      getConfig({
+        APP_ENV: "production",
+        BROWSER_CHROMIUM_NO_SANDBOX: "true",
+      }),
+    ).toThrow(/Unsafe browser production configuration/u);
+    expect(() =>
+      getConfig({
+        APP_ENV: "production",
+        ALLOW_LOCAL_PRODUCT_URLS: "true",
+      }),
+    ).toThrow(/ALLOW_LOCAL_PRODUCT_URLS/u);
+    expect(() =>
+      getConfig({
+        APP_ENV: "production",
+        BROWSER_BLOCK_EXTERNAL_NAVIGATION: "false",
+      }),
+    ).toThrow(/BROWSER_BLOCK_EXTERNAL_NAVIGATION/u);
+  });
 });

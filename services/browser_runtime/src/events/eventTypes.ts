@@ -13,5 +13,5 @@ export type BrowserEventType =
   | "browser.action.completed"
   | "browser.action.failed"
   | "browser.policy.blocked"
+  | "browser.network.request_blocked"
   | "browser.error";
-

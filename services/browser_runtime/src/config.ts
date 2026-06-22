@@ -59,6 +59,7 @@ export type BrowserRuntimeConfig = {
   stagehandProviderModel: string;
   browserUseEnabled: boolean;
   browserUseAllowHotPath: boolean;
+  browserChromiumNoSandbox: boolean;
 };
 
 const DEFAULT_NEVER_CLICK = [
@@ -160,10 +161,12 @@ export function getConfig(env: NodeJS.ProcessEnv = process.env): BrowserRuntimeC
     stagehandProviderModel: readString(env.STAGEHAND_PROVIDER_MODEL, ""),
     browserUseEnabled: readBoolean(env.BROWSER_USE_ENABLED, false),
     browserUseAllowHotPath: readBoolean(env.BROWSER_USE_ALLOW_HOT_PATH, false),
+    browserChromiumNoSandbox: readBoolean(env.BROWSER_CHROMIUM_NO_SANDBOX, false),
   };
   if (config.cursorMoveMinDurationMs > config.cursorMoveMaxDurationMs) {
     throw new Error("CURSOR_MOVE_MIN_DURATION_MS must be <= CURSOR_MOVE_MAX_DURATION_MS.");
   }
+  validateProductionSafety(config);
   return config;
 }
 
@@ -173,6 +176,23 @@ export function safeConfig(config: BrowserRuntimeConfig): Record<string, unknown
     objectStorageAccessKey: "***REDACTED***",
     objectStorageSecretKey: "***REDACTED***",
   };
+}
+
+function validateProductionSafety(config: BrowserRuntimeConfig): void {
+  if (config.appEnv !== "production") {
+    return;
+  }
+  const violations: string[] = [];
+  if (config.browserChromiumNoSandbox) violations.push("BROWSER_CHROMIUM_NO_SANDBOX");
+  if (config.allowLocalProductUrls) violations.push("ALLOW_LOCAL_PRODUCT_URLS");
+  if (config.allowDestructiveActions) violations.push("ALLOW_DESTRUCTIVE_ACTIONS");
+  if (config.allowDownloads) violations.push("ALLOW_DOWNLOADS");
+  if (config.allowFileUploads) violations.push("ALLOW_FILE_UPLOADS");
+  if (config.allowPaymentPages) violations.push("ALLOW_PAYMENT_PAGES");
+  if (!config.browserBlockExternalNavigation) violations.push("BROWSER_BLOCK_EXTERNAL_NAVIGATION=false");
+  if (violations.length > 0) {
+    throw new Error(`Unsafe browser production configuration: ${violations.join(", ")}.`);
+  }
 }
 
 function readString(value: string | undefined, fallback: string): string {

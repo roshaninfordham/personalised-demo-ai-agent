@@ -17,14 +17,15 @@ export function installDownloadGuards(
     });
     if (!config.allowDownloads) {
       await download.cancel();
+      await download.delete().catch(() => undefined);
     }
   });
   page.on("filechooser", async (chooser) => {
-    void chooser;
     await events.publish(session, "browser.policy.blocked", {
       reason: "file_upload_blocked",
     });
     if (!config.allowFileUploads) {
+      await chooser.setFiles([]).catch(() => undefined);
       await events.publish(session, "browser.policy.blocked", {
         reason: "file_chooser_not_accepted",
       });

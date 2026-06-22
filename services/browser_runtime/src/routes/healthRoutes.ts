@@ -10,11 +10,17 @@ export function registerHealthRoutes(server: FastifyInstance, deps: BrowserRunti
     checks.redis = (await deps.redis.ping()) === "PONG" ? "ok" : "failed";
     checks.object_storage = "skipped";
     checks.playwright = (await deps.playwrightFactory.isLaunchable()) ? "ok" : "failed";
+    checks.capacity =
+      deps.sessionManager.activeCount() < deps.config.browserMaxConcurrentSessions ? "ok" : "full";
     return {
-      status: Object.values(checks).includes("failed") ? "degraded" : "ok",
+      status: Object.values(checks).some((value) => value === "failed" || value === "full")
+        ? "degraded"
+        : "ok",
       service: "browser-runtime",
       version: "0.1.0",
       checks,
+      active_sessions: deps.sessionManager.activeCount(),
+      max_sessions: deps.config.browserMaxConcurrentSessions,
     };
   });
 }

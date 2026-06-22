@@ -14,6 +14,7 @@ export class PlaywrightFactory {
     this.browser = await chromium.launch({
       headless: this.config.browserHeadless,
       timeout: this.config.browserTimeoutMs,
+      args: this.config.browserChromiumNoSandbox ? ["--no-sandbox"] : [],
     });
     return this.browser;
   }
@@ -30,4 +31,3 @@ export class PlaywrightFactory {
     }
   }
 }
-

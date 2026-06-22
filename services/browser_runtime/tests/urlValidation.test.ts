@@ -41,5 +41,23 @@ describe("validateNavigationUrl", () => {
     const result = validateNavigationUrl("https://evil.example.net", policy);
     expect(result.ok).toBe(false);
   });
-});
 
+  it("rejects cloud metadata endpoints even when explicitly allowlisted", () => {
+    const result = validateNavigationUrl("http://169.254.169.254/latest/meta-data", {
+      ...policy,
+      allowedDomains: ["169.254.169.254"],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errorCode).toBe("metadata_endpoint_blocked");
+    }
+  });
+
+  it("allows wildcard subdomains", () => {
+    const result = validateNavigationUrl("https://app.example.com/dashboard", {
+      ...policy,
+      allowedDomains: ["*.example.com"],
+    });
+    expect(result.ok).toBe(true);
+  });
+});
