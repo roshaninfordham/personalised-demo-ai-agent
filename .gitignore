@@ -26,6 +26,7 @@ postgres_data/
 redis_data/
 minio_data/
 ollama_data/
+.local/
 
 # OS/editor
 .DS_Store
