@@ -268,9 +268,13 @@ services:
     image: grafana/grafana:latest
     ports:
       - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     restart: unless-stopped
     networks:
       - live-demo-agent
@@ -289,6 +293,8 @@ services:
   jaeger:
     profiles: ["observability"]
     image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
     ports:
       - "16686:16686"
       - "14268:14268"

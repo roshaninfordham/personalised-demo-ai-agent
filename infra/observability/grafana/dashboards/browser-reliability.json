@@ -1,0 +1,19 @@
+{
+  "title": "Browser Reliability",
+  "uid": "live-demo-browser-reliability",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["live-demo", "phase-14"],
+  "panels": [
+    {"type": "stat", "title": "Active browser sessions", "targets": [{"expr": "sum(live_demo_browser_sessions_active_current)"}]},
+    {"type": "timeseries", "title": "Browser action rate", "targets": [{"expr": "sum by (action_type) (rate(live_demo_browser_actions_total[5m]))"}]},
+    {"type": "timeseries", "title": "Browser action success ratio", "targets": [{"expr": "sum(rate(live_demo_browser_actions_total{result=\"success\"}[5m])) / sum(rate(live_demo_browser_actions_total[5m]))"}]},
+    {"type": "timeseries", "title": "Browser action p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le, action_type) (rate(live_demo_browser_action_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "Screen read p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_browser_screen_read_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "Screenshot capture p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_browser_screenshot_capture_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "Policy blocks by reason", "targets": [{"expr": "sum by (reason_code) (rate(live_demo_policy_blocks_total[5m]))"}]},
+    {"type": "timeseries", "title": "Stale element failures", "targets": [{"expr": "sum(rate(live_demo_errors_total{error_code=\"stale_element\"}[5m]))"}]},
+    {"type": "timeseries", "title": "Recovery events", "targets": [{"expr": "sum(rate(live_demo_events_published_total{event_type_group=\"session\"}[5m]))"}]},
+    {"type": "timeseries", "title": "Browser runtime errors", "targets": [{"expr": "sum(rate(live_demo_errors_total{component=\"browser\"}[5m]))"}]}
+  ]
+}

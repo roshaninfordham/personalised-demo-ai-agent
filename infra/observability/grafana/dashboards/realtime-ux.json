@@ -1,0 +1,20 @@
+{
+  "title": "Realtime UX",
+  "uid": "live-demo-realtime-ux",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["live-demo", "phase-14"],
+  "panels": [
+    {"type": "stat", "title": "Active sessions", "targets": [{"expr": "sum(live_demo_sessions_active_current)"}]},
+    {"type": "timeseries", "title": "Sessions started rate", "targets": [{"expr": "sum(rate(live_demo_sessions_started_total[5m]))"}]},
+    {"type": "timeseries", "title": "Sessions completed rate", "targets": [{"expr": "sum(rate(live_demo_sessions_completed_total[5m]))"}]},
+    {"type": "timeseries", "title": "First audio p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_first_audio_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "Turn latency p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_turn_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "STT final p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_stt_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "TTS first audio p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_tts_first_audio_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "User interruption rate", "targets": [{"expr": "sum(rate(live_demo_user_interruptions_total[5m]))"}]},
+    {"type": "timeseries", "title": "Interruption stop p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_interruption_stop_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "Event lag p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_event_lag_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "Live errors by component", "targets": [{"expr": "sum by (component) (rate(live_demo_errors_total[5m]))"}]}
+  ]
+}

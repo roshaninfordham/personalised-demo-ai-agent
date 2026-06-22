@@ -1,0 +1,15 @@
+{
+  "title": "Session Debug",
+  "uid": "live-demo-session-debug",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["live-demo", "phase-14"],
+  "panels": [
+    {"type": "logs", "title": "Event timeline from logs", "targets": [{"expr": "{service=~\"api|agent-runtime|browser-runtime|learner-worker\"}"}]},
+    {"type": "logs", "title": "Trace links by trace_id", "targets": [{"expr": "{service=~\"api|agent-runtime|browser-runtime\"} | json | trace_id != \"\""}]},
+    {"type": "logs", "title": "Browser action logs", "targets": [{"expr": "{service=\"browser-runtime\"} | json | event_type =~ \"browser.action.*\""}]},
+    {"type": "logs", "title": "Policy blocks", "targets": [{"expr": "{service=~\"api|browser-runtime|agent-runtime\"} | json | event_type=\"policy.blocked\""}]},
+    {"type": "logs", "title": "Latency budget violations", "targets": [{"expr": "{service=~\"api|agent-runtime|browser-runtime\"} | json | event_type=\"latency_budget.violation\""}]},
+    {"type": "logs", "title": "Session errors", "targets": [{"expr": "{level=\"error\"}"}]}
+  ]
+}

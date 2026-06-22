@@ -1,0 +1,16 @@
+{
+  "title": "Latency Budget",
+  "uid": "live-demo-latency-budget",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["live-demo", "phase-14"],
+  "panels": [
+    {"type": "timeseries", "title": "Budget violations by operation", "targets": [{"expr": "sum by (operation, severity) (rate(live_demo_latency_budget_violations_total[5m]))"}]},
+    {"type": "timeseries", "title": "First audio violations", "targets": [{"expr": "sum(rate(live_demo_latency_budget_violations_total{operation=\"first_audio\"}[5m]))"}]},
+    {"type": "timeseries", "title": "Browser action violations", "targets": [{"expr": "sum(rate(live_demo_latency_budget_violations_total{operation=\"browser_action_total\"}[5m]))"}]},
+    {"type": "timeseries", "title": "LLM violations", "targets": [{"expr": "sum(rate(live_demo_latency_budget_violations_total{operation=\"llm_realtime_host\"}[5m]))"}]},
+    {"type": "timeseries", "title": "STT/TTS violations", "targets": [{"expr": "sum(rate(live_demo_latency_budget_violations_total{operation=~\"stt_final|tts_first_audio\"}[5m]))"}]},
+    {"type": "timeseries", "title": "Top operations exceeding budget", "targets": [{"expr": "topk(10, sum by (operation) (rate(live_demo_latency_budget_excess_seconds_sum[5m])))"}]},
+    {"type": "stat", "title": "Budget compliance", "targets": [{"expr": "1 - (sum(rate(live_demo_latency_budget_violations_total[5m])) / sum(rate(live_demo_latency_budget_checks_total[5m])))"}]}
+  ]
+}

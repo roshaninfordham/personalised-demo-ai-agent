@@ -1,0 +1,17 @@
+{
+  "title": "Cost and Usage",
+  "uid": "live-demo-cost-usage",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["live-demo", "phase-14"],
+  "panels": [
+    {"type": "timeseries", "title": "Model invocations", "targets": [{"expr": "sum by (provider, purpose) (rate(live_demo_model_invocations_total[5m]))"}]},
+    {"type": "timeseries", "title": "LLM tokens per minute", "targets": [{"expr": "sum by (provider, purpose, token_type) (rate(live_demo_llm_tokens_total[5m])) * 60"}]},
+    {"type": "timeseries", "title": "Estimated cost", "targets": [{"expr": "sum by (provider, purpose) (rate(live_demo_estimated_cost_usd_total[5m]))"}]},
+    {"type": "timeseries", "title": "STT audio seconds", "targets": [{"expr": "sum(rate(live_demo_stt_audio_seconds_total[5m]))"}]},
+    {"type": "timeseries", "title": "TTS audio seconds", "targets": [{"expr": "sum(rate(live_demo_tts_audio_seconds_total[5m]))"}]},
+    {"type": "timeseries", "title": "Vision calls placeholder", "targets": [{"expr": "sum(rate(live_demo_model_invocations_total{purpose=\"vision\"}[5m]))"}]},
+    {"type": "timeseries", "title": "Embedding vectors", "targets": [{"expr": "sum(rate(live_demo_embedding_vectors_total[5m]))"}]},
+    {"type": "timeseries", "title": "CRM exports", "targets": [{"expr": "sum by (provider, dry_run) (rate(live_demo_crm_exports_total[5m]))"}]}
+  ]
+}

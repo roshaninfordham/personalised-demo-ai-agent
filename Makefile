@@ -1,7 +1,7 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python:packages/policies/generated/python:packages/backend_common/src
 LEARNER_PYTHONPATH := services/learner_worker/src:packages/backend_common/src:packages/policies/generated/python:packages/contracts/generated/python
 
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -194,6 +194,22 @@ post-demo-test-integration:
 
 post-demo-smoke:
 	curl -s http://localhost:8000/healthz
+
+obs-up:
+	docker compose --profile observability up --build
+
+obs-down:
+	docker compose --profile observability down
+
+obs-test:
+	uv run pytest tests/observability services/api/tests services/agent_runtime/tests services/learner_worker/tests -k "observability or metrics or tracing or logging or latency"
+
+obs-dashboards-validate:
+	uv run python scripts/validate_grafana_dashboards.py infra/observability/grafana/dashboards
+
+obs-smoke:
+	curl -s http://localhost:9090/-/healthy
+	curl -s http://localhost:3001/api/health
 
 policy-validate:
 	pnpm --filter @live-demo-agent/policies validate

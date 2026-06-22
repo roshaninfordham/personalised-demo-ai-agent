@@ -1,0 +1,19 @@
+{
+  "title": "Agent Quality",
+  "uid": "live-demo-agent-quality",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["live-demo", "phase-14"],
+  "panels": [
+    {"type": "timeseries", "title": "LLM latency p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le, purpose, provider) (rate(live_demo_llm_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "LLM validation failures", "targets": [{"expr": "sum(rate(live_demo_agent_output_validation_failures_total[5m]))"}]},
+    {"type": "timeseries", "title": "Invalid structured output count", "targets": [{"expr": "sum(rate(live_demo_agent_output_validation_failures_total[5m]))"}]},
+    {"type": "timeseries", "title": "Tool routing failures", "targets": [{"expr": "sum(rate(live_demo_errors_total{component=\"tool_router\"}[5m]))"}]},
+    {"type": "timeseries", "title": "Memory updates", "targets": [{"expr": "sum(rate(live_demo_memory_updates_total[5m]))"}]},
+    {"type": "timeseries", "title": "Policy rejects", "targets": [{"expr": "sum(rate(live_demo_policy_blocks_total[5m]))"}]},
+    {"type": "timeseries", "title": "Fallback decisions", "targets": [{"expr": "sum(rate(live_demo_agent_fallback_decisions_total[5m]))"}]},
+    {"type": "timeseries", "title": "Recovery phase count", "targets": [{"expr": "sum(rate(live_demo_events_published_total{event_type_group=\"session\"}[5m]))"}]},
+    {"type": "timeseries", "title": "Recipe completed ratio", "targets": [{"expr": "sum(rate(live_demo_recipe_steps_completed_total[5m])) / (sum(rate(live_demo_recipe_steps_completed_total[5m])) + sum(rate(live_demo_recipe_steps_failed_total[5m])))"}]},
+    {"type": "timeseries", "title": "Lead summaries generated", "targets": [{"expr": "sum(rate(live_demo_lead_summaries_generated_total[5m]))"}]}
+  ]
+}

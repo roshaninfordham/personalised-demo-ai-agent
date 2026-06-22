@@ -1,0 +1,19 @@
+{
+  "title": "Infrastructure Health",
+  "uid": "live-demo-infrastructure-health",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["live-demo", "phase-14"],
+  "panels": [
+    {"type": "timeseries", "title": "API request rate", "targets": [{"expr": "sum(rate(live_demo_events_published_total{event_type_group=\"http\"}[5m]))"}]},
+    {"type": "timeseries", "title": "API error rate", "targets": [{"expr": "sum(rate(live_demo_errors_total{component=\"http\"}[5m]))"}]},
+    {"type": "timeseries", "title": "HTTP request latency p95", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_turn_latency_seconds_bucket{phase=\"http_request\"}[5m])))"}]},
+    {"type": "timeseries", "title": "Redis operation latency", "targets": [{"expr": "histogram_quantile(0.95, sum by (le, operation) (rate(live_demo_redis_operation_latency_seconds_bucket[5m])))"}]},
+    {"type": "timeseries", "title": "DB query latency", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_redis_operation_latency_seconds_bucket{operation=\"db_query\"}[5m])))"}]},
+    {"type": "timeseries", "title": "Event publish latency", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(live_demo_event_publish_latency_seconds_bucket[5m])))"}]},
+    {"type": "stat", "title": "Worker job queue depth", "targets": [{"expr": "sum(live_demo_worker_queue_depth_current)"}]},
+    {"type": "timeseries", "title": "Worker job failures", "targets": [{"expr": "sum(rate(live_demo_learner_jobs_total{result=\"failed\"}[5m])) + sum(rate(live_demo_post_demo_jobs_total{result=\"failed\"}[5m]))"}]},
+    {"type": "timeseries", "title": "Container CPU placeholder", "targets": [{"expr": "sum(rate(process_cpu_seconds_total[5m]))"}]},
+    {"type": "stat", "title": "Service readiness", "targets": [{"expr": "up"}]}
+  ]
+}

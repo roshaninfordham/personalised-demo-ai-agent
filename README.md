@@ -480,6 +480,12 @@ Include observability stack:
 docker compose --profile observability up --build
 ```
 
+Phase 14 observability details:
+
+- Architecture, trace propagation, dashboards, and runbooks: [docs/architecture/observability-latency.md](docs/architecture/observability-latency.md)
+- Dashboard validation: `make obs-dashboards-validate`
+- Local stack smoke: `make obs-smoke`
+
 Include everything:
 
 ```bash
