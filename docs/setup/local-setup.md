@@ -120,6 +120,9 @@ docker compose --profile tts-local up --build
 # Include observability stack.
 docker compose --profile observability up --build
 
+# Include optional ScrapeGraphAI learner adapter.
+make up-scrapegraph
+
 # Include local AI, local TTS, and observability.
 docker compose --profile ai-local --profile tts-local --profile observability up --build
 ```
@@ -262,6 +265,15 @@ docker compose down -v
 rm -rf .local/test-artifacts .local/mock-crm-exports
 docker compose up --build
 ```
+
+Docker cleanup:
+
+```bash
+make clean-docker-safe
+make clean-docker-deep
+```
+
+`clean-docker-deep` deletes unused images, containers, volumes, and build cache. It can free a lot of space but makes the next build slower. Use `clean-docker-safe` first.
 
 ## Common Local Issues
 

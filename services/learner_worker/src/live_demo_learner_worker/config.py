@@ -87,6 +87,13 @@ class LearnerWorkerSettings(BaseSettings):
     knowledge_embedding_batch_size: int = 32
     ai_embedding_dimensions: int = 768
 
+    scrapegraph_enabled: bool = False
+    scrapegraph_install_profile: str = "scrapegraph"
+    scrapegraph_use_only_public_urls: bool = True
+    scrapegraph_max_pages: int = 3
+    scrapegraph_timeout_ms: int = 30000
+    scrapegraph_telemetry_enabled: bool = False
+
     browser_runtime_base_url: str = "http://localhost:8200"
     api_base_url: str = "http://localhost:8000"
 

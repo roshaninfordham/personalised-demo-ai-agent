@@ -33,6 +33,9 @@ dev = [
   "testcontainers>=4.0.0",
   "types-redis>=4.6.0",
 ]
+scrapegraph = [
+  "scrapegraphai>=1.62.0",
+]
 
 [tool.ruff]
 line-length = 100

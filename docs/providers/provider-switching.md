@@ -241,6 +241,27 @@ AI_TTS_PROVIDER=fake
 
 Production should use managed or explicitly supported providers, real secrets from a secret manager, and provider health checks. Real CRM writes must stay disabled until a provider adapter is implemented and live-tested.
 
+## Optional ScrapeGraphAI Learner Adapter
+
+ScrapeGraphAI is available only as a cold-path learner adapter for public marketing-page extraction. It must not run in the realtime agent loop or replace Playwright browser control.
+
+```env
+SCRAPEGRAPH_ENABLED=false
+SCRAPEGRAPH_INSTALL_PROFILE=scrapegraph
+SCRAPEGRAPH_USE_ONLY_PUBLIC_URLS=true
+SCRAPEGRAPH_MAX_PAGES=3
+SCRAPEGRAPH_TIMEOUT_MS=30000
+SCRAPEGRAPH_TELEMETRY_ENABLED=false
+```
+
+Enable explicitly:
+
+```bash
+make up-scrapegraph
+```
+
+Adapter output is untrusted until validated and compared with deterministic learner evidence. Adapter failure must not break live demos.
+
 ## Troubleshooting Provider Errors
 
 ```bash
