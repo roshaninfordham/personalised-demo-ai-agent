@@ -10,13 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from live_demo_api.config import get_settings
 from live_demo_api.errors import NotFoundError
 from live_demo_api.pagination import clamp_limit, decode_cursor, encode_cursor
+from live_demo_api.post_demo.repositories.features_shown import FeatureShownRepository
 from live_demo_api.repositories.actions import ActionRepository
 from live_demo_api.repositories.demo_sessions import DemoSessionRepository
 from live_demo_api.repositories.transcripts import TranscriptRepository
 from live_demo_api.security import Principal
 from live_demo_api.services.mappers import action_to_response, transcript_to_response
 from live_demo_contracts.browser_action import BrowserActionsResponse
-from live_demo_contracts.lead_summary import FeaturesShownResponse
+from live_demo_contracts.lead_summary import FeatureShown, FeaturesShownResponse
 from live_demo_contracts.transcript import (
     QuestionResponse,
     QuestionsResponse,
@@ -132,6 +133,30 @@ class TranscriptService:
         self, db: AsyncSession, principal: Principal, session_id: UUID
     ) -> FeaturesShownResponse:
         await self._ensure_session(db, principal, session_id)
+        rows = await FeatureShownRepository(db).list_for_session(
+            organization_id=principal.organization_id,
+            session_id=session_id,
+        )
+        if rows:
+            return FeaturesShownResponse(
+                features=[
+                    FeatureShown(
+                        name=row.feature_label,
+                        source=row.source_type,
+                        screen_id=(
+                            str(row.evidence_screen_ids[0]) if row.evidence_screen_ids else None
+                        ),
+                        action_event_id=(
+                            str(row.evidence_browser_action_ids[0])
+                            if row.evidence_browser_action_ids
+                            else None
+                        ),
+                    )
+                    for row in rows
+                ],
+                source="post_demo",
+                message="Post-demo feature tracking results.",
+            )
         return FeaturesShownResponse(
             features=[],
             source="not_available_in_phase_3",

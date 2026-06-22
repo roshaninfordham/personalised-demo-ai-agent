@@ -132,5 +132,6 @@ asyncio_mode = "auto"
 markers = [
   "integration: tests that require local Docker Compose services",
   "orchestration_integration: session orchestration integration tests with fake services",
+  "post_demo_integration: post-demo intelligence integration tests with fake providers",
   "live: tests that call configured live AI providers",
 ]

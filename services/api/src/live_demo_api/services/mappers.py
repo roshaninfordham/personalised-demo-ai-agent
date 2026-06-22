@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 
 from live_demo_api.db.models import (
     ActionEvent,
@@ -192,12 +192,64 @@ def insight_to_response(row: LeadInsight) -> LeadInsightContract:
 
 def lead_summary_to_response(row: LeadSummary) -> LeadSummaryContract:
     summary = row.summary
+    demo_summary_payload = summary.get("demo_summary", {})
+    if isinstance(demo_summary_payload, dict):
+        features_payload = demo_summary_payload.get("features_shown", [])
+        features_shown = [
+            str(item.get("feature_label", item.get("feature_key", "")))
+            if isinstance(item, dict)
+            else str(item)
+            for item in features_payload
+        ]
+        questions_payload = demo_summary_payload.get("questions_asked", [])
+        questions_asked = [
+            str(item.get("content", item.get("question", "")))
+            if isinstance(item, dict)
+            else str(item)
+            for item in questions_payload
+        ]
+        evidence_payload = summary.get("evidence_summary", {})
+        screen_ids = demo_summary_payload.get("screens_visited", [])
+        if not screen_ids and isinstance(evidence_payload, dict):
+            screen_ids = evidence_payload.get("screen_ids", [])
+        demo_summary = {
+            "duration_seconds": int(demo_summary_payload.get("duration_seconds", 0) or 0),
+            "features_shown": [item for item in features_shown if item],
+            "questions_asked": [item for item in questions_asked if item],
+            "screens_visited": [str(item) for item in screen_ids],
+        }
+    else:
+        demo_summary = {}
+
+    qualification_payload = summary.get("qualification", {})
+    if isinstance(qualification_payload, dict):
+        urgency_payload = qualification_payload.get(
+            "urgency", qualification_payload.get("urgency_level", {})
+        )
+        if isinstance(urgency_payload, dict):
+            urgency_level = str(urgency_payload.get("level", "unknown"))
+        else:
+            urgency_level = str(urgency_payload or "unknown")
+        qualification = {
+            "insights": [],
+            "urgency_level": urgency_level,
+            "confidence": float(qualification_payload.get("confidence", 0.0) or 0.0),
+        }
+    else:
+        qualification = {}
+
+    follow_up_payload: Any = summary.get("recommended_follow_up", "")
+    if isinstance(follow_up_payload, dict):
+        recommended_follow_up = str(follow_up_payload.get("summary", ""))
+    else:
+        recommended_follow_up = str(follow_up_payload)
+
     return LeadSummaryContract(
         lead_summary_id=str(row.lead_summary_id),
         session_id=str(row.session_id),
-        demo_summary=DemoSummary.model_validate(summary.get("demo_summary", {})),
-        qualification=Qualification.model_validate(summary.get("qualification", {})),
-        recommended_follow_up=str(summary.get("recommended_follow_up", "")),
+        demo_summary=DemoSummary.model_validate(demo_summary),
+        qualification=Qualification.model_validate(qualification),
+        recommended_follow_up=recommended_follow_up,
         crm_payload=CrmPayload.model_validate(
             summary.get("crm_payload", {"provider": "mock", "objects": []})
         ),
