@@ -65,8 +65,13 @@ echo "Opening after startup: make open"
 echo "Health check:            make health"
 echo
 
-if [ "${#services[@]}" -gt 0 ]; then
-  docker compose "${profiles[@]}" up --build "${services[@]}"
-else
-  docker compose "${profiles[@]}" up --build
+compose_args=(docker compose)
+if [ "${#profiles[@]}" -gt 0 ]; then
+  compose_args+=("${profiles[@]}")
 fi
+compose_args+=(up --build)
+if [ "${#services[@]}" -gt 0 ]; then
+  compose_args+=("${services[@]}")
+fi
+
+"${compose_args[@]}"
