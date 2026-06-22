@@ -14,6 +14,7 @@ The platform has two execution paths:
 | System architecture                | [architecture/system-design.md](architecture/system-design.md)                   |
 | Observability and latency          | [architecture/observability-latency.md](architecture/observability-latency.md)   |
 | Testing and evaluation             | [architecture/testing-evaluation.md](architecture/testing-evaluation.md)         |
+| Production hardening               | [architecture/production-hardening.md](architecture/production-hardening.md)     |
 | Post-demo intelligence             | [architecture/post-demo-intelligence.md](architecture/post-demo-intelligence.md) |
 | User and agent flows               | [flows/user-agent-flow.md](flows/user-agent-flow.md)                             |
 | Local development and verification | [operations/local-development.md](operations/local-development.md)               |
@@ -60,6 +61,12 @@ mindmap
       E2E demo flow
       Agent evals
       Load tests
+    Production
+      Hardened containers
+      Kubernetes manifests
+      CI/CD
+      Autoscaling
+      Runbooks
     Authoring
       Demo recipes
       Text guidance conversion

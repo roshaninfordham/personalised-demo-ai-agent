@@ -41,6 +41,12 @@ make recipe-test
 make orchestration-test
 make post-demo-test
 make obs-test
+make ci-local
+make docker-build-all
+make docker-scan
+make security-scan
+make k8s-render
+make k8s-validate
 make test-fixture-secrets
 make test-unit
 make test-browser
@@ -56,7 +62,8 @@ flowchart TD
     Lint --> Typecheck["make typecheck"]
     Typecheck --> Unit["make test"]
     Unit --> Quality["make test-all-quality"]
-    Quality --> Smoke["orchestration smoke"]
+    Quality --> ProdReady["make ci-local"]
+    ProdReady --> Smoke["orchestration smoke"]
 ```
 
 ## Phase 15 Quality Workflow
@@ -89,6 +96,34 @@ make test-all-quality
 
 Reports are written to `.local/test-results`, `.local/load-results`, and
 `tests/evals/reports`.
+
+## Phase 16 Production-Readiness Workflow
+
+```mermaid
+flowchart LR
+    Docker["docker-build-all"] --> User["verify non-root users"]
+    User --> Env["verify no .env in images"]
+    Env --> Secrets["secret scan"]
+    Secrets --> Dependencies["dependency scan"]
+    Dependencies --> K8s["k8s render/validate"]
+    K8s --> LocalCI["ci-local"]
+```
+
+Local production-readiness gate:
+
+```bash
+make docker-build-all
+make docker-scan
+make security-scan
+make k8s-render
+make k8s-validate
+make ci-local
+scripts/security/verify_no_env_in_images.sh
+scripts/security/verify_container_user.sh
+```
+
+Generated manifests are written to `.local/rendered-staging.yaml` and
+`.local/rendered-production.yaml`.
 
 ## Full Local Orchestration Smoke
 

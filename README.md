@@ -2,7 +2,7 @@
 
 Monorepo foundation for a production-grade, low-latency, secure, deterministic, provider-agnostic AI product-demo agent platform.
 
-Through Phase 15, this repo now contains the monorepo foundation, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, deterministic Playwright browser runtime, frontend live demo UI, Pipecat voice runtime foundation, realtime grounded agent brain, shared safety/policy layer, product learner and demo graph, recipe engine, end-to-end session orchestration, post-demo intelligence, observability/latency engineering, and deterministic testing/evaluation infrastructure.
+Through Phase 16, this repo now contains the monorepo foundation, contracts, tooling, durable database schema, Redis live-state layer, Redis Streams event bus, S3-compatible artifact storage, FastAPI backend APIs, provider-agnostic AI adapters, deterministic Playwright browser runtime, frontend live demo UI, Pipecat voice runtime foundation, realtime grounded agent brain, shared safety/policy layer, product learner and demo graph, recipe engine, end-to-end session orchestration, post-demo intelligence, observability/latency engineering, deterministic testing/evaluation infrastructure, and production hardening assets for secure deployment.
 
 ## What This Repo Is
 
@@ -26,6 +26,7 @@ This repository currently contains:
 - Phase 13 post-demo intelligence, feature tracking, lead summaries, and mock CRM export.
 - Phase 14 OpenTelemetry, Prometheus metrics, JSON logs, dashboards, and latency budgets.
 - Phase 15 deterministic quality gates, browser fixture apps, E2E demo tests, agent evals, and load testing.
+- Phase 16 hardened containers, browser sandboxing, secrets abstraction, CI/CD, Kubernetes manifests, autoscaling, and runbooks.
 - Python and TypeScript workspace tooling.
 - Shared JSON Schema contracts with generated Python and TypeScript outputs.
 - Shared policy rules with generated Python and TypeScript outputs.
@@ -41,6 +42,7 @@ This repository currently contains:
 | [docs/architecture/post-demo-intelligence.md](docs/architecture/post-demo-intelligence.md) | Phase 13 evidence-backed summaries and CRM handoff              |
 | [docs/architecture/observability-latency.md](docs/architecture/observability-latency.md)   | Phase 14 traces, metrics, logs, dashboards, latency budgets     |
 | [docs/architecture/testing-evaluation.md](docs/architecture/testing-evaluation.md)         | Phase 15 safety tests, E2E demo flow, evals, and load scenarios |
+| [docs/architecture/production-hardening.md](docs/architecture/production-hardening.md)     | Phase 16 containers, Kubernetes, CI/CD, secrets, and runbooks   |
 | [docs/flows/user-agent-flow.md](docs/flows/user-agent-flow.md)                             | User journey, agent turn, browser sync, recovery, shutdown      |
 | [docs/operations/local-development.md](docs/operations/local-development.md)               | Local setup, verification, smoke testing, debugging             |
 | [architecture/README.md](architecture/README.md)                                           | Phase 0 foundation documents and early architecture             |
@@ -269,6 +271,12 @@ make test-session-lifecycle
 make test-e2e
 make test-evals
 make test-load-smoke
+make ci-local
+make docker-build-all
+make docker-scan
+make security-scan
+make k8s-render
+make k8s-validate
 make web-dev
 make web-test
 make web-build
