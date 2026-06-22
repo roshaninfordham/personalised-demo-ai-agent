@@ -1,7 +1,10 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python:packages/policies/generated/python:packages/backend_common/src
 LEARNER_PYTHONPATH := services/learner_worker/src:packages/backend_common/src:packages/policies/generated/python:packages/contracts/generated/python
 
-.PHONY: help up up-lite up-full up-observability up-ai-local up-nim up-scrapegraph down restart logs status health open doctor debug-session clean clean-docker clean-docker-safe clean-docker-deep rebuild rebuild-service test-e2e-user test-e2e-real-demo test-login-required-flow test-voice-text-flow test-rebolt-demo test-e2e-full test-ui-ux test-ready verify-ui verify-realtime verify-e2e-demo verify-agentic-demo deploy-check final-ready-lite final-ready readiness-report design-lint design-export design-check production-config-test install lint format format-write typecheck test contracts docker-config docker-up docker-down db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production docs-validate docs-links docs-secrets docs-mermaid docs-index docs-all py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help up up-lite up-full up-observability up-ai-local up-nim up-scrapegraph down restart logs status health open doctor debug-session clean clean-docker clean-docker-safe clean-docker-deep rebuild rebuild-service test-e2e-user test-e2e-real-demo test-login-required-flow test-voice-text-flow test-rebolt-demo test-rebolt-demo-headed test-e2e-full test-ui-ux test-ready verify-ui verify-realtime verify-e2e-demo verify-agentic-demo deploy-check final-ready-lite final-ready readiness-report design-lint design-export design-check production-config-test install lint format format-write typecheck test contracts docker-config docker-up docker-down db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production docs-validate docs-links docs-secrets docs-mermaid docs-index docs-all py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+
+E2E_HEADED ?= false
+E2E_HEADED_FLAG = $(if $(filter true 1 yes,$(E2E_HEADED)),--headed,)
 
 help:
 	@echo "Available commands:"
@@ -115,7 +118,10 @@ test-voice-text-flow:
 
 test-rebolt-demo:
 	scripts/dev/prepare_e2e_browser_runtime.sh
-	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/rebolt-metric-master-demo.spec.ts --headed
+	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/rebolt-metric-master-demo.spec.ts $(E2E_HEADED_FLAG)
+
+test-rebolt-demo-headed:
+	$(MAKE) test-rebolt-demo E2E_HEADED=true
 
 test-e2e-full:
 	make test-fixture-secrets
