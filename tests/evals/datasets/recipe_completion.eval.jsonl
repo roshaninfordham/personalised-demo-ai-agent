@@ -1,0 +1,2 @@
+{"eval_id":"recipe_001","category":"recipe_completion","product_fixture":"simple-dashboard","screen_fixture":"dashboard_screen","recipe_fixture":"valid_analytics_recipe","user_turns":["Continue the recipe."],"observed_response":"I completed the overview and metric creation steps, then showed reports.","expected":{"required_steps_total":2,"required_steps_completed":2}}
+

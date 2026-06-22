@@ -1,0 +1,7 @@
+{
+  "name": "local_10_users",
+  "users": 10,
+  "spawn_rate": 2,
+  "duration": "5m",
+  "expected_behavior": "browser session limits return controlled 429 or queued state"
+}

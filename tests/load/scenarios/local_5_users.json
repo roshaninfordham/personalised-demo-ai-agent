@@ -1,0 +1,7 @@
+{
+  "name": "local_5_users",
+  "users": 5,
+  "spawn_rate": 1,
+  "duration": "5m",
+  "expected_success_rate": 0.95
+}

@@ -1,7 +1,7 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python:packages/policies/generated/python:packages/backend_common/src
 LEARNER_PYTHONPATH := services/learner_worker/src:packages/backend_common/src:packages/policies/generated/python:packages/contracts/generated/python
 
-.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help install lint format format-write typecheck test contracts docker-config docker-up docker-down clean db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -23,6 +23,7 @@ help:
 	@echo "  make web-dev          Run frontend development server"
 	@echo "  make agent-brain-test Run realtime agent brain tests"
 	@echo "  make recipe-test      Run demo recipe engine tests"
+	@echo "  make test-all-quality Run Phase 15 safety, integration, e2e, eval, and load smoke gates"
 	@echo "  make docker-config    Validate Docker Compose config"
 	@echo "  make docker-up        Start local stack"
 	@echo "  make docker-down      Stop local stack"
@@ -210,6 +211,68 @@ obs-dashboards-validate:
 obs-smoke:
 	curl -s http://localhost:9090/-/healthy
 	curl -s http://localhost:3001/api/health
+
+test-fixture-secrets:
+	uv run python scripts/test/check_no_secrets_in_fixtures.py
+
+test-unit:
+	mkdir -p .local/test-results
+	uv run pytest tests/unit services/api/tests services/agent_runtime/tests services/learner_worker/tests \
+		-m "not integration" \
+		--junitxml=.local/test-results/unit-results.xml
+	pnpm test
+
+test-integration:
+	mkdir -p .local/test-results
+	uv run pytest tests/integration services/api/tests services/agent_runtime/tests services/learner_worker/tests \
+		-m integration \
+		--junitxml=.local/test-results/integration-results.xml
+
+test-browser:
+	pnpm --filter @live-demo-agent/browser-runtime test:integration
+
+test-session-lifecycle:
+	mkdir -p .local/test-results
+	uv run pytest tests/integration/session_lifecycle -m integration \
+		--junitxml=.local/test-results/integration-results.xml
+
+test-e2e:
+	pnpm exec playwright test -c tests/e2e/playwright.config.ts
+
+test-evals:
+	uv run python scripts/test/validate_eval_dataset.py tests/evals/datasets
+	uv run python tests/evals/runners/run_agent_quality_evals.py \
+		--dataset tests/evals/datasets \
+		--output tests/evals/reports/eval_report.json \
+		--junit-output tests/evals/reports/eval_report.xml
+
+test-load-smoke:
+	mkdir -p .local/load-results
+	if command -v k6 >/dev/null 2>&1; then \
+		k6 run --summary-export=.local/load-results/k6-summary.json tests/load/k6/api-smoke.js; \
+	else \
+		uv run python scripts/test/run_k6_smoke_fallback.py; \
+	fi
+
+test-load-local:
+	mkdir -p .local/load-results
+	if command -v locust >/dev/null 2>&1; then \
+		locust -f tests/load/locustfile.py --headless -u 5 -r 1 -t 5m \
+			--csv .local/load-results/locust \
+			--html .local/load-results/locust.html; \
+	else \
+		uv run python scripts/test/run_locust_fallback.py; \
+	fi
+
+test-all-quality:
+	make test-fixture-secrets
+	make test-unit
+	make test-browser
+	make test-session-lifecycle
+	make test-e2e
+	make test-evals
+	make test-load-smoke
+	uv run python scripts/test/collect_test_artifacts.py
 
 policy-validate:
 	pnpm --filter @live-demo-agent/policies validate

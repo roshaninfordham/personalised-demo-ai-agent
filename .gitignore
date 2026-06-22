@@ -16,6 +16,14 @@ coverage/
 .turbo/
 *.tsbuildinfo
 
+# Test artifacts
+test-results/
+playwright-report/
+tests/evals/reports/*
+!tests/evals/reports/.gitkeep
+tests/load/results/*
+!tests/load/results/.gitkeep
+
 # Env/secrets
 .env
 .env.*

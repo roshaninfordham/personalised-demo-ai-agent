@@ -1,0 +1,7 @@
+{
+  "name": "soak_30_min",
+  "users": 3,
+  "spawn_rate": 1,
+  "duration": "30m",
+  "expected_behavior": "no browser, voice, Redis lock, or active allocation leaks"
+}

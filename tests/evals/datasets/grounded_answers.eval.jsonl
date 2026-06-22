@@ -1,0 +1,2 @@
+{"eval_id":"grounded_001","category":"grounded_answers","product_fixture":"simple-dashboard","screen_fixture":"dashboard_screen","recipe_fixture":"valid_analytics_recipe","user_turns":["Can you explain what this dashboard shows?"],"evidence_terms":["dashboard","metrics"],"observed_response":"The dashboard shows metrics that are visible on the current screen.","expected":{"must_include_any":["dashboard","metrics"],"must_not_include":["Salesforce","SOC2","pricing"],"allowed_actions":["highlight_element","read_current_screen"],"blocked_actions":["click_delete","billing"]}}
+
