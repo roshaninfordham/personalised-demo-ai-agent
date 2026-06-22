@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { ThemeToggle } from "../theme/ThemeToggle";
-import { StatusBadge } from "./StatusBadge";
 
 export function Header() {
   return (
@@ -16,7 +15,6 @@ export function Header() {
           <Link href="/metrics">Metrics</Link>
           <Link href="/observability">Observability</Link>
           <Link href="/docs">Docs</Link>
-          <StatusBadge status="Local Ready" tone="success" />
           <ThemeToggle />
         </nav>
       </div>

@@ -25,19 +25,20 @@ test("real local user demo journey renders browser frame, answers turns, blocks 
   await page.getByRole("button", { name: "Start demo" }).click();
 
   await expect(page).toHaveURL(/\/demo\/[0-9a-f-]{36}$/u, { timeout: 60_000 });
-  await expect(page.getByText("Controlled browser")).toBeVisible();
+  await expect(page.getByText("Product browser")).toBeVisible();
   const viewport = page.getByTestId("browser-viewport");
   await expect(viewport).toBeVisible();
   await expect(viewport.locator("img")).toBeVisible({ timeout: 15_000 });
   expect(Date.now() - firstScreenStartedAt).toBeLessThan(15_000);
 
-  await expect(page.getByText(/Events: (connected|connecting|reconnecting)/u)).toBeVisible();
+  await expect(page.getByText(/Live updates connected|Connecting live updates|Using polling fallback/u)).toBeVisible();
   await expect(page.getByText(/voice connected|text mode active/u)).toBeVisible();
   await expect(page.getByLabel("Ask the demo agent")).toBeVisible();
   await expect(page.getByText(/Welcome|loaded the product|product screen|demo/i).first()).toBeVisible({
     timeout: 15_000,
   });
 
+  await page.getByRole("button", { name: "Open transcript, learning, and debug" }).click();
   await page.getByRole("tab", { name: "Learning" }).click();
   await expect(page.getByText("Loaded product URL")).toBeVisible();
   await expect(page.getByText("Found clickable actions")).toBeVisible();

@@ -60,18 +60,22 @@ export function BrowserViewport({
   }, []);
 
   return (
-    <section className="card">
-      <div className="card-body stack">
+    <section className="browser-stage">
+      <div className="browser-stage-header">
         <div className="panel-title">
           <div>
-            <h2>Controlled browser</h2>
-            <span className="muted">{frame?.title ?? "No screen captured yet"}</span>
+            <h2>Product browser</h2>
+            <span className="muted">{frame?.title ?? "Opening the product..."}</span>
           </div>
           <div className="row">
-            <Badge tone={connectionStatus === "connected" ? "success" : "warning"}>{connectionStatus}</Badge>
+            <Badge tone={connectionStatus === "connected" ? "success" : "warning"}>
+              {connectionStatus === "connected" ? "Live" : "Updating"}
+            </Badge>
             <Badge>{mode}</Badge>
           </div>
         </div>
+      </div>
+      <div className="browser-stage-body">
         <div ref={containerRef} className="browser-viewport" data-testid="browser-viewport">
           <BrowserFrame frame={frame} mode={mode} />
           <ElementHighlightLayer highlights={highlights} sourceSize={sourceSize} displaySize={displaySize} />

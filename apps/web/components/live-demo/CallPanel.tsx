@@ -62,26 +62,29 @@ export function CallPanel({
           fallbackEventsEnabled={eventStatus !== "connected"}
           {...(onFallbackTextTurn === undefined ? {} : { onFallbackTurn: onFallbackTextTurn })}
         />
-        <div className="call-grid">
-          <div className="stack">
-            <div className="row">
-              <Button type="button" onClick={() => void connectVoice()}>
-                {mic.status === "idle" ? "Connect microphone" : "Connect voice"}
-              </Button>
-              <Button type="button" variant="secondary" onClick={mic.toggleMute} disabled={mic.stream === null}>
-                {mic.muted ? "Unmute" : "Mute"}
-              </Button>
+        <details className="voice-details">
+          <summary>Voice controls</summary>
+          <div className="call-grid">
+            <div className="stack">
+              <div className="row">
+                <Button type="button" onClick={() => void connectVoice()}>
+                  {mic.status === "idle" ? "Connect microphone" : "Connect voice"}
+                </Button>
+                <Button type="button" variant="secondary" onClick={mic.toggleMute} disabled={mic.stream === null}>
+                  {mic.muted ? "Unmute" : "Mute"}
+                </Button>
+              </div>
+              <div aria-live="polite">
+                <Badge tone={mic.status === "failed" ? "danger" : mic.status === "microphone_ready" ? "success" : "warning"}>
+                  Mic: {mic.status}
+                </Badge>
+              </div>
+              {mic.error === null ? null : <ErrorBanner message={mic.error} />}
+              <MicLevelMeter stream={mic.stream} />
             </div>
-            <div aria-live="polite">
-              <Badge tone={mic.status === "failed" ? "danger" : mic.status === "microphone_ready" ? "success" : "warning"}>
-                Mic: {mic.status}
-              </Badge>
-            </div>
-            {mic.error === null ? null : <ErrorBanner message={mic.error} />}
-            <MicLevelMeter stream={mic.stream} />
+            <AgentAudioPanel status={callStatus} />
           </div>
-          <AgentAudioPanel status={callStatus} />
-        </div>
+        </details>
         <TranscriptPreview items={transcript} />
       </div>
     </section>

@@ -1,8 +1,6 @@
 import Link from "next/link";
 
 import { DemoStartForm } from "../components/demo-start/DemoStartForm";
-import { LocalMetricsPanel } from "../components/metrics/LocalMetricsPanel";
-import { MetricsDashboardLink } from "../components/metrics/MetricsDashboardLink";
 import { Card, CardBody } from "../components/ui/Card";
 import { getPublicConfig } from "../lib/config/publicConfig";
 
@@ -18,71 +16,55 @@ export default function HomePage() {
   ] as const;
   return (
     <main className="page landing landing-demo">
-      <section className="hero-panel">
+      <section className="home-hero">
         <div className="hero-copy">
-          <span className="badge badge-success">Demo readiness: Ready in fake-provider mode</span>
+          <span className="badge badge-success">Local mode: {config.providerModeLabel}</span>
           <h1>Live AI Product Demo Agent</h1>
           <p>
-            Enter a product URL, optionally add guidance or a recipe, and start a safe interactive
-            demo with browser control, grounded answers, transcript, learning, and post-demo summary.
+            Enter a product URL. The agent opens it, learns the screen, and gives a live
+            interactive demo.
           </p>
-          <div className="hero-actions">
-            <Link className="button" href="/demo">
-              Open full demo form
-            </Link>
-            <Link className="button button-secondary" href="/metrics">
-              Metrics & Analytics
-            </Link>
+          <div className="home-hero-meta" aria-label="Demo capabilities">
+            <span>Browser-first live room</span>
+            <span>Grounded text fallback</span>
+            <span>Safe actions only</span>
           </div>
         </div>
-        <Card>
+        <Card className="home-start-card">
           <CardBody>
             <DemoStartForm />
           </CardBody>
         </Card>
       </section>
 
-      <section className="quick-link-grid" aria-label="Quick links">
-        <Link href="/demo">Live Demo</Link>
-        <Link href="/metrics">Metrics & Analytics</Link>
-        <Link href="/observability">Observability</Link>
-        <a href="/api/v1/docs">API Docs</a>
-        <a href="https://github.com/roshaninfordham/personalised-demo-ai-agent">Repo</a>
-        <Link href="/demo">Settings</Link>
+      <section className="home-secondary">
+        <Link className="linked-card" href="/metrics">
+          Metrics
+        </Link>
+        <Link className="linked-card" href="/observability">
+          Observability
+        </Link>
+        <Link className="linked-card" href="/docs">
+          Docs
+        </Link>
       </section>
 
-      <section className="status-grid" aria-label="Provider and service status">
-        {statusCards.map(([title, endpoint, detail]) => (
-          <Card key={title}>
-            <CardBody className="status-card">
-              <div className="panel-title">
-                <h2>{title}</h2>
-                <span className="badge badge-success">configured</span>
-              </div>
+      <details className="system-status-compact">
+        <summary>
+          <span>System status</span>
+          <strong>Ready for local fake-provider demo</strong>
+        </summary>
+        <div className="system-status-list">
+          {statusCards.map(([title, endpoint, detail]) => (
+            <div key={title}>
+              <span className="badge badge-success">configured</span>
+              <strong>{title}</strong>
               <p className="muted">{detail}</p>
               <code>{endpoint}</code>
-            </CardBody>
-          </Card>
-        ))}
-      </section>
-
-      <section className="dashboard-strip">
-        <div>
-          <span className="badge">{config.providerModeLabel}</span>
-          <h2>Operator links</h2>
-          <p className="muted">
-            Grafana and Prometheus are optional. Start them with <code>make up-observability</code>.
-          </p>
+            </div>
+          ))}
         </div>
-        <div className="row">
-          <MetricsDashboardLink />
-          <Link className="button button-secondary" href="/observability">
-            Observability
-          </Link>
-        </div>
-      </section>
-
-      <LocalMetricsPanel compact />
+      </details>
     </main>
   );
 }

@@ -9,6 +9,7 @@ import type {
 
 import { apiRequest } from "./apiClient";
 import {
+  demoStartEndpoint,
   demoSessionEndpoint,
   demoSessionEndEndpoint,
   demoSessionJoinConfigEndpoint,
@@ -20,6 +21,27 @@ import {
   demoSessionStateEndpoint,
   demoSessionTextTurnEndpoint,
 } from "./endpoints";
+
+export type StartDemoRequest = {
+  product_url: string;
+  product_name?: string | null;
+  target_persona?: string | null;
+  text_guidance?: string | null;
+};
+
+export type StartDemoResponse = {
+  session_id: string;
+  status: string;
+  redirect_url: string;
+};
+
+export function startDemo(request: StartDemoRequest): Promise<StartDemoResponse> {
+  return apiRequest<StartDemoResponse>(demoStartEndpoint(), {
+    method: "POST",
+    body: request,
+    timeoutMs: 30_000,
+  });
+}
 
 export function createDemoSession(request: CreateDemoSessionRequest): Promise<CreateDemoSessionResponse> {
   return apiRequest<CreateDemoSessionResponse>(demoSessionsEndpoint(), { method: "POST", body: request });

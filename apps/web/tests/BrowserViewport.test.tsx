@@ -18,7 +18,7 @@ describe("BrowserViewport", () => {
         connectionStatus="idle"
       />,
     );
-    expect(screen.getByText("Waiting for browser frame")).toBeInTheDocument();
+    expect(screen.getAllByText("Opening the product...")[0]).toBeInTheDocument();
   });
 
   it("renders screenshot frame and stale overlay", () => {

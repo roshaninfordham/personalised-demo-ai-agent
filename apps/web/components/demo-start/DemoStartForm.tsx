@@ -10,7 +10,7 @@ import type {
   ProductResponse,
 } from "@live-demo-agent/contracts";
 
-import { createDemoSession, startDemoSession } from "../../lib/api/demoSessionsApi";
+import { createDemoSession, startDemo, startDemoSession } from "../../lib/api/demoSessionsApi";
 import { createProductGuidance } from "../../lib/api/guidanceApi";
 import { createProduct } from "../../lib/api/productsApi";
 import { createDemoRecipe, validateDemoRecipe } from "../../lib/api/recipesApi";
@@ -44,10 +44,12 @@ const defaultApi: DemoStartApi = {
 
 type FormState =
   | "idle"
+  | "validating_url"
   | "creating_product"
   | "saving_guidance"
   | "saving_recipe"
   | "creating_session"
+  | "opening_product"
   | "starting_session"
   | "navigating_to_session"
   | "failed";
@@ -93,20 +95,37 @@ export function DemoStartForm({
     if (submitting) return;
     setFormError(null);
     setPartialWarning(null);
+    setFormState("validating_url");
     if (!urlValidation.valid || urlValidation.normalizedUrl === undefined) {
+      setFormState("failed");
       setFormError(urlError);
       return;
     }
     if (!guidanceValidation.valid) {
+      setFormState("failed");
       setFormError(guidanceError);
       return;
     }
     if (!recipeValidation.valid) {
+      setFormState("failed");
       setFormError(recipeError);
       return;
     }
 
     try {
+      if (api === defaultApi && recipeJson.trim() === "") {
+        setFormState("creating_session");
+        const response = await startDemo({
+          product_url: urlValidation.normalizedUrl,
+          product_name: productName.trim() || null,
+          target_persona: targetPersona.trim() || null,
+          text_guidance: textGuidance.trim() || null,
+        });
+        setFormState("opening_product");
+        navigate(response.redirect_url);
+        return;
+      }
+
       setFormState("creating_product");
       const productRequest: CreateProductRequest = {
         product_name: productName.trim() || productNameFromUrl(urlValidation.normalizedUrl),
@@ -146,16 +165,31 @@ export function DemoStartForm({
     <form className="stack" onSubmit={(event) => void handleSubmit(event)} noValidate>
       <UrlInput value={productUrl} onChange={setProductUrl} error={urlError} warning={urlValidation.warning ?? null} />
 
-      <button
-        type="button"
-        className="button button-secondary"
-        onClick={() => {
-          setAdvancedOpen((current) => !current);
-        }}
-        aria-expanded={advancedOpen}
-      >
-        {advancedOpen ? "Hide optional guidance" : "Add optional guidance"}
-      </button>
+      <div className="demo-form-actions">
+        <button
+          type="button"
+          className="text-button"
+          aria-label={advancedOpen ? "Hide optional guidance" : "Add optional guidance"}
+          onClick={() => {
+            setAdvancedOpen((current) => !current);
+          }}
+          aria-expanded={advancedOpen}
+        >
+          {advancedOpen ? "Hide guidance" : "Add guidance"}
+        </button>
+        <button
+          type="button"
+          className="text-button"
+          onClick={() => {
+            setProductUrl(config.defaultProductUrl);
+            setProductName("Example product");
+            setTargetPersona("founder");
+            setTextGuidance("Show the dashboard, metric creation, and reports. Avoid billing and delete.");
+          }}
+        >
+          Try sample URL
+        </button>
+      </div>
 
       {advancedOpen ? (
         <div className="advanced-panel stack">
@@ -193,7 +227,7 @@ export function DemoStartForm({
         <Button type="submit" disabled={submitting || urlError !== null}>
           {submitLabel(formState)}
         </Button>
-        <span className="muted">Frontend validation is UX only. Backend validation is authoritative.</span>
+        <span className="muted">Text mode stays available if voice setup is unavailable.</span>
       </div>
     </form>
   );
@@ -285,12 +319,16 @@ function submitLabel(state: FormState): string {
       return "Start demo";
     case "creating_product":
       return "Creating product...";
+    case "validating_url":
+      return "Validating URL...";
     case "saving_guidance":
       return "Saving guidance...";
     case "saving_recipe":
       return "Saving recipe...";
     case "creating_session":
       return "Creating session...";
+    case "opening_product":
+      return "Opening product...";
     case "starting_session":
       return "Starting session...";
     case "navigating_to_session":

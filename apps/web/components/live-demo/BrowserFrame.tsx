@@ -32,8 +32,8 @@ export const BrowserFrame = memo(function BrowserFrame({
   if (frame === null || frame.imageUrl === null) {
     return (
       <div className="browser-frame browser-frame-empty">
-        <EmptyState title="Waiting for browser frame">
-          Screenshot frames appear here after the browser runtime emits screen updates.
+        <EmptyState title="Opening the product...">
+          The agent is creating an isolated browser, loading the URL, and reading the first screen.
         </EmptyState>
       </div>
     );
@@ -42,7 +42,9 @@ export const BrowserFrame = memo(function BrowserFrame({
   if (loadError) {
     return (
       <div className="browser-frame browser-frame-empty">
-        <EmptyState title="Frame could not load">The screenshot URL was rejected or expired.</EmptyState>
+        <EmptyState title="We could not show the browser frame">
+          Try refreshing the session or use the sample URL from the homepage.
+        </EmptyState>
       </div>
     );
   }

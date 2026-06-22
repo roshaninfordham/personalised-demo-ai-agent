@@ -30,7 +30,7 @@ export function LiveDemoShell({ sessionId }: { sessionId: string }) {
   const { cursor, highlights } = useCursorOverlay(state);
   const config = getPublicConfig();
   const sessionState = sessionLoadState.status === "loaded" ? sessionLoadState.data : null;
-  const [sidePanelOpen, setSidePanelOpen] = useState(true);
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [fallbackPolling, setFallbackPolling] = useState(false);
   const dispatch = useCallback(
     (event: LiveDemoEvent, receivedAtMs?: number) => {
@@ -68,12 +68,14 @@ export function LiveDemoShell({ sessionId }: { sessionId: string }) {
   }, [dispatch, sessionId, state.connectionStatus, state.currentFrame]);
 
   return (
-    <div className="live-shell">
+    <div className={sidePanelOpen ? "live-shell" : "live-shell live-shell-details-closed"}>
       <div className="live-main">
         <SessionStatusBar sessionId={sessionId} sessionState={sessionState} eventStatus={state.connectionStatus} />
         {config.enableMockEvents ? <ErrorBanner message="Mock events enabled. This is not a live backend stream." /> : null}
         {fallbackPolling && state.currentFrame !== null ? (
-          <ErrorBanner message="Live events are reconnecting, so the room is using session-state polling." />
+          <div className="soft-status" role="status">
+            Live updates are reconnecting. The room is using polling and keeping the latest browser frame visible.
+          </div>
         ) : null}
         {sessionLoadState.status === "failed" ? <ErrorBanner message={sessionLoadState.message} /> : null}
         <BrowserViewport
@@ -101,7 +103,7 @@ export function LiveDemoShell({ sessionId }: { sessionId: string }) {
             setSidePanelOpen((open) => !open);
           }}
         >
-          {sidePanelOpen ? "Hide panel" : "Show panel"}
+          {sidePanelOpen ? "Close details" : "Open transcript, learning, and debug"}
         </button>
         {sidePanelOpen ? (
           <Tabs

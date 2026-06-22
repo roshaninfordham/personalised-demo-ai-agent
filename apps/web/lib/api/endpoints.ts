@@ -18,6 +18,14 @@ export function demoSessionsEndpoint(): string {
   return "/api/v1/demo-sessions";
 }
 
+export function demoStartEndpoint(): string {
+  return "/api/v1/demo/start";
+}
+
+export function metricsSummaryEndpoint(): string {
+  return "/api/v1/metrics/summary";
+}
+
 export function demoSessionEndpoint(sessionId: string): string {
   return `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}`;
 }
