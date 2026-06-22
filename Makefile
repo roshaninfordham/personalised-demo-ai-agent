@@ -98,18 +98,23 @@ rebuild-service:
 	docker compose build $(service)
 
 test-e2e-user:
+	scripts/dev/prepare_e2e_browser_runtime.sh
 	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/user-demo.spec.ts --headed
 
 test-e2e-real-demo:
+	scripts/dev/prepare_e2e_browser_runtime.sh
 	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/real-url-demo.spec.ts --headed
 
 test-login-required-flow:
+	scripts/dev/prepare_e2e_browser_runtime.sh
 	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/login-required-flow.spec.ts --headed
 
 test-voice-text-flow:
+	scripts/dev/prepare_e2e_browser_runtime.sh
 	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/voice-or-text-agent-demo.spec.ts --headed
 
 test-rebolt-demo:
+	scripts/dev/prepare_e2e_browser_runtime.sh
 	pnpm exec playwright test -c tests/e2e/playwright.config.ts tests/e2e/rebolt-metric-master-demo.spec.ts --headed
 
 test-e2e-full:
