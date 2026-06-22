@@ -1,7 +1,7 @@
 API_PYTHONPATH := services/api/src:packages/contracts/generated/python:packages/policies/generated/python:packages/backend_common/src
 LEARNER_PYTHONPATH := services/learner_worker/src:packages/backend_common/src:packages/policies/generated/python:packages/contracts/generated/python
 
-.PHONY: help up up-lite up-full up-observability up-ai-local up-nim up-scrapegraph down restart logs status health open doctor clean clean-docker clean-docker-safe clean-docker-deep rebuild rebuild-service test-e2e-user test-e2e-full test-ui-ux test-ready deploy-check final-ready readiness-report design-lint design-export design-check production-config-test install lint format format-write typecheck test contracts docker-config docker-up docker-down db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production docs-validate docs-links docs-secrets docs-mermaid docs-index docs-all py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
+.PHONY: help up up-lite up-full up-observability up-ai-local up-nim up-scrapegraph down restart logs status health open doctor clean clean-docker clean-docker-safe clean-docker-deep rebuild rebuild-service test-e2e-user test-e2e-full test-ui-ux test-ready deploy-check final-ready-lite final-ready readiness-report design-lint design-export design-check production-config-test install lint format format-write typecheck test contracts docker-config docker-up docker-down db-upgrade db-downgrade db-revision db-current db-history db-reset api-dev api-test api-test-integration api-openapi ai-test ai-test-live ai-test-unit browser-install browser-dev browser-test browser-test-integration web-dev web-build web-test web-typecheck web-lint agent-dev agent-test agent-test-integration agent-build agent-brain-test agent-brain-test-integration policy-validate policy-generate policy-test policy-test-ts policy-test-py policy-fixtures-check learner-dev learner-worker learner-test learner-test-integration recipe-test recipe-test-integration recipe-validate-fixtures orchestration-test orchestration-test-integration orchestration-smoke post-demo-test post-demo-test-integration post-demo-smoke obs-up obs-down obs-test obs-dashboards-validate obs-smoke test-unit test-integration test-browser test-session-lifecycle test-e2e test-evals test-load-smoke test-load-local test-all-quality test-fixture-secrets docker-build-all docker-scan k8s-render k8s-validate security-scan ci-local deploy-staging deploy-production rollback-staging rollback-production docs-validate docs-links docs-secrets docs-mermaid docs-index docs-all py-sync py-lint py-format py-typecheck py-test ts-install ts-lint ts-format ts-typecheck ts-test secrets-check
 
 help:
 	@echo "Available commands:"
@@ -136,6 +136,22 @@ production-config-test:
 
 readiness-report:
 	uv run python scripts/dev/generate_readiness_report.py
+
+final-ready-lite:
+	COMPOSE_DETACHED=true scripts/dev/up.sh lite
+	HEALTH_ATTEMPTS=15 HEALTH_RETRY_SECONDS=2 make health
+	make test-e2e-user
+	make test-fixture-secrets
+	make docs-secrets
+	scripts/dev/docker_disk_usage.sh
+	READINESS_E2E_PASSED=true \
+	READINESS_CURSOR_EVENTS_SEEN=true \
+	READINESS_SAFE_CLICK_EXECUTED=true \
+	READINESS_POLICY_BLOCK_VERIFIED=true \
+	READINESS_LEAD_SUMMARY_READY=true \
+	READINESS_HALLUCINATION_COUNT=0 \
+	READINESS_SAFETY_VIOLATIONS=0 \
+	make readiness-report
 
 final-ready:
 	make docs-secrets

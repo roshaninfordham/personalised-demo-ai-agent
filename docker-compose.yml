@@ -56,6 +56,31 @@ services:
     networks:
       - live-demo-agent
 
+  db-migrate:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://demo_agent:demo_agent@postgres:5432/demo_agent
+      DATABASE_SYNC_URL: postgresql+psycopg://demo_agent:demo_agent@postgres:5432/demo_agent
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      AI_TEXT_PROVIDER: ${AI_TEXT_PROVIDER:-fake}
+      AI_STT_PROVIDER: ${AI_STT_PROVIDER:-fake}
+      AI_TTS_PROVIDER: ${AI_TTS_PROVIDER:-fake}
+    command:
+      [
+        "/bin/sh",
+        "-c",
+        "cd /app/services/api && /app/.venv/bin/alembic upgrade head",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - live-demo-agent
+
   api:
     build:
       context: .
@@ -67,11 +92,17 @@ services:
       REDIS_URL: redis://redis:6379/0
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
       CORS_ALLOWED_ORIGINS: ${PUBLIC_BASE_URL:-http://localhost:3000}
+      AI_TEXT_PROVIDER: ${AI_TEXT_PROVIDER:-fake}
+      AI_STT_PROVIDER: ${AI_STT_PROVIDER:-fake}
+      AI_TTS_PROVIDER: ${AI_TTS_PROVIDER:-fake}
+      LEARNER_ENABLED: ${LEARNER_ENABLED:-true}
     ports:
       - "${HOST_API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       minio:
@@ -144,6 +175,9 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://demo_agent:demo_agent@postgres:5432/demo_agent
       REDIS_URL: redis://redis:6379/0
+      AI_TEXT_PROVIDER: ${AI_TEXT_PROVIDER:-fake}
+      AI_STT_PROVIDER: ${AI_STT_PROVIDER:-fake}
+      AI_TTS_PROVIDER: ${AI_TTS_PROVIDER:-fake}
     ports:
       - "${HOST_AGENT_RUNTIME_PORT:-8300}:8300"
     depends_on:
@@ -175,6 +209,7 @@ services:
     environment:
       REDIS_URL: redis://redis:6379/0
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      BROWSER_MAX_CONCURRENT_SESSIONS: ${BROWSER_MAX_CONCURRENT_SESSIONS:-3}
     ports:
       - "${HOST_BROWSER_RUNTIME_PORT:-8200}:8200"
     shm_size: "2gb"
@@ -209,6 +244,8 @@ services:
       DATABASE_SYNC_URL: postgresql+psycopg://demo_agent:demo_agent@postgres:5432/demo_agent
       REDIS_URL: redis://redis:6379/0
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      AI_TEXT_PROVIDER: ${AI_TEXT_PROVIDER:-fake}
+      LEARNER_ENABLED: ${LEARNER_ENABLED:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -284,6 +321,7 @@ services:
       DATABASE_SYNC_URL: postgresql+psycopg://demo_agent:demo_agent@postgres:5432/demo_agent
       REDIS_URL: redis://redis:6379/0
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      AI_TEXT_PROVIDER: ${AI_TEXT_PROVIDER:-fake}
     depends_on:
       postgres:
         condition: service_healthy

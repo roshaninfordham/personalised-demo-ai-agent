@@ -13,14 +13,21 @@ set +a
 check() {
   local name="$1"
   local url="$2"
+  local attempts="${HEALTH_ATTEMPTS:-1}"
+  local retry_seconds="${HEALTH_RETRY_SECONDS:-2}"
   printf "%-18s" "$name"
-  if curl -fsS --max-time 5 "$url" >/tmp/live-demo-health.json 2>/tmp/live-demo-health.err; then
-    echo "healthy $url"
-  else
-    echo "unavailable $url"
-    cat /tmp/live-demo-health.err || true
-    return 1
-  fi
+  for attempt in $(seq 1 "$attempts"); do
+    if curl -fsS --max-time 5 "$url" >/tmp/live-demo-health.json 2>/tmp/live-demo-health.err; then
+      echo "healthy $url"
+      return 0
+    fi
+    if [ "$attempt" != "$attempts" ]; then
+      sleep "$retry_seconds"
+    fi
+  done
+  echo "unavailable $url"
+  cat /tmp/live-demo-health.err || true
+  return 1
 }
 
 failed=0
