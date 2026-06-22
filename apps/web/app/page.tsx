@@ -1,51 +1,89 @@
 import Link from "next/link";
 
+import { DemoStartForm } from "../components/demo-start/DemoStartForm";
+import { LocalMetricsPanel } from "../components/metrics/LocalMetricsPanel";
+import { MetricsDashboardLink } from "../components/metrics/MetricsDashboardLink";
 import { Card, CardBody } from "../components/ui/Card";
+import { getPublicConfig } from "../lib/config/publicConfig";
+
+const statusCards = [
+  ["API", "http://localhost:8000/healthz", "session orchestration"],
+  ["Browser runtime", "http://localhost:8200/healthz", "Playwright control"],
+  ["Agent runtime", "http://localhost:8300/healthz", "voice and agent loop"],
+  ["Redis/Postgres/MinIO", "make health", "state and artifacts"],
+  ["LLM provider", "env-configured", "fake/NIM/Ollama/custom"],
+  ["STT/TTS", "env-configured", "fake/local/cloud"],
+] as const;
 
 export default function HomePage() {
+  const config = getPublicConfig();
   return (
-    <main className="page landing">
-      <div className="landing-grid">
-        <section className="hero-copy">
-          <h1>Live Demo Agent</h1>
+    <main className="page landing landing-demo">
+      <section className="hero-panel">
+        <div className="hero-copy">
+          <span className="badge badge-success">Demo readiness: Ready in fake-provider mode</span>
+          <h1>Live AI Product Demo Agent</h1>
           <p>
-            Start a live demo session from a product URL, then watch the controlled browser,
-            transcript, learning events, microphone status, and latency signals in one focused
-            operator view.
+            Enter a product URL, optionally add guidance or a recipe, and start a safe interactive
+            demo with browser control, grounded answers, transcript, learning, and post-demo summary.
           </p>
-          <Link className="button" href="/demo">
-            Start demo
-          </Link>
-          <div className="mode-list" aria-label="Demo input modes">
-            <div>
-              <strong>URL mode</strong>
-              <span className="muted">Create a session from a product URL with backend validation.</span>
-            </div>
-            <div>
-              <strong>Guidance mode</strong>
-              <span className="muted">Add positioning notes or restrictions before starting.</span>
-            </div>
-            <div>
-              <strong>Recipe mode</strong>
-              <span className="muted">Provide a deterministic screen-by-screen demo plan.</span>
-            </div>
-          </div>
-        </section>
-        <Card>
-          <CardBody className="stack">
-            <span className="badge badge-warning">Phase 6 shell</span>
-            <h2 style={{ margin: 0 }}>Built for live state, not claims.</h2>
-            <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
-              This frontend consumes the backend session APIs and event stream. Voice transport,
-              AI planning, browser internals, and CRM export remain later-phase integrations unless
-              those services are available locally.
-            </p>
-            <Link className="button button-secondary" href="/demo">
-              Open demo form
+          <div className="hero-actions">
+            <Link className="button" href="/demo">
+              Open full demo form
             </Link>
+            <Link className="button button-secondary" href="/metrics">
+              Metrics & Analytics
+            </Link>
+          </div>
+        </div>
+        <Card>
+          <CardBody>
+            <DemoStartForm />
           </CardBody>
         </Card>
-      </div>
+      </section>
+
+      <section className="quick-link-grid" aria-label="Quick links">
+        <Link href="/demo">Live Demo</Link>
+        <Link href="/metrics">Metrics & Analytics</Link>
+        <Link href="/observability">Observability</Link>
+        <a href="/api/v1/docs">API Docs</a>
+        <a href="https://github.com/roshaninfordham/personalised-demo-ai-agent">Repo</a>
+        <Link href="/demo">Settings</Link>
+      </section>
+
+      <section className="status-grid" aria-label="Provider and service status">
+        {statusCards.map(([title, endpoint, detail]) => (
+          <Card key={title}>
+            <CardBody className="status-card">
+              <div className="panel-title">
+                <h2>{title}</h2>
+                <span className="badge badge-success">configured</span>
+              </div>
+              <p className="muted">{detail}</p>
+              <code>{endpoint}</code>
+            </CardBody>
+          </Card>
+        ))}
+      </section>
+
+      <section className="dashboard-strip">
+        <div>
+          <span className="badge">{config.providerModeLabel}</span>
+          <h2>Operator links</h2>
+          <p className="muted">
+            Grafana and Prometheus are optional. Start them with <code>make up-observability</code>.
+          </p>
+        </div>
+        <div className="row">
+          <MetricsDashboardLink />
+          <Link className="button button-secondary" href="/observability">
+            Observability
+          </Link>
+        </div>
+      </section>
+
+      <LocalMetricsPanel compact />
     </main>
   );
 }

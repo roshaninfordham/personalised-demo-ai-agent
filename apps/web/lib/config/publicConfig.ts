@@ -16,6 +16,11 @@ export type PublicConfig = {
   frameStaleAfterMs: number;
   defaultProductUrl: string;
   maxEventPayloadBytes: number;
+  grafanaUrl: string;
+  prometheusUrl: string;
+  jaegerUrl: string;
+  lokiUrl: string;
+  providerModeLabel: string;
 };
 
 export function getPublicConfig(): PublicConfig {
@@ -34,6 +39,11 @@ export function getPublicConfig(): PublicConfig {
     frameStaleAfterMs: readInteger("NEXT_PUBLIC_FRAME_STALE_AFTER_MS", 10_000, 1000, 120_000),
     defaultProductUrl: readString("NEXT_PUBLIC_DEFAULT_PRODUCT_URL", "https://example.com"),
     maxEventPayloadBytes: readInteger("NEXT_PUBLIC_MAX_EVENT_PAYLOAD_BYTES", 262_144, 1024, 1_048_576),
+    grafanaUrl: readString("NEXT_PUBLIC_GRAFANA_URL", "http://localhost:3001"),
+    prometheusUrl: readString("NEXT_PUBLIC_PROMETHEUS_URL", "http://localhost:9090"),
+    jaegerUrl: readString("NEXT_PUBLIC_JAEGER_URL", "http://localhost:16686"),
+    lokiUrl: readString("NEXT_PUBLIC_LOKI_URL", "http://localhost:3100"),
+    providerModeLabel: readString("NEXT_PUBLIC_PROVIDER_MODE_LABEL", "Fake Providers"),
   };
 }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import "./design-tokens.css";
 import "./globals.css";
 import { AppShell } from "../components/layout/AppShell";
 

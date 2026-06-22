@@ -8,11 +8,14 @@ export function Header() {
       <div className="app-header-inner">
         <Link href="/" className="brand">
           <strong>Live Demo Agent</strong>
-          <span>Frontend live demo shell</span>
+          <span>Realtime product demo room</span>
         </Link>
         <nav className="row" aria-label="Primary navigation">
           <Link href="/demo">Demo</Link>
-          <StatusBadge status="Phase 6" tone="warning" />
+          <Link href="/metrics">Metrics</Link>
+          <Link href="/observability">Observability</Link>
+          <Link href="/docs">Docs</Link>
+          <StatusBadge status="Local Ready" tone="success" />
         </nav>
       </div>
     </header>
