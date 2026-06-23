@@ -6,13 +6,13 @@ import { getPublicConfig } from "../lib/config/publicConfig";
 
 export default function HomePage() {
   const config = getPublicConfig();
-  const statusCards = [
+  const localEndpoints = [
     ["API", `${config.apiBaseUrl}/healthz`, "session orchestration"],
     ["Browser runtime", `${config.browserRuntimeUrl}/healthz`, "Playwright control"],
     ["Agent runtime", `${config.agentRuntimeUrl}/healthz`, "voice and agent loop"],
-    ["Storage", `${config.minioUrl}/minio/health/live`, "Redis/Postgres/MinIO state"],
-    ["LLM provider", "env-configured", "fake/NIM/Ollama/custom"],
-    ["STT/TTS", "env-configured", "fake/local/cloud"],
+    ["Storage", `${config.minioUrl}/minio/health/live`, "artifact storage health"],
+    ["LLM provider", config.providerModeLabel, "selected by environment"],
+    ["STT/TTS", "voice mode dependent", "text fallback is always available"],
   ] as const;
   return (
     <main className="page landing landing-demo">
@@ -51,13 +51,13 @@ export default function HomePage() {
 
       <details className="system-status-compact">
         <summary>
-          <span>System status</span>
-          <strong>Ready for local fake-provider demo</strong>
+          <span>Local endpoints</span>
+          <strong>Run make health for real service status</strong>
         </summary>
         <div className="system-status-list">
-          {statusCards.map(([title, endpoint, detail]) => (
+          {localEndpoints.map(([title, endpoint, detail]) => (
             <div key={title}>
-              <span className="badge badge-success">configured</span>
+              <span className="badge">local</span>
               <strong>{title}</strong>
               <p className="muted">{detail}</p>
               <code>{endpoint}</code>

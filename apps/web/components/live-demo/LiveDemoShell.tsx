@@ -72,7 +72,12 @@ export function LiveDemoShell({ sessionId }: { sessionId: string }) {
   return (
     <div className={sidePanelOpen ? "live-shell" : "live-shell live-shell-details-closed"}>
       <div className="live-main">
-        <SessionStatusBar sessionId={sessionId} sessionState={sessionState} eventStatus={state.connectionStatus} />
+        <SessionStatusBar
+          sessionId={sessionId}
+          sessionState={sessionState}
+          eventStatus={state.connectionStatus}
+          agentPhase={state.agentPhase}
+        />
         {config.enableMockEvents ? <ErrorBanner message="Mock events enabled. This is not a live backend stream." /> : null}
         {fallbackPolling && state.currentFrame !== null ? (
           <div className="soft-status" role="status">
@@ -190,6 +195,18 @@ function dispatchTextTurnFallback(
       turn_id: response.turn_id,
     },
   });
+  if (response.agent_phase !== undefined && response.agent_phase !== null) {
+    dispatch({
+      ...base,
+      event_id: `local-phase:${response.turn_id}`,
+      event_type: "agent.phase.updated",
+      payload: {
+        phase: response.agent_phase,
+        turn_id: response.turn_id,
+        reason_code: "text_turn_response",
+      },
+    });
+  }
   if (response.policy_blocked) {
     dispatch({
       ...base,

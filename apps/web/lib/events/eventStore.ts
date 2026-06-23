@@ -28,6 +28,7 @@ export function createInitialLiveDemoState(sessionId: string): LiveDemoClientSta
     sessionId,
     connectionStatus: "idle",
     sessionStatus: null,
+    agentPhase: null,
     currentFrame: null,
     authState: null,
     cursor: {

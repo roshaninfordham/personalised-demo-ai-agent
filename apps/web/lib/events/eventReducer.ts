@@ -113,6 +113,9 @@ export function reduceEvent(
     case "agent.interrupted":
       markAssistantInterrupted(state);
       break;
+    case "agent.phase.updated":
+      state.agentPhase = stringPayload(event.payload.phase) ?? state.agentPhase;
+      break;
     case "learner.demo_graph.updated":
       markMilestone(state, "built_demo_route", "Built demo route", event.created_at);
       break;

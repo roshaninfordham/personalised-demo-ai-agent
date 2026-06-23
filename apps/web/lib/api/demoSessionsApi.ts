@@ -87,6 +87,7 @@ export type TextTurnResponse = {
   assistant_response: string;
   action_taken: string | null;
   policy_blocked: boolean;
+  agent_phase?: string | null;
 };
 
 export function sendTextTurn(sessionId: string, text: string): Promise<TextTurnResponse> {

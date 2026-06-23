@@ -17,6 +17,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
+from live_demo_api.agentic.turn_planner import plan_text_turn
 from live_demo_api.clients.browser_runtime_client import BrowserRuntimeClient
 from live_demo_api.db.models import ActionEvent, TranscriptEvent
 from live_demo_api.db.types import SessionStatus
@@ -68,6 +69,7 @@ class TextTurnResponse(BaseModel):
     assistant_response: str
     action_taken: str | None = None
     policy_blocked: bool = False
+    agent_phase: str | None = None
 
 
 def _parse_status(status: str | None) -> SessionStatus | None:
@@ -216,7 +218,7 @@ async def run_text_turn(
         },
     )
 
-    decision = _deterministic_turn_decision(user_text, screen, safe_actions)
+    decision = plan_text_turn(user_text, screen, safe_actions).as_router_payload()
     assistant_event = TranscriptEvent(
         organization_id=principal.organization_id,
         session_id=session_id,
@@ -241,6 +243,20 @@ async def run_text_turn(
             "chunk_type": "final",
             "text": decision["response"],
             "turn_id": str(turn_id),
+            "agent_phase": decision["phase"],
+            "reason_code": decision["reason_code"],
+        },
+    )
+    await publish_event(
+        event_bus,
+        organization_id=principal.organization_id,
+        session_id=session_id,
+        event_type="agent.phase.updated",
+        request_context=request_context,
+        payload={
+            "phase": decision["phase"],
+            "turn_id": str(turn_id),
+            "reason_code": decision["reason_code"],
         },
     )
 
@@ -385,6 +401,7 @@ async def run_text_turn(
         assistant_response=str(decision["response"]),
         action_taken=str(decision["label"]) if decision["action"] is not None else None,
         policy_blocked=bool(decision["blocked"]),
+        agent_phase=str(decision["phase"]),
     )
 
 
@@ -633,126 +650,6 @@ def _decode(value: Any) -> str:
     if isinstance(value, bytes):
         return value.decode("utf-8")
     return str(value or "")
-
-
-def _deterministic_turn_decision(
-    user_text: str,
-    screen: dict[str, object],
-    safe_actions: list[dict[str, object]],
-) -> dict[str, object]:
-    lowered = user_text.lower()
-    title = str(screen.get("title") or "the current screen")
-    summary = str(screen.get("summary") or f"I can see {title}.")
-    auth_state = screen.get("auth_state") if isinstance(screen.get("auth_state"), dict) else {}
-    login_required = (
-        bool(auth_state.get("login_required")) if isinstance(auth_state, dict) else False
-    )
-    destructive_terms = ("delete", "remove", "billing", "payment", "purchase", "upgrade")
-    if any(term in lowered for term in destructive_terms):
-        return {
-            "response": (
-                "I cannot perform destructive, billing, or payment actions in a live demo. "
-                "I can keep showing safe product workflows instead."
-            ),
-            "blocked": True,
-            "action": None,
-            "action_type": "blocked_action",
-            "label": "Dangerous action",
-        }
-    if login_required:
-        if any(term in lowered for term in ("sign up", "signup", "create account", "register")):
-            action = _find_action(
-                safe_actions,
-                ("sign up", "sign-up", "create account", "register"),
-            )
-            return {
-                "response": (
-                    "I am at the sign-in screen, so I cannot verify the in-app workflow yet. "
-                    "I can show the sign-up path without submitting anything; I will open "
-                    "the visible sign-up link if it is available."
-                ),
-                "blocked": False,
-                "action": _safe_auth_navigation_action(action),
-                "action_type": action.get("action_type") if action else None,
-                "label": action.get("label") if action else None,
-            }
-        return {
-            "response": (
-                "This product is currently showing a sign-in screen, so I cannot verify the "
-                "authenticated app yet. You can sign in securely, or I can explain the visible "
-                "login and sign-up flow without entering or storing credentials."
-            ),
-            "blocked": False,
-            "action": None,
-            "action_type": None,
-            "label": None,
-        }
-    if any(term in lowered for term in ("salesforce", "soc2", "soc 2", "hipaa", "pricing", "sso")):
-        return {
-            "response": (
-                "I cannot verify that from the current screen. "
-                f"What I can verify is: {summary}"
-            ),
-            "blocked": False,
-            "action": None,
-            "action_type": None,
-            "label": None,
-        }
-    if any(term in lowered for term in ("metric", "create", "add")):
-        action = _find_action(safe_actions, ("add metric", "create metric", "new metric", "metric"))
-        return {
-            "response": (
-                "I will focus on the metric creation workflow and highlight the safest "
-                "matching control."
-            ),
-            "blocked": False,
-            "action": action,
-            "action_type": action.get("action_type") if action else None,
-            "label": action.get("label") if action else None,
-        }
-    if "report" in lowered:
-        action = _find_action(safe_actions, ("reports", "reporting", "analytics"))
-        return {
-            "response": "I will show the reporting area if it is available on this screen.",
-            "blocked": False,
-            "action": action,
-            "action_type": action.get("action_type") if action else None,
-            "label": action.get("label") if action else None,
-        }
-    action = _find_action(safe_actions, ("dashboard", "overview", "read current screen")) or (
-        safe_actions[0] if safe_actions else None
-    )
-    return {
-        "response": (
-            f"From the visible screen, {summary} "
-            "I will start by orienting you around this view."
-        ),
-        "blocked": False,
-        "action": action,
-        "action_type": action.get("action_type") if action else None,
-        "label": action.get("label") if action else None,
-    }
-
-
-def _find_action(
-    safe_actions: list[dict[str, object]],
-    labels: tuple[str, ...],
-) -> dict[str, object] | None:
-    for action in safe_actions:
-        label = str(action.get("label") or "").lower()
-        if any(candidate in label for candidate in labels):
-            return action
-    return None
-
-
-def _safe_auth_navigation_action(action: dict[str, object] | None) -> dict[str, object] | None:
-    if action is None:
-        return None
-    label = str(action.get("label") or "").lower()
-    action_type = str(action.get("action_type") or "")
-    if "sign in" in label or "log in" in label or action_type == "type_into_element":
-        return None
-    return action
 
 
 async def _execute_browser_action_if_possible(

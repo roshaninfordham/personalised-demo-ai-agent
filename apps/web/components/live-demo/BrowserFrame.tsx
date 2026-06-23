@@ -29,7 +29,9 @@ export const BrowserFrame = memo(function BrowserFrame({
   if (mode !== "screenshot") {
     return (
       <div className="browser-frame browser-frame-empty">
-        <EmptyState title={`${mode} mode is not implemented in Phase 6.`} />
+        <EmptyState title={`${mode} mode is not available in this local run.`}>
+          The demo is using screenshot frames from the controlled Playwright browser.
+        </EmptyState>
       </div>
     );
   }

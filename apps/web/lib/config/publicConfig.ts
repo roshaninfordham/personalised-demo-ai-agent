@@ -64,13 +64,15 @@ function readString(key: string, fallback: string): string {
 }
 
 function readBoolean(key: string, fallback: boolean): boolean {
-  const value = process.env[key];
+  const runtimeConfig = readRuntimePublicConfig();
+  const value = runtimeConfig[key] ?? process.env[key];
   if (value === undefined || value.trim() === "") return fallback;
   return value.toLowerCase() === "true";
 }
 
 function readInteger(key: string, fallback: number, min: number, max: number): number {
-  const value = process.env[key];
+  const runtimeConfig = readRuntimePublicConfig();
+  const value = runtimeConfig[key] ?? process.env[key];
   const parsed = value === undefined || value.trim() === "" ? fallback : Number.parseInt(value, 10);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(min, Math.min(max, parsed));

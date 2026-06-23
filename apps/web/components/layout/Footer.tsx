@@ -2,8 +2,8 @@ export function Footer() {
   return (
     <footer className="app-footer">
       <div className="app-footer-inner">
-        <span className="muted">Phase 6 implements the frontend UI shell and mockable event flow.</span>
-        <span className="muted">Voice, AI planning, and CRM export are later phases.</span>
+        <span className="muted">Real browser screenshots are required for live URL demos.</span>
+        <span className="muted">Voice is optional locally; grounded text mode remains available.</span>
       </div>
     </footer>
   );

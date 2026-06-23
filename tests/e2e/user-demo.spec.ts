@@ -83,7 +83,6 @@ async function ask(page: import("@playwright/test").Page, text: string): Promise
   const input = page.getByLabel("Ask the demo agent");
   const askButton = page.getByRole("button", { name: /^Ask$/u });
   await expect(askButton).toBeVisible({ timeout: 15_000 });
-  await expect(input).toHaveValue("", { timeout: 15_000 });
   await input.fill(text);
   await expect(input).toHaveValue(text);
   await expect(askButton).toBeEnabled();

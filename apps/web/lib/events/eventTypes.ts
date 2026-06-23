@@ -116,6 +116,7 @@ export type LiveDemoClientState = {
   sessionId: string;
   connectionStatus: EventConnectionStatus;
   sessionStatus: string | null;
+  agentPhase: string | null;
   currentFrame: BrowserFrameState | null;
   authState: AuthScreenState | null;
   cursor: CursorState;

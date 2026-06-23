@@ -99,6 +99,7 @@ class EventType(StrEnum):
     AGENT_GREETING_STARTED = "agent.greeting.started"
     AGENT_TURN_STARTED = "agent.turn.started"
     AGENT_TURN_COMPLETED = "agent.turn.completed"
+    AGENT_PHASE_UPDATED = "agent.phase.updated"
     AGENT_INTERRUPTED = "agent.interrupted"
     TRANSCRIPT_PARTIAL = "transcript.partial"
     TRANSCRIPT_FINAL = "transcript.final"

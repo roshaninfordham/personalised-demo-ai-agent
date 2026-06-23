@@ -32,6 +32,12 @@ export function LoginRequiredBanner({
         >
           Explain screen
         </Button>
+        <Button type="button" variant="secondary" disabled title="Secure browser takeover is not enabled in this local build.">
+          Take control to sign in
+        </Button>
+        <Button type="button" variant="secondary" disabled title="Demo credentials must be configured server-side for this product.">
+          Use demo credentials
+        </Button>
         {canSignUp ? (
           <Button
             type="button"

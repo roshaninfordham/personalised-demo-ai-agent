@@ -85,6 +85,7 @@
         "agent.greeting.started",
         "agent.turn.started",
         "agent.turn.completed",
+        "agent.phase.updated",
         "agent.interrupted",
         "transcript.partial",
         "transcript.final",
