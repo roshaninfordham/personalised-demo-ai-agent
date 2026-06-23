@@ -997,6 +997,8 @@ def _resource_id(resources: tuple[SessionResource, ...], resource_type: str) -> 
 
 def _screen_event_payload(result: BrowserScreenResult) -> dict[str, object]:
     screen = result.screen
+    width = _int_payload_value(screen.get("width"), 1440)
+    height = _int_payload_value(screen.get("height"), 900)
     payload: dict[str, object] = {
         "screen_id": str(screen.get("screen_id") or ""),
         "screen_hash": str(screen.get("screen_hash") or ""),
@@ -1005,8 +1007,8 @@ def _screen_event_payload(result: BrowserScreenResult) -> dict[str, object]:
         "title": str(screen.get("title") or ""),
         "summary": str(screen.get("summary") or ""),
         "safe_action_count": len(result.safe_actions),
-        "width": int(screen.get("width") or 1440),
-        "height": int(screen.get("height") or 900),
+        "width": width,
+        "height": height,
     }
     image_url = screen.get("image_url")
     if isinstance(image_url, str) and image_url:
@@ -1018,8 +1020,8 @@ def _screen_event_payload(result: BrowserScreenResult) -> dict[str, object]:
             "object_key": screenshot_uri,
             "url": image_url if isinstance(image_url, str) and image_url else "",
             "content_type": "image/webp",
-            "width": int(screen.get("width") or 1440),
-            "height": int(screen.get("height") or 900),
+            "width": width,
+            "height": height,
         }
     diagnostics = screen.get("diagnostics")
     if isinstance(diagnostics, dict) and diagnostics:
@@ -1028,3 +1030,14 @@ def _screen_event_payload(result: BrowserScreenResult) -> dict[str, object]:
     if isinstance(auth_state, dict):
         payload["auth_state"] = auth_state
     return payload
+
+
+def _int_payload_value(value: object, fallback: int) -> int:
+    if isinstance(value, int | float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(float(value))
+        except ValueError:
+            return fallback
+    return fallback

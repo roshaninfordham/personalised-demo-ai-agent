@@ -64,12 +64,12 @@ export async function extractRawElements(page: Page, maxElements: number): Promi
               .join(" ")
           : "";
         const ariaReferenceText = labelledText.length > 0 ? labelledText : null;
-        const inputLabels =
-          "labels" in element
-            ? Array.from((element as HTMLInputElement).labels ?? [])
-                .map((label) => label.textContent ?? "")
-                .join(" ")
-            : "";
+        const labels = "labels" in element ? (element as HTMLInputElement).labels : null;
+        const inputLabels = labels
+          ? Array.from(labels)
+              .map((label) => label.textContent)
+              .join(" ")
+          : "";
         const wrappedLabel =
           element.closest("label") !== null ? element.closest("label")?.textContent ?? "" : "";
         const placeholder = element.getAttribute("placeholder");

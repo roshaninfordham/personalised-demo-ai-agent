@@ -219,13 +219,21 @@ async def run_text_turn(
         },
     )
 
-    decision = plan_text_turn(user_text, screen, safe_actions).as_router_payload()
+    decision = plan_text_turn(
+        user_text,
+        cast(dict[str, object], screen),
+        cast(list[dict[str, object]], safe_actions),
+    )
+    assistant_response = decision.response
+    agent_phase = decision.phase.value
+    reason_code = decision.reason_code
+    planned_action = decision.action
     assistant_event = TranscriptEvent(
         organization_id=principal.organization_id,
         session_id=session_id,
         speaker="assistant",
         chunk_type="final",
-        text=decision["response"],
+        text=assistant_response,
         is_final=True,
         confidence=Decimal("0.880"),
         turn_id=turn_id,
@@ -242,10 +250,10 @@ async def run_text_turn(
             "transcript_event_id": str(assistant_event.transcript_event_id),
             "speaker": "assistant",
             "chunk_type": "final",
-            "text": decision["response"],
+            "text": assistant_response,
             "turn_id": str(turn_id),
-            "agent_phase": decision["phase"],
-            "reason_code": decision["reason_code"],
+            "agent_phase": agent_phase,
+            "reason_code": reason_code,
         },
     )
     await publish_event(
@@ -255,20 +263,20 @@ async def run_text_turn(
         event_type="agent.phase.updated",
         request_context=request_context,
         payload={
-            "phase": decision["phase"],
+            "phase": agent_phase,
             "turn_id": str(turn_id),
-            "reason_code": decision["reason_code"],
+            "reason_code": reason_code,
         },
     )
 
-    if decision["blocked"]:
+    if decision.blocked:
         db.add(
             ActionEvent(
                 organization_id=principal.organization_id,
                 session_id=session_id,
                 turn_id=turn_id,
-                action_type=str(decision["action_type"] or "blocked_action"),
-                action_payload={"label": decision["label"], "source": "text_turn"},
+                action_type=decision.action_type or "blocked_action",
+                action_payload={"label": decision.label, "source": "text_turn"},
                 risk_level="blocked",
                 policy_decision="blocked",
                 success=False,
@@ -286,15 +294,15 @@ async def run_text_turn(
             payload={
                 "policy_decision": "blocked",
                 "reason_code": "dangerous_action",
-                "label": decision["label"],
+                "label": decision.label,
                 "success": False,
             },
         )
-    elif decision["action"] is not None:
+    elif planned_action is not None:
         browser_result = await _execute_browser_action_if_possible(
             store=store,
             session_id=session_id,
-            action=cast(dict[str, object], decision["action"]),
+            action=planned_action,
             request_context=request_context,
         )
         if browser_result.success:
@@ -303,12 +311,12 @@ async def run_text_turn(
                     organization_id=principal.organization_id,
                     session_id=session_id,
                     turn_id=turn_id,
-                    action_type=str(decision["action"].get("action_type") or "browser_action"),
+                    action_type=str(planned_action.get("action_type") or "browser_action"),
                     action_payload={
-                        "label": decision["action"].get("label"),
+                        "label": planned_action.get("label"),
                         "source": "text_turn_browser_runtime",
                     },
-                    risk_level=str(decision["action"].get("risk_level") or "low"),
+                    risk_level=str(planned_action.get("risk_level") or "low"),
                     policy_decision="allowed",
                     success=True,
                     latency_ms=0,
@@ -320,14 +328,14 @@ async def run_text_turn(
                     organization_id=principal.organization_id,
                     session_id=session_id,
                     turn_id=turn_id,
-                    action_type=str(decision["action"].get("action_type") or "browser_action"),
+                    action_type=str(planned_action.get("action_type") or "browser_action"),
                     action_payload={
-                        "label": decision["action"].get("label"),
+                        "label": planned_action.get("label"),
                         "source": "text_turn",
-                        "action_id": decision["action"].get("action_id"),
+                        "action_id": planned_action.get("action_id"),
                         "error_code": browser_result.error_code,
                     },
-                    risk_level=str(decision["action"].get("risk_level") or "low"),
+                    risk_level=str(planned_action.get("risk_level") or "low"),
                     policy_decision="not_executed",
                     success=False,
                     error_code=browser_result.error_code,
@@ -342,8 +350,8 @@ async def run_text_turn(
                 event_type="browser.action.failed",
                 request_context=request_context,
                 payload={
-                    "action_id": str(decision["action"].get("action_id") or ""),
-                    "label": str(decision["action"].get("label") or ""),
+                    "action_id": str(planned_action.get("action_id") or ""),
+                    "label": str(planned_action.get("label") or ""),
                     "success": False,
                     "policy_decision": "not_executed",
                     "reason_code": browser_result.error_code,
@@ -365,7 +373,7 @@ async def run_text_turn(
         {
             "speaker": "assistant",
             "chunk_type": "final",
-            "text": decision["response"],
+            "text": assistant_response,
             "turn_id": str(turn_id),
             "created_at": datetime.now(UTC).isoformat(),
         },
@@ -373,10 +381,10 @@ async def run_text_turn(
     await db.commit()
     return TextTurnResponse(
         turn_id=str(turn_id),
-        assistant_response=str(decision["response"]),
-        action_taken=str(decision["label"]) if decision["action"] is not None else None,
-        policy_blocked=bool(decision["blocked"]),
-        agent_phase=str(decision["phase"]),
+        assistant_response=assistant_response,
+        action_taken=decision.label if planned_action is not None else None,
+        policy_blocked=decision.blocked,
+        agent_phase=agent_phase,
     )
 
 
@@ -560,7 +568,7 @@ async def list_sessions_for_product(
 
 
 async def _replay_recent_events(redis: Redis[bytes], stream_key: str) -> tuple[str, list[str]]:
-    recent = await redis.xrevrange(stream_key, count=50)  # type: ignore[no-untyped-call]
+    recent = await redis.xrevrange(stream_key, count=50)
     if not recent:
         return "$", []
     chunks = [
@@ -582,7 +590,7 @@ async def _stream_events(
         yield chunk
     next_heartbeat = time.monotonic() + 10
     while not await request.is_disconnected():
-        response = await redis.xread({stream_key: last_id}, count=20, block=1000)  # type: ignore[no-untyped-call]
+        response = await redis.xread({stream_key: last_id}, count=20, block=1000)
         for _stream_name, messages in response:
             for message_id, fields in messages:
                 last_id = _decode(message_id)

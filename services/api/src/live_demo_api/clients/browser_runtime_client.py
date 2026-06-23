@@ -299,10 +299,12 @@ def _safe_actions_from_screen(screen: dict[str, object]) -> tuple[dict[str, obje
         if isinstance(element, dict) and element.get("element_id")
     } if isinstance(elements, list) else {}
     if isinstance(runtime_actions, list) and runtime_actions:
-        actions = [_normalize_runtime_action(action, element_by_id) for action in runtime_actions]
-        return tuple(action for action in actions if action is not None)[:20]
+        runtime_normalized = [
+            _normalize_runtime_action(action, element_by_id) for action in runtime_actions
+        ]
+        return tuple(action for action in runtime_normalized if action is not None)[:20]
 
-    actions: list[dict[str, object]] = [
+    fallback_actions: list[dict[str, object]] = [
         {
             "action_id": "act_read_current_screen",
             "action_type": "read_current_screen",
@@ -324,9 +326,11 @@ def _safe_actions_from_screen(screen: dict[str, object]) -> tuple[dict[str, obje
             action_type = (
                 "click_element" if role in {"button", "link", "tab"} else "highlight_element"
             )
-            actions.append(
+            fallback_actions.append(
                 {
-                    "action_id": f"act_highlight_{element.get('element_id', len(actions))}",
+                    "action_id": (
+                        f"act_highlight_{element.get('element_id', len(fallback_actions))}"
+                    ),
                     "action_type": action_type,
                     "element_id": str(element.get("element_id") or ""),
                     "label": label[:120],
@@ -336,7 +340,7 @@ def _safe_actions_from_screen(screen: dict[str, object]) -> tuple[dict[str, obje
                     "bbox": element.get("bbox") if isinstance(element.get("bbox"), dict) else None,
                 }
             )
-    return tuple(actions)
+    return tuple(fallback_actions)
 
 
 def _normalize_runtime_action(

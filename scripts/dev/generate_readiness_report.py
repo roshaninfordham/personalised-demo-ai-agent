@@ -109,7 +109,9 @@ def main() -> int:
         },
         "e2e": {
             "passed": env_bool("READINESS_E2E_PASSED"),
-            "first_screen_ms": os.getenv("READINESS_FIRST_SCREEN_MS", "validated under test threshold"),
+            "first_screen_ms": os.getenv(
+                "READINESS_FIRST_SCREEN_MS", "validated under test threshold"
+            ),
             "event_connection_status": os.getenv(
                 "READINESS_EVENT_CONNECTION_STATUS", "connected_or_polling_validated"
             ),

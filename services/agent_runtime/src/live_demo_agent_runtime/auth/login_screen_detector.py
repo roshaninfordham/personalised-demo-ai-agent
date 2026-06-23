@@ -43,7 +43,8 @@ def detect_login_screen(screen: dict[str, Any]) -> LoginScreenDetection:
     url = str(screen.get("url") or screen.get("final_url") or "")
     title = str(screen.get("title") or "")
     visible_text = str(screen.get("visible_text") or screen.get("summary") or "")
-    elements = screen.get("elements") if isinstance(screen.get("elements"), list) else []
+    elements_raw = screen.get("elements")
+    elements = elements_raw if isinstance(elements_raw, list) else []
 
     fields: set[str] = set()
     actions: set[str] = set()
