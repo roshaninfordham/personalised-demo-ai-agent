@@ -19,7 +19,7 @@ def test_login_screen_turn_identifies_auth_gate_without_hallucinating() -> None:
 
 
 def test_sign_up_tutorial_uses_visible_safe_action_only() -> None:
-    action = {
+    action: dict[str, object] = {
         "action_id": "act_signup",
         "action_type": "click_element",
         "element_id": "el_signup",
@@ -39,8 +39,68 @@ def test_sign_up_tutorial_uses_visible_safe_action_only() -> None:
     assert "without submitting anything" in decision.response
 
 
+def test_metric_action_ranking_prefers_high_success_low_latency_action() -> None:
+    decision = plan_text_turn(
+        "How do I create a metric?",
+        {},
+        [
+            {
+                "action_id": "act_new_metric_slow",
+                "action_type": "click_element",
+                "element_id": "el_new_metric",
+                "label": "New Metric",
+                "risk_level": "low",
+                "score": 0.7,
+                "success_rate": 0.4,
+                "latency_cost": 0.9,
+            },
+            {
+                "action_id": "act_create_metric",
+                "action_type": "click_element",
+                "element_id": "el_create_metric",
+                "label": "Create Metric",
+                "risk_level": "low",
+                "score": 0.8,
+                "success_rate": 0.95,
+                "latency_cost": 0.1,
+            },
+        ],
+    )
+
+    assert decision.action is not None
+    assert decision.action["action_id"] == "act_create_metric"
+
+
+def test_action_ranking_penalizes_high_risk_candidates() -> None:
+    decision = plan_text_turn(
+        "Can you show reports?",
+        {},
+        [
+            {
+                "action_id": "act_export_reports",
+                "action_type": "click_element",
+                "element_id": "el_export_reports",
+                "label": "Reports Export",
+                "risk_level": "high",
+                "score": 0.98,
+            },
+            {
+                "action_id": "act_reports",
+                "action_type": "click_element",
+                "element_id": "el_reports",
+                "label": "Reports",
+                "risk_level": "low",
+                "score": 0.72,
+            },
+        ],
+    )
+
+    assert decision.action is not None
+    assert decision.action["action_id"] == "act_reports"
+
+
 def test_auth_planner_does_not_click_sign_in_or_type_fields() -> None:
-    actions = [
+    actions: list[dict[str, object]] = [
         {
             "action_id": "act_signin",
             "action_type": "click_element",

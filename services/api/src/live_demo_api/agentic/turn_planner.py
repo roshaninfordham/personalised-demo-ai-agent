@@ -96,7 +96,7 @@ def plan_text_turn(
         )
 
     if _contains_any(lowered, ("metric", "create", "add")):
-        action = _find_action(safe_actions, ("add metric", "create metric", "new metric", "metric"))
+        action = _rank_action(safe_actions, ("add metric", "create metric", "new metric", "metric"))
         return TurnDecision(
             phase=AgenticPhase.GUIDED_NAVIGATION,
             response=(
@@ -110,7 +110,7 @@ def plan_text_turn(
         )
 
     if "report" in lowered:
-        action = _find_action(safe_actions, ("reports", "reporting", "analytics"))
+        action = _rank_action(safe_actions, ("reports", "reporting", "analytics"))
         return TurnDecision(
             phase=AgenticPhase.GUIDED_NAVIGATION,
             response="I will show the reporting area if it is available on this screen.",
@@ -120,7 +120,7 @@ def plan_text_turn(
             reason_code="reporting_requested",
         )
 
-    action = _find_action(safe_actions, ("dashboard", "overview", "read current screen")) or (
+    action = _rank_action(safe_actions, ("dashboard", "overview", "read current screen")) or (
         safe_actions[0] if safe_actions else None
     )
     return TurnDecision(
@@ -138,7 +138,7 @@ def plan_text_turn(
 
 def _plan_auth_turn(lowered: str, safe_actions: list[dict[str, object]]) -> TurnDecision:
     if _contains_any(lowered, ("sign up", "signup", "create account", "register")):
-        action = _find_action(safe_actions, ("sign up", "sign-up", "create account", "register"))
+        action = _rank_action(safe_actions, ("sign up", "sign-up", "create account", "register"))
         safe_action = _safe_auth_navigation_action(action)
         return TurnDecision(
             phase=AgenticPhase.AUTH_HANDLING,
@@ -163,15 +163,86 @@ def _plan_auth_turn(lowered: str, safe_actions: list[dict[str, object]]) -> Turn
     )
 
 
-def _find_action(
+def _rank_action(
     safe_actions: list[dict[str, object]],
     labels: tuple[str, ...],
 ) -> dict[str, object] | None:
-    for action in safe_actions:
-        label = str(action.get("label") or "").lower()
-        if any(candidate in label for candidate in labels):
-            return action
-    return None
+    ranked = [
+        (
+            _action_score(action, labels),
+            str(action.get("label") or ""),
+            str(action.get("action_id") or ""),
+            action,
+        )
+        for action in safe_actions
+        if _label_matches(action, labels)
+    ]
+    if not ranked:
+        return None
+    ranked.sort(key=lambda item: (-item[0], _risk_sort_key(item[3]), item[1], item[2]))
+    return ranked[0][3]
+
+
+def _label_matches(action: dict[str, object], labels: tuple[str, ...]) -> bool:
+    label = str(action.get("label") or "").lower()
+    action_type = str(action.get("action_type") or "").lower()
+    return any(candidate in label for candidate in labels) or any(
+        candidate in action_type for candidate in labels
+    )
+
+
+def _action_score(action: dict[str, object], labels: tuple[str, ...]) -> float:
+    label = str(action.get("label") or "").lower()
+    exact_label_match = max((1.0 for candidate in labels if candidate == label), default=0.0)
+    partial_label_match = max((1.0 for candidate in labels if candidate in label), default=0.0)
+    browser_score = _clamped_float(action.get("score"), 0.5)
+    historical_success = _clamped_float(action.get("historical_success"), 0.7)
+    if "success_rate" in action:
+        historical_success = _clamped_float(action.get("success_rate"), historical_success)
+    demo_value = _clamped_float(action.get("demo_value"), 0.6)
+    latency_cost = _clamped_float(action.get("latency_cost"), 0.2)
+    risk_score = _risk_score(action)
+    return (
+        0.30 * max(exact_label_match, partial_label_match)
+        + 0.15 * partial_label_match
+        + 0.20 * browser_score
+        + 0.15 * historical_success
+        + 0.10 * demo_value
+        - 0.35 * risk_score
+        - 0.10 * latency_cost
+    )
+
+
+def _risk_score(action: dict[str, object]) -> float:
+    risk_level = str(action.get("risk_level") or "medium").lower()
+    if "risk_score" in action:
+        return _clamped_float(action.get("risk_score"), 0.5)
+    return {
+        "low": 0.1,
+        "medium": 0.35,
+        "high": 0.75,
+        "blocked": 1.0,
+    }.get(risk_level, 0.5)
+
+
+def _risk_sort_key(action: dict[str, object]) -> int:
+    return {"low": 0, "medium": 1, "high": 2, "blocked": 3}.get(
+        str(action.get("risk_level") or "medium").lower(),
+        1,
+    )
+
+
+def _clamped_float(value: object, fallback: float) -> float:
+    if isinstance(value, int | float):
+        parsed = float(value)
+    elif isinstance(value, str):
+        try:
+            parsed = float(value)
+        except ValueError:
+            parsed = fallback
+    else:
+        parsed = fallback
+    return min(1.0, max(0.0, parsed))
 
 
 def _safe_auth_navigation_action(action: dict[str, object] | None) -> dict[str, object] | None:
