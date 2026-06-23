@@ -47,18 +47,22 @@ describe("action executor integration", () => {
       runtime.events,
       runtime.screenReader,
     );
-    const email = [...session.currentElements.values()].find((element) => element.label === "name@example.com");
-    expect(email).toBeDefined();
-    const emailId = email?.element_id;
-    if (emailId === undefined) throw new Error("missing email element");
+    const displayName = [...session.currentElements.values()].find(
+      (element) =>
+        element.role === "input" &&
+        (element.label === "Display name" || element.placeholder === "Weekly KPI demo"),
+    );
+    expect(displayName).toBeDefined();
+    const displayNameId = displayName?.element_id;
+    if (displayNameId === undefined) throw new Error("missing display name element");
     await runtime.actionExecutor.execute(
       session,
       command(session.browserSessionId, "type_into_element", {
-        element_id: emailId,
-        text: "user@example.com",
+        element_id: displayNameId,
+        text: "Founder KPI demo",
       }),
     );
-    expect(await session.page.locator("#email").inputValue()).toBe("user@example.com");
+    expect(await session.page.locator("#displayName").inputValue()).toBe("Founder KPI demo");
 
     const password = [...session.currentElements.values()].find((element) => element.inputType === "password");
     expect(password).toBeDefined();

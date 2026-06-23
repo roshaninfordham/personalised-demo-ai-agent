@@ -16,7 +16,7 @@ test("real local user demo journey renders browser frame, answers turns, blocks 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
   const firstScreenStartedAt = Date.now();
-  await page.getByLabel("Product URL").fill("https://example.com");
+  await page.getByLabel("Product URL").fill("http://web:3000/fixtures/metric-product");
   await page.getByRole("button", { name: "Add optional guidance" }).click();
   await page.getByLabel("Target persona").fill("founder");
   await page
